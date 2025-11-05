@@ -1,0 +1,398 @@
+          button {
+            color: white;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            letter-spacing: 1.3px;
+            background-color: #0075be;
+            border-radius: 2px;
+            border: none;
+            padding: 12px 30px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .ui-widget-header {
+            border: none !important;
+            background: none !important;
+            color: #333333;
+            font-weight: bold;
+        }
+
+        .ui-state-default, .ui-widget-content .ui-state-default {
+            border: none !important;
+            background: none !important;
+            text-align: center;
+            font-weight: normal;
+            color: #454545;
+        }
+        .ui-state-active, .ui-widget-content .ui-state-active {
+            border: 1px solid #003eff !important;
+            background: #007fff !important;
+            font-weight: normal;
+            color: #ffffff;
+        }
+
+        .ui-state-highlight, .ui-widget-content .ui-state-highlight {
+            border: 1px solid #dad55e !important;
+            background: #fffa90 !important;
+            color: #777620;
+        }
+
+    .custom-dropdown {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+    }
+
+    .custom-dropdown select {
+        appearance: none; /* Hide default dropdown arrow */
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        background: white;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    .custom-dropdown::after {
+        content: "▼"; /* Unicode down arrow */
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 14px;
+        color: #666;
+        pointer-events: none;
+    }
+
+    
+
+<!-- 1ST PAGE CSS -->
+
+/* container */
+.tax-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 24px 72px;
+}
+
+/* card */
+.tax-card{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 56px 56px 48px;
+
+  /* center layout defaults */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* eyebrow */
+.tax-eyebrow{
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0369a1;
+  background: #e0f2fe;
+  border: 1px solid #bae6fd;
+  padding: 6px 10px;
+  border-radius: 999px;
+  margin-bottom: 16px;
+}
+
+/* title LEFT */
+.tax-title{
+  font-size: clamp(32px, 4vw, 44px);
+  line-height: 1.1;
+  margin: 0 0 12px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-align: left !important;
+  align-self: stretch;          
+}
+
+/* subtext LEFT */
+.tax-sub{
+  font-size: 16px;
+  color: var(--muted);
+  margin: 0 0 28px;
+  padding-left: 50px;
+  max-width:1000px;
+  text-align: left !important;
+  align-self: stretch;
+}
+
+/* list block (kept left) */
+.tax-list{
+  list-style: none;
+  margin: 28px 0 8px;
+  padding: 0;
+  display: grid;
+  gap: 22px;
+  max-width: 760px;
+  text-align: left;
+}
+
+.tax-item{
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* make the icon column wider so layout stays stable */
+.tax-item{
+  grid-template-columns: 36px 1fr;   /* was 24px */
+  align-items: start;
+}
+
+/* bigger icon box */
+.tax-check{
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+/* scale the svg precisely */
+.tax-check svg{
+  width: 24px;   /* increase to taste: 22–28 looks good */
+  height: 24px;
+  display: block;   /* removes inline gaps */
+}
+
+.tax-item h3{ margin: 0 0 4px; font-size: 18px; }
+.tax-muted{ color: var(--muted); }
+
+.tax-muted a{ color: #0284c7; text-decoration: none; font-weight: bold; }
+.tax-muted a:hover{ text-decoration: underline; }
+/* legal note (centered as a block) */
+.tax-legal{
+  margin: 24px auto 16px;
+  color: var(--muted);
+  font-size: 14.5px;
+  max-width: 700px;
+  text-align: center;
+}
+
+.tax-legal a{ color: #0284c7; text-decoration: none; font-weight: bold; }
+.tax-legal a:hover{ text-decoration: underline; }
+
+/* CTA: button + note stacked and centered */
+.tax-cta{
+  margin-top: 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* form wrapper reset (prevents white box) */
+.tax-cta form{
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  display: inline-block;
+}
+
+/* outline button (no white fill) */
+.tax-btn, #button{
+  background: transparent;
+  border: 2px solid #0284c7;
+  color: #0284c7;
+  box-shadow: none;
+  border-radius: 24px;
+  font-weight: bold;
+}
+
+.tax-btn:hover, #button:hover{
+  filter: none;
+  background: #0284c7;
+  color: #fff;
+}
+
+.tax-btn:active, #button:active{
+  transform: translateY(0);
+}
+
+/* tiny note */
+.tax-tiny{ margin-top: 10px; font-size: 13px; color: #64748b; }
+
+/* responsive */
+@media (max-width: 720px){
+  .tax-card{ padding: 36px 22px; }
+  .tax-item{ grid-template-columns: 36px 1fr; }
+  .tax-check{ width: 36px; height: 36px; }
+.tax-sub{
+  padding-left: 20px;
+
+}
+}
+
+
+
+
+
+
+
+<!-- SECOND PAGE CSS -->
+
+
+
+/* same grid feel, but for radios */
+.qs-choicegrid{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap:12px 16px;
+}
+.qs-choicegrid label{
+  display:flex; align-items:center; gap:12px; cursor:pointer;
+}
+
+/* make radios bigger + blue */
+.qs-choicegrid input[type="radio"]{
+  width:22px; height:22px; min-width:22px;
+  accent-color:#0b66c3;     /* blue dot + ring */
+  cursor:pointer;
+}
+.qs-choicegrid input[type="radio"]:focus-visible{
+  outline:none;
+  box-shadow:0 0 0 3px rgba(11,102,195,.25);
+  border-radius:50%;
+}
+
+          
+/* ===== Questionnaire layout ===== */
+.qs-wrap { max-width: 980px; margin: 0 auto; }
+.qs-lead { font-size: 16px; color: #475569; margin: 6px 0 24px; max-width: 70ch; }
+.qs-title {
+  font-size: clamp(28px, 3.2vw, 44px);
+  font-weight: 800; letter-spacing: -0.02em; margin: 8px 0 4px; text-align: left;
+}
+.qs-block { margin: 18px 0 28px; }
+.qs-label { display: block; margin: 0 0 10px; font-size: clamp(18px, 2vw, 28px); font-weight: 800; }
+.qs-note, .qs-help { color: #64748b; font-size: 14px; }
+.qs-help { margin: 6px 0 12px; }
+
+/* checkbox grid */
+.qs-checkgrid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 16px;
+}
+.qs-checkgrid label { display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 16px; }
+.qs-checkgrid input[type="checkbox"] {
+  width: 22px; height: 22px; min-width: 22px; accent-color: #0284c7; cursor: pointer;
+}
+.qs-checkgrid input[type="checkbox"]:hover { filter: brightness(1.05); }
+.qs-checkgrid input[type="checkbox"]:focus-visible {
+  outline: none; box-shadow: 0 0 0 3px rgba(11,102,195,.25); border-radius: 6px;
+}
+
+/* ===== Yes / No buttons ===== */
+.yn-group { display: flex; gap: 18px; }
+.yn-group input[type="radio"] { display: none; }
+
+.yn-btn {
+  padding: 10px 26px; border-radius: 8px; font-weight: 700; line-height: 1; cursor: pointer;
+  user-select: none;
+  background: #fff; color: #0284c7; border: 2px solid #0284c7;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease,
+              box-shadow .15s ease, transform .05s ease;
+}
+.yn-btn:hover { background: #eaf4ff; box-shadow: 0 0 0 3px rgba(11,102,195,.12) inset; }
+.yn-btn:active { transform: translateY(1px); }
+.yn-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(11,102,195,.35); }
+
+/* selected => solid blue */
+.yn-group input[type="radio"]:checked + .yn-btn {
+  background: #0284c7; color: #fff; border-color: #0284c7;
+}
+.yn-group input[type="radio"]:checked + .yn-btn:hover {
+  filter: brightness(1.05);
+}
+
+/* Keep blocks full-width within centered card */
+.qs-title, .qs-block { align-self: stretch; text-align: left; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) { .yn-btn { transition: none; } }
+
+/* Small screens */
+@media (max-width: 720px) { .qs-lead { margin-bottom: 18px; } }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ===== 3RD PAGE ===== */
+
+/* ===== Personal Info two-column layout ===== */
+.pi-layout{
+  display:flex;
+  gap:32px;
+  align-items:flex-start;
+}
+
+/* left panel */
+.pi-side{
+  flex:0 0 260px;                 /* fixed-ish width */
+  max-width:300px;
+  position:sticky; top:16px;      /* stays in view while scrolling */
+}
+.pi-side-title{
+  font-size:18px; font-weight:800; margin:0 0 12px;
+}
+.pi-steps{ display:flex; flex-direction:column; gap:10px; }
+.pi-step{
+  display:block;
+  padding:10px 12px;
+  border-radius:8px;
+  color:#334155;                  /* slate-700 */
+  text-decoration:none;
+  border:1px solid transparent;
+}
+.pi-step:hover{
+  background:#f1f5f9;             /* slate-100 */
+  border-color:#e2e8f0;           /* slate-200 */
+}
+.pi-step.is-current{
+  font-weight:700;
+  color:#0b66c3;
+}
+
+/* right content */
+.pi-main{
+  flex:1 1 auto;
+  min-width:0;                    /* prevents overflow */
+}
+
+/* responsive: stack on mobile */
+@media (max-width: 960px){
+  .pi-layout{ flex-direction:column; }
+  .pi-side{ position:static; width:100%; max-width:none; }
+  .pi-steps{ flex-wrap:wrap; gap:8px; }
+  .pi-step{ display:inline-block; }
+}

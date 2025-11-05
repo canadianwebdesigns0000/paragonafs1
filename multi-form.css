@@ -1,0 +1,892 @@
+@import url('https://fonts.googleapis.com/css2?family=Heebo&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background-color: #ffffff;
+}
+
+.tab {
+  display: none;
+  width: 100%;
+  height: 50%;
+  margin: 0px auto;
+}
+.current {
+  display: block;
+}
+
+body {
+  background-color: #f1f1f1;
+}
+
+form {
+  background-color: #ffffff;
+  padding: 10px 30px 30px;
+  box-shadow: 0px 0px 10px 0px rgb(0 0 0 / 18%);
+  border-radius: 10px;
+}
+
+.form-label {
+  font-weight: 500;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+h1 {
+  text-align: center;
+}
+
+button:hover {
+  /* opacity: 0.8; */
+}
+
+.previous {
+  /* background-color: #bbbbbb; */
+  margin-right: 10px;
+}
+
+/* Make circles that indicate the steps of the form: */
+/* .step {
+  height: 30px;
+  width: 30px;
+  cursor: pointer;
+  margin: 0 2px;
+  color: #fff;
+  background-color: #bbbbbb;
+  border: none;
+  border-radius: 50%;
+  display: inline-block;
+  opacity: 0.8;
+  padding: 5px;
+} */
+
+.step.active {
+  opacity: 1;
+  background-color: #69c769;
+}
+
+.step.finish {
+  background-color: #4caf50;
+}
+
+.error {
+  color: #f00;
+}
+
+/* Mimic table appearance */
+/* div.table {
+  display: table;
+}
+div.table .file-row {
+  display: table-row;
+}
+div.table .file-row > div {
+  display: table-cell;
+  vertical-align: top;
+  border-top: 1px solid #ddd;
+  padding: 8px;
+}
+div.table .file-row:nth-child(odd) {
+  background: #f9f9f9;
+} */
+
+/* The total progress gets shown by event listeners */
+#total-progress {
+  opacity: 0;
+  transition: opacity 0.3s linear;
+}
+
+/* Hide the progress bar when finished */
+#previews .file-row.dz-success .progress {
+  opacity: 0;
+  transition: opacity 0.3s linear;
+}
+
+/* Hide the delete button initially */
+#previews .file-row .delete {
+  display: none;
+}
+
+/* Hide the start and cancel buttons and show the delete button */
+
+#previews .file-row.dz-success .start,
+#previews .file-row.dz-success .cancel {
+  display: none;
+}
+#previews .file-row.dz-success .delete {
+  display: block;
+}
+
+#gender-error {
+  margin-left: 8px;
+  margin-top: 0;
+}
+
+#gender-error,
+#another_province-error,
+#first_fillingtax-error,
+#file_paragon-error,
+#marital_status-error,
+#residing_canada-error,
+#spouse_file_tax-error,
+#spouse_first_tax-error,
+#spouse_file_paragon-error,
+#have_child-error,
+#first_time_buyer-error {
+  /* position: absolute;
+  bottom: 0;
+  left: 0;
+  color: transparent; */
+}
+
+.container-xl {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.header-fixed {
+  background-color: #fff;
+  box-shadow: 0 1px 1px #ccc;
+  padding: 0px;
+  /* height: 80px; */
+  color: #ffffff;
+  box-sizing: border-box;
+  top: -100px;
+  display: none;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  -webkit-transition: top 1.5s;
+  transition: top 1s;
+}
+
+.header-fixed .header-limiter {
+  max-width: 1200px;
+  text-align: center;
+  margin: 0 auto;
+}
+
+/*	The header placeholder. It is displayed when the header is fixed to the top of the
+	browser window, in order to prevent the content of the page from jumping up. */
+
+.header-fixed-placeholder {
+  height: 80px;
+  display: none;
+}
+
+/* Logo */
+
+.header-fixed .header-limiter h1 {
+  float: left;
+  font: normal 28px Cookie, Arial, Helvetica, sans-serif;
+  line-height: 40px;
+  margin: 0;
+}
+
+.header-fixed .header-limiter h1 span {
+  color: #5383d3;
+}
+
+/* The navigation links */
+
+.header-fixed .header-limiter a {
+  /* color: #ffffff; */
+  text-decoration: none;
+}
+
+.header-fixed .header-limiter nav {
+  font: 16px Arial, Helvetica, sans-serif;
+  line-height: 40px;
+  float: right;
+}
+
+.header-fixed .header-limiter nav a {
+  display: inline-block;
+  padding: 0 8px;
+  text-decoration: none;
+  font-weight: 600;
+  color: black;
+  opacity: 0.9;
+}
+
+.header-fixed .header-limiter nav a:hover {
+  opacity: 1;
+}
+
+.header-fixed .header-limiter nav a.selected {
+  color: #608bd2;
+  pointer-events: none;
+  opacity: 1;
+}
+
+a.nav-link {
+  font-weight: 500;
+  font-family: 'Poppins', sans-serif;
+}
+
+.nav-link {
+  padding: 0 !important;
+}
+
+.header-fixed .dropdown-content li {
+  margin: 0;
+  text-align: left;
+  background-color: #ffffff;
+  border: 1px solid #eeeeee;
+}
+
+.header-fixed .dropdown-content a {
+  background-color: #ffffff !important;
+  padding: 20px 16px !important;
+  text-decoration: none;
+  display: inline-block !important;
+  font-size: 14px;
+}
+/* Fixed version of the header */
+
+body.fixed .header-fixed {
+  padding: 10px 40px;
+  height: 80px;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  box-shadow: 0 10px 20px rgb(0 0 0 / 20%);
+}
+
+body.fixed .header-fixed-placeholder {
+  display: block;
+}
+
+body.fixed .header-fixed .header-limiter h1 {
+  font-size: 24px;
+  line-height: 30px;
+}
+
+body.fixed .header-fixed .header-limiter nav {
+  line-height: 28px;
+  font-size: 13px;
+}
+
+.header_top {
+  /* height: 50px; */
+  vertical-align: middle;
+  padding: 11px 0px;
+  background-color: #f0f5f9;
+}
+
+.header_top span a {
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  font-weight: 200;
+  color: black;
+  text-decoration: none;
+}
+
+.header_top a i {
+  padding-right: 20px;
+  font-size: 16px;
+  border-right: 1px solid rgb(112, 109, 109);
+}
+
+.header_middle {
+  /* height: 93px; */
+  padding: 10px 0px;
+}
+
+.header_middle ul {
+  list-style: none;
+  padding: 0;
+  display: inline-block;
+  vertical-align: middle;
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  margin: 0;
+}
+
+.header_middle a {
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  color: black;
+  text-decoration: none;
+  margin-right: 20px;
+}
+
+.header_middle a:hover {
+  color: #fcbc45;
+}
+
+.header_middle i.fas,
+.header_middle i.far {
+  display: inline-block;
+  vertical-align: middle;
+  border-radius: 60px;
+  box-shadow: 0 0 2px #888;
+  padding: 20px;
+  margin-right: 10px;
+}
+
+.header_middle .header_middle_image {
+  display: inline-block;
+  vertical-align: middle;
+  border-radius: 60px;
+  box-shadow: 0 0 2px #888;
+  padding: 10px;
+  margin-right: 10px;
+}
+
+.header_middle .header_middle_location_link:hover {
+}
+
+.row {
+  --bs-gutter-y: 0.5rem !important;
+}
+
+.logo {
+  color: #fff;
+  font-size: 2.1rem;
+  padding: 0.65rem 1rem;
+  position: absolute;
+}
+
+.menu-button {
+  color: #fff;
+  cursor: pointer;
+  font-size: 2rem;
+  padding: 0.75rem 1.55rem;
+  position: fixed;
+  right: 0;
+}
+
+.open-menu {
+  color: #fff;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 1rem;
+  position: absolute;
+  right: 0;
+  top: 0;
+  transition: transform 250ms ease;
+}
+
+.rotate {
+  transform: rotate(135deg);
+}
+
+/* Generated Overflow Element */
+
+.overflow {
+  margin-top: 57px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Menu Styles */
+
+#mobile-nav {
+  background-color: #60babb;
+  position: fixed;
+  width: 100%;
+  z-index: 1;
+}
+
+#mobile-nav ul {
+  background-color: rgba(0, 0, 0, 0.1);
+  display: none;
+  margin: 0 1rem;
+  padding: 0;
+  position: relative;
+}
+
+#mobile-nav ul:first-child {
+  background-color: transparent;
+}
+
+#mobile-nav ul li {
+  border-top: 1px solid rgba(255, 255, 255, 0.075);
+  list-style: none;
+  margin-bottom: 0;
+  position: relative;
+}
+
+#mobile-nav ul li a {
+  color: #fff;
+  display: inline-block;
+  font-size: 1rem;
+  padding: 1rem 0;
+  text-decoration: none;
+  width: 100%;
+}
+
+#mobile-nav ul ul {
+  margin: 0;
+}
+
+#mobile-nav ul ul li {
+  border-top: none;
+  padding-left: 1rem;
+}
+
+/* Making the header responsive */
+
+@media all and (max-width: 600px) {
+  .navupload {
+    display: none !important;
+  }
+
+  .navbar-toggler #navbar_upload,
+  .navbar-toggler #navbar_button {
+    width: 100%;
+    padding-left: 0px;
+    padding-right: 0px;
+  }
+
+  .services_page {
+    padding-top: 120px !important;
+  }
+
+  .paragon {
+    padding-bottom: 0px !important;
+  }
+
+  .consultations p {
+    /* margin-bottom: 80px !important; */
+  }
+
+  .others_offers_box {
+    margin-bottom: 0px !important;
+  }
+
+  .registered_slips {
+    padding: 0px 5px 50px !important;
+  }
+
+  .personal_upload_document {
+    margin-right: 0px !important;
+    margin-left: 0px !important;
+    margin-bottom: 40px;
+  }
+
+  .other_service {
+    margin-top: 20px;
+  }
+
+  .wrapper {
+    width: 100%;
+  }
+
+  .working_process {
+    padding-top: 50px !important;
+  }
+
+  .others_offer {
+    height: 80% !important;
+    margin-bottom: 0 !important;
+  }
+
+  .contact-us form {
+    margin-top: 0px !important;
+  }
+
+  .header_top_socials {
+    /* display: none; */
+    margin-top: 15px !important;
+  }
+
+  .header_top_contact {
+    display: none;
+  }
+
+  .mobile_num {
+    display: inline-block !important;
+  }
+
+  .navbar-toggler {
+    display: flex;
+  }
+
+  .uploaded p.uploaded_filename {
+    max-width: 250px !important;
+    font-size: 14px;
+  }
+
+  .file__name {
+    font-size: 14px !important;
+  }
+
+  .main {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 50px;
+  }
+
+  .main h1 {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 60px;
+    text-align: center;
+    line-height: 80px;
+  }
+
+  .services_page h2 {
+    padding-top: 150px;
+   text-align:center;
+  }
+
+  
+
+  .par-banner-h1 {
+    font-size: 40px !important;
+    line-height: 50px !important;
+    margin-top: 40px;
+  }
+
+  .others_offers_box .col-lg-4 {
+    margin-bottom: 20px !important;
+  }
+
+  .others_offers {
+    padding-top: 160px !important;
+    margin-bottom: 40px !important;
+  }
+
+  .par-h4 {
+    /* font-size: 20px !important; */
+  }
+
+  .par-h2 {
+    font-size: 24px !important;
+    line-height: 30px !important;
+  }
+
+  .par-p {
+    font-size: 14px !important;
+  }
+
+  .others_offer {
+    height: 100%;
+    min-height: 320px !important;
+  }
+
+  .footer_filler {
+    display: none;
+  }
+
+  .services {
+    padding-top: 0px !important;
+  }
+
+  .service-offer {
+    margin-top: 0px !important;
+  }
+
+  .service-box {
+    margin-right: 0px !important;
+    margin-left: 0px !important;
+    margin-top: 0px !important;
+  }
+
+  .about-paragon li {
+    font-size: 14px !important;
+    line-height: 1.6;
+  }
+
+  .about-paragon ul {
+    margin-bottom: 5px;
+  }
+
+  .contact-us .contact-box {
+    margin-bottom: 10px !important;
+  }
+
+  .services_image {
+    display: block !important;
+  }
+
+  .documents .par-banner-h1 {
+    margin-top: 0px !important;
+  }
+
+  .registered_slips .par-banner-h1 {
+    font-size: 30px !important;
+  }
+
+  .remote_tax_text {
+    width: 100% !important;
+  }
+
+  p.upload_doc_p {
+    text-align: justify !important;
+  }
+
+  .date-container .date-icon2 {
+    position: absolute;
+    top: 36px !important;
+    right: 10px;
+    /* pointer-events: none;
+    */
+    cursor: pointer;
+    /* color: #aaa; */
+  }
+
+  footer .paragon_contact {
+    padding-top: 70px;
+  }
+
+  footer .paragon_links_menu {
+    margin-left: 0px !important;
+  }
+
+  footer .company_links {
+    padding: 20px !important;
+  }
+
+  footer .company_links .col-lg-6 h6 {
+    text-align: center !important;
+  }
+
+  .services_page_box_text {
+    display: none !important;
+  }
+
+  .service-offer .services_page_box {
+    padding: 0px !important;
+  }
+
+  .service-offer .service-box {
+    width: 90% !important;
+  }
+
+  img.services_image {
+    min-height: 185px !important;
+    width: 100% !important;
+    margin: 0px !important;
+    padding: 20px !important;
+  }
+
+  .mobile_description {
+    display: block !important;
+    padding: 0px 20px;
+    text-align: justify !important;
+    margin-bottom: 40px !important;
+  }
+
+  .bottom-right {
+    display: none !important;
+  }
+
+  .personal_tax_info ul {
+    columns: 1 !important;
+  }
+  /* .services_page_box img {
+    height: 50px !important;
+    width: 50px !important;
+  } */
+
+  .home_help .col-lg-3 {
+    width: 100%;
+  }
+
+  .home_help_first_box {
+    margin-bottom: 30px !important;
+  }
+
+  .service-offer .service-box {
+    padding: 30px;
+  }
+}
+
+@media all and (max-width: 991px) {
+  .side-bar {
+    background: #1b1a1b;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    width: 300px;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: -300px;
+    overflow-y: auto;
+    transition: 0.6s ease;
+    transition-property: left;
+    max-width: 100%;
+  }
+
+  .menu-btn {
+    display: block !important;
+  }
+
+  .side-bar::-webkit-scrollbar {
+    width: 0px;
+  }
+
+  .side-bar.active {
+    left: 0;
+  }
+
+  .side-bar .menu {
+    width: 100%;
+    margin-top: 30px;
+  }
+
+  .side-bar .menu .item {
+    position: relative;
+    cursor: pointer;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .side-bar .menu .item a {
+    /* color: #fff; */
+    text-decoration: none;
+    display: block;
+    line-height: 24px;
+    padding: 10px 25px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #ffffff;
+    text-transform: uppercase;
+  }
+
+  .side-bar .menu .item a:hover {
+    background: #33363a;
+    transition: 0.3s ease;
+  }
+
+  .side-bar .menu .item i {
+    margin-right: 15px;
+  }
+
+  .side-bar .menu .item a .dropdown {
+    /* position: absolute;
+    right: 0;
+    margin: 20px;
+    transition: 0.3s ease; */
+
+    position: absolute;
+    right: 6px;
+    top: 6px;
+    width: 32px;
+    height: 32px;
+    text-align: center;
+    font-size: 16px;
+    line-height: 32px;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    border-radius: 2px;
+    -webkit-transition: all 500ms ease;
+    -moz-transition: all 500ms ease;
+    -ms-transition: all 500ms ease;
+    -o-transition: all 500ms ease;
+    transition: all 500ms ease;
+    z-index: 5;
+  }
+
+  .side-bar .menu .item .sub-menu {
+    background: #262627;
+    display: none;
+  }
+
+  .side-bar .menu .item .sub-menu a {
+    /* padding-left: 80px; */
+    font-size: 14px;
+  }
+
+  .rotate {
+    transform: rotate(90deg);
+  }
+
+  .close-btn {
+    position: absolute;
+    color: #fff;
+    right: 25px;
+    top: 10px;
+    line-height: 30px;
+    width: 24px;
+    text-align: center;
+    font-size: 16px;
+    color: #ffffff;
+    cursor: pointer;
+    z-index: 10;
+    -webkit-transition: all 0.9s ease;
+    -moz-transition: all 0.9s ease;
+    -ms-transition: all 0.9s ease;
+    -o-transition: all 0.9s ease;
+    transition: all 0.9s ease;
+  }
+
+  .menu-btn {
+    /* position: absolute; */
+    color: rgb(0, 0, 0);
+    font-size: 26px;
+    /* margin: 25px; */
+    text-align: center;
+    cursor: pointer;
+    padding: 10px 0px;
+    cursor: pointer;
+    border-radius: 20% / 100%;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    background-color: white;
+    width: 100%;
+  }
+
+  .side-bar header {
+    /* padding: 20px 30px; */
+    padding: 30px 25px 0px;
+  }
+
+  .header_top_time {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .header-fixed {
+    padding: 20px 0;
+    height: 75px;
+    display: none !important;
+  }
+
+  .header-fixed .header-limiter h1 {
+    float: none;
+    margin: -8px 0 10px;
+    text-align: center;
+    font-size: 24px;
+    line-height: 1;
+  }
+
+  .header-fixed .header-limiter nav {
+    line-height: 1;
+    float: none;
+  }
+
+  .header-fixed .header-limiter nav a {
+    font-size: 13px;
+  }
+
+  body.fixed .header-fixed {
+    display: none;
+  }
+
+  #navbar_upload {
+    width: 100%;
+  }
+}
+/*
+	 We are clearing the body's margin and padding, so that the header fits properly.
+	 We are also adding a height to demonstrate the scrolling behavior. You can remove
+	 these styles.
+ */
+
+body {
+  margin: 0;
+  padding: 0;
+  height: 1500px;
+}
