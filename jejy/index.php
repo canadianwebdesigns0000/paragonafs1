@@ -602,6 +602,11 @@ error_log("Client Logged In: " . encrypt_decrypt("decrypt", $_SESSION['email']))
     </script>
 
     <style>
+
+      body { 
+        height: 0;
+      }
+
         button {
             color: white;
             letter-spacing: 1px;
@@ -794,7 +799,7 @@ error_log("Client Logged In: " . encrypt_decrypt("decrypt", $_SESSION['email']))
 
 /* CTA: button + note stacked and centered */
 .tax-cta{
-  margin-top: 34px;
+  margin-top: 100px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -907,13 +912,12 @@ error_log("Client Logged In: " . encrypt_decrypt("decrypt", $_SESSION['email']))
   font-size: 36px;
   font-weight: 800; letter-spacing: -0.02em; margin: 8px 0 4px; text-align: left;
 }
-.qs-label { display: block; margin: 0 0 24px; font-size: clamp(18px, 2vw, 24px); font-weight: 800; }
+.qs-label { display: block; margin: 24px 0 4px; font-size: clamp(18px, 2vw, 24px); font-weight: 800; }
 .qs-note, .qs-help { color: #64748b; font-size: 14px; }
 
 
 .qs-label {
   display:block;
-  margin:0 0 24px;
   font-size:clamp(18px, 2vw, 24px);
   font-weight:800;
 }
@@ -931,7 +935,7 @@ error_log("Client Logged In: " . encrypt_decrypt("decrypt", $_SESSION['email']))
   border-bottom:3px solid #f7c94a;  /* the yellow line at bottom */
   border-radius:4px;
   padding:10px 12px 10px 34px;  /* extra left space for icon */
-  margin:12px 0;              /* adjust as needed */
+  margin:12px 0 24px;              /* adjust as needed */
   color:#3f4a5a;
   line-height:1.4;
   text-align: left;
@@ -971,7 +975,7 @@ error_log("Client Logged In: " . encrypt_decrypt("decrypt", $_SESSION['email']))
 }
 
 /* ===== Yes / No buttons ===== */
-.yn-group { display: flex; gap: 18px; margin-bottom: 46px;}
+.yn-group { display: flex; gap: 18px; margin-bottom: 46px; margin-top: 20px;}
 .yn-group input[type="radio"] { display: none; }
 
 .yn-btn {
@@ -1256,7 +1260,7 @@ a.pi-step.is-done:visited {
 }
 .fi-hint{ color:#64748b; font-size:13px; margin-top:6px; }
 
-.small{ font-size: clamp(18px, 2vw, 24px) !important; margin:46px 0 24px !important; }
+.small{ font-size: clamp(18px, 2vw, 24px) !important; margin-top:46px !important; }
 
 /* mobile: stack inputs */
 @media (max-width: 960px){
@@ -1313,7 +1317,7 @@ a.pi-step.is-done:visited {
   background: rgba(15,23,42,.45);
   display: grid;
   place-items: center;
-  z-index: 9999;
+  z-index: 999999;
 }
 .dob-dialog {
   width: min(400px, 92vw);
@@ -1616,7 +1620,8 @@ a.pi-step.is-done:visited {
   #pi-mobilebar .pi-mb-back,
   #pi-mobilebar .pi-mb-toggle{
     appearance:none; border:0; background:#fff;
-    width:36px; height:36px; border-radius:10px;
+    width:36px; height:36px;
+    padding: 0;
     box-shadow:0 0 0 1px #e5e7eb inset;
     display:grid; place-items:center; cursor:pointer;
   }
@@ -2434,7 +2439,7 @@ a.pi-step.is-done:visited {
 /* ===== Property modal (single, definitive block) ===== */
 #prop-modal .qs-modal__backdrop,
 #prop-confirm .qs-modal__backdrop{
-  position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:9998;
+  position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:100000;
 }
 #prop-modal .qs-modal__dialog,
 #prop-confirm .qs-modal__dialog{
@@ -2443,7 +2448,7 @@ a.pi-step.is-done:visited {
   max-height:88vh;
   background:#fff; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.2);
   display:grid; grid-template-rows:auto 1fr auto;   /* head | body | foot */
-  z-index:9999;
+  z-index:100000;
   overflow:hidden;                                   /* dialog never steals clicks */
 }
 #prop-modal .qs-modal__head,
@@ -2539,8 +2544,9 @@ a.pi-step.is-done:visited {
 
 /* Keep your calendar icon touchable on mobile (you already have similar rules; this ensures consistency) */
 @media (max-width: 640px){
-  #prop-modal .dob-calendar-btn{ width:28px; height:28px; }
+  #prop-modal .dob-calendar-btn{ width:28px; height:28px; padding: 0; }
   #prop-modal .fi-float .fi-input{ min-height:48px; }
+
 }
 
 
@@ -2601,6 +2607,7 @@ a.pi-step.is-done:visited {
 .xsel-btn{
   width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:10px;
   background:#fff; font-size:16px; text-align:left; display:flex; align-items:center; justify-content:space-between;
+  margin: 20px 0 0 0;
 }
 .xsel-btn:hover{ border-color:#0284c7; box-shadow:0 0 0 3px rgba(11,100,194,.15); cursor:pointer; }
 .xsel-btn:focus{ outline:3px solid #94d2ff; outline-offset:2px; }
@@ -3482,7 +3489,7 @@ color: #0284c7;
 /* 4) Calendar icon size + padding on phone */
 #prop-modal .dob-calendar-btn{ width: 28px; height: 28px; }
 @media (max-width: 640px){
-  #prop-modal .dob-calendar-btn{ width: 32px; height: 32px; right: 10px; }
+  #prop-modal .dob-calendar-btn{ width: 32px; height: 32px; right: 10px; padding: 0 !important;}
   #prop-modal .fi-float .fi-input{ padding-right: 52px; } /* room for the bigger icon */
 }
 
@@ -3664,7 +3671,7 @@ color: #0284c7;
   width:min(92vw, 520px);
   display:grid;
   gap:10px;
-  z-index:9999;
+  z-index:1000000;
   pointer-events:none;              /* never block clicks behind */
 }
 
@@ -4210,6 +4217,111 @@ text-decoration: uppercase;
   .dropzone .dz-pw-input .pw-input{ height: 40px !important; }
 }
 
+/* ===== FINAL OVERRIDES ===== */
+
+/* 1) Phones: stacked */
+@media (max-width: 860px){
+  .dropzone .dz-head{ display:none !important; }
+
+  .dropzone .dz-item{
+    display:grid !important;
+    grid-template-columns: 1fr !important;
+    row-gap:10px;
+  }
+
+  .dropzone .dz-item .dz-left,
+  .dropzone .dz-item .dz-pw-yn,
+  .dropzone .dz-item .dz-pw-input{
+    grid-column:1 / -1;
+  }
+
+  /* show inline labels on mobile */
+  .dropzone .dz-pw-yn::before,
+  .dropzone .dz-pw-input::before{
+    content:attr(data-label);
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:#475569;
+    margin-bottom:4px;
+  }
+
+  /* keep green bar full width */
+  .dropzone .dz-item .dz-left{
+    display:flex;
+    gap:12px;
+    align-items:flex-start;
+  }
+  .dropzone .dz-item .dz-left .dz-meta{
+    flex:1 1 auto;
+    min-width:0;
+  }
+  .dropzone .dz-item .dz-left .dz-bar{
+    width:100% !important;
+  }
+}
+
+/* 2) 861px and up: ALWAYS 3 cols, show header, let col1 stay wide */
+@media (min-width: 861px){
+  /* make sure header actually shows in this range */
+  .dropzone .dz-head{
+    display:grid !important;
+    grid-template-columns: minmax(0,1fr) auto 210px !important;
+    gap:12px !important;
+    align-items:center !important;
+  }
+
+  /* each file row same grid as header */
+  .dropzone .dz-item{
+    display:grid !important;
+    grid-template-columns: minmax(0,1fr) auto 210px !important;
+    gap:12px !important;
+    align-items:center !important;
+  }
+
+  /* remove the mobile labels in this range */
+  .dropzone .dz-pw-yn::before,
+  .dropzone .dz-pw-input::before{
+    content:none !important;
+  }
+
+  /* LEFT column: icon + meta, meta must stretch so the bar is long */
+  .dropzone .dz-item .dz-left{
+    display:flex !important;
+    gap:12px;
+    align-items:center;
+    min-width:0;
+  }
+  .dropzone .dz-item .dz-left .dz-meta{
+    flex:1 1 auto !important;
+    min-width:0 !important;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .dropzone .dz-item .dz-left .dz-bar{
+    width:100% !important;
+  }
+
+  /* center pills + password in their columns */
+  .dropzone .dz-pw-yn,
+  .dropzone .dz-pw-input{
+    justify-self:center;
+  }
+
+  /* keep your blue/white toggle look */
+  .dropzone .dz-pw-yn .yn-btn.solid{
+    background:#0284c7 !important;
+    color:#fff !important;
+    border-color:#0284c7 !important;
+  }
+  .dropzone .dz-pw-yn .yn-btn.outline{
+    background:#fff !important;
+    color:#0284c7 !important;
+    border-color:#0284c7 !important;
+  }
+}
+
 
 </style>
 
@@ -4238,8 +4350,7 @@ text-decoration: uppercase;
 
 
   /* Summary list layout */
-  .rev-dl { display:grid; grid-template-columns: 240px 1fr; gap:10px 18px; margin:6px 0 6px; }
-  .rev-dl dt { color:#475569; font-weight:600; }
+  .rev-dl { display:grid; grid-template-columns: 300px 1fr; gap:10px 18px; margin:6px 0 6px; }
   .rev-dl dd { margin:0; color:#0f172a; }
 
   /* Plain “Go to …” links (no box) */
@@ -4254,11 +4365,7 @@ text-decoration: uppercase;
   /* Make sidebar steps clickable (cursor only; style is yours) */
   .pi-steps.progress-only .pi-step { cursor:pointer; }
 
-  @media (max-width: 680px){
-    .rev-dl { grid-template-columns: 1fr; }
-    .rev-item { font-size:16px; }
-    .rev-title { font-size:24px; }
-  }
+
                  
    /* Scroll wrapper for wide tables */
 .rev-table-wrap { overflow-x:auto; -webkit-overflow-scrolling: touch; }
@@ -4274,10 +4381,16 @@ text-decoration: uppercase;
 }
 
 /* tidy definition list */
-.rev-dl { margin: 6px 0 14px; }
-.rev-dl dt { font-weight:600; color:#334155; padding:8px 0 2px; }
+.rev-dl { margin: 6px 0 14px 70px; text-align: left; }
+.rev-dl dt { font-weight:600; color:#334155; padding:8px 0 2px;  }
 .rev-dl dd { margin: 8px 0 2px; color:#0f172a; }
 
+
+  @media (max-width: 680px){
+    .rev-dl { grid-template-columns: 1fr; margin-left: 20px;}
+    .rev-item { font-size:16px; }
+    .rev-title { font-size:24px; }
+  }
 /* Base list */
 /* Review filenames */
 .rev-files{ margin:8px 0 0; padding-left:0; list-style:none; }
@@ -4443,43 +4556,74 @@ text-decoration: uppercase;
   .dropzone .dz-pw-input .pw-input{ height:44px; }
 }
 
-/* ===========================
-   Desktop column centering
-   (keep mobile/tablet as-is)
-   =========================== */
-@media (min-width: 861px){
-
-  /* keep the 3-col grid */
+/* 861px – 1024px: force it to look like mobile so it won't squish */
+@media (min-width: 861px) and (max-width: 1024px){
+  /* hide the header just for this range */
   .dropzone .dz-head{
-    display:grid;
-    grid-template-columns: minmax(0,1fr) 240px 260px;
-    align-items:center;
+    display: none !important;
   }
+
+  /* make each uploaded file one full-width block */
   .dropzone .dz-item{
-    display:grid;
-    grid-template-columns: minmax(0,1fr) 240px 260px;
-    align-items:center;                 /* vertical middle */
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    row-gap: 10px;
   }
 
-  /* headers: center the titles for cols 2 & 3 */
-  .dropzone .dz-head > div:nth-child(2),
-  .dropzone .dz-head > div:nth-child(3){
-    text-align:center;
+  /* every part (left, yes/no, password) spans the whole width */
+  .dropzone .dz-item .dz-left,
+  .dropzone .dz-item .dz-pw-yn,
+  .dropzone .dz-item .dz-pw-input{
+    grid-column: 1 / -1 !important;
   }
 
-  /* row content: center the cells for cols 2 & 3 */
-  .dropzone .dz-pw-yn,
-  .dropzone .dz-pw-input{
-    justify-self:center;                /* horizontal center in their grid cell */
+  /* left side: icon + meta, meta stretches, bar 100% */
+  .dropzone .dz-item .dz-left{
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .dropzone .dz-item .dz-left .dz-meta{
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .dropzone .dz-item .dz-left .dz-bar{
+    width: 100% !important;
+    max-width: none !important;
   }
 
-  /* keep col 1 (file name) left-aligned */
-  .dropzone .dz-left{ justify-self:start; }
+  /* put the little labels back so user sees what Yes/No is for */
+  .dropzone .dz-pw-yn::before,
+  .dropzone .dz-pw-input::before{
+    content: attr(data-label);
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:#475569;
+    margin-bottom:4px;
+  }
+}
 
-  /* make pills & input same height for perfect alignment */
-  .dropzone .dz-pw-yn .yn-group{ display:inline-flex; gap:10px; align-items:center; }
-  .dropzone .dz-pw-yn .yn-btn{ height:44px; padding:0 16px; }
-  .dropzone .dz-pw-input .pw-input{ height:44px; width:100%; }
+/* ≤1024px: show the question, hide the extra "Password" label */
+@media (max-width: 1024px){
+  /* keep this one */
+  .dropzone .dz-pw-yn::before{
+    content: attr(data-label);
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 4px;
+  }
+
+  /* hide this one */
+  .dropzone .dz-pw-input::before{
+    content: none !important;
+    display: none !important;
+  }
 }
 
 
@@ -4522,7 +4666,7 @@ text-decoration: uppercase;
   /* Expand area */
   .prop-exp{margin-top:10px;border-top:1px dashed #e6eef6;padding-top:10px;display:none}
   .prop-exp table{width:100%;border-collapse:collapse}
-  .prop-exp td{padding:6px 8px;vertical-align:top}
+  .prop-exp td{padding:6px 8px;vertical-align:top; text-align: left;}
 
   /* Mobile: stack neatly */
   @media (max-width:680px){
@@ -4549,7 +4693,8 @@ text-decoration: uppercase;
 
 /* “Expenses” as a link (not a button) */
 .prop-toggle-link{
-  font-weight:700; text-decoration:none; border-bottom:2px solid currentColor;
+  font-weight:700; text-decoration:none;
+
   line-height:1; padding:4px 0; color:#0ea5e9;
 }
 .prop-toggle-link:hover{ text-decoration:none; filter:brightness(1.1); }
@@ -4577,9 +4722,337 @@ text-decoration: uppercase;
 }
 </style>
 
+<style>
+/* Header row: title + Expenses link */
+.prop-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:8px;
+}
+.prop-title{
+  font-weight:800;
+  font-size:22px;
+  text-transform:lowercase;
+}
+.prop-toggle-link{
+  font-weight:700;
+  text-decoration:none;
+  line-height:1;
+  padding:4px 0;
+  color:#0ea5e9;
+}
+.prop-toggle-link:hover{
+  text-decoration:none;
+  filter:brightness(1.1);
+}
 
+/* Chip row with labels */
+.prop-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 10px;
+  margin-bottom:10px;
+}
+.chip{
+  display:inline-block;
+  border:1px solid #dbe7f5;
+  border-radius:999px;
+  padding:6px 10px;
+  white-space:nowrap;
+  font-size:.95rem;
+}
+.chip b{ font-weight:800; margin-right:6px; }
+
+/* Expenses area */
+.prop-exp{
+  margin-top:8px;
+  border-top:1px dashed #e6eef6;
+  padding-top:8px;
+  display:none;
+}
+.prop-exp table{
+  width:100%;
+  border-collapse:collapse;
+}
+.prop-exp td{
+  padding:6px 8px;
+  vertical-align:top;
+}
+
+/* make the labels (1st, 3rd cells) bold */
+.prop-exp td:nth-child(1),
+.prop-exp td:nth-child(3){
+  font-weight:600;
+  color:#0f172a;
+}
+
+/* ---------- Tablet & mobile layout ---------- */
+/* stack each pair so it doesn't squish like in your screenshot */
+/* ---------- Tablet & mobile layout ---------- */
+@media (max-width:1024px){
+  .prop-exp table{
+    display:block;
+  }
+  .prop-exp tr{
+    display:grid;
+    grid-template-columns: 1fr auto;  /* label | value */
+    gap:4px 8px;
+    margin-bottom:8px;
+    background:#f8fafc;
+    border-radius:10px;
+    padding:6px 8px;
+  }
+
+  /* labels (1st, 3rd) */
+  .prop-exp td:nth-child(1),
+  .prop-exp td:nth-child(3){
+    font-weight:600;
+    color:#0f172a;
+  }
+
+  /* values (2nd, 4th) right-aligned */
+  .prop-exp td:nth-child(2),
+  .prop-exp td:nth-child(4){
+    text-align:right;
+  }
+}
+
+
+/* mobile tweaks – make header + chips smaller */
+@media (max-width:680px){
+  .prop-title{ font-size:18px; }
+  .prop-meta{ gap:6px; }
+  .chip{ font-size:.9rem; white-space:normal; }
+}
+
+/* Header row: title + Expenses toggle */
+.prop-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:8px;
+}
+.prop-title{
+  font-weight:800;
+  font-size:22px;
+  text-transform:lowercase;
+}
+
+/* right-side Expenses toggle with chevron */
+.prop-toggle-link{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-weight:600;
+  color:#0ea5e9;
+  text-decoration:none;
+  line-height:1;
+}
+.prop-toggle-link::after{
+  content:"";
+  width:10px;
+  height:10px;
+  border-right:2px solid currentColor;
+  border-bottom:2px solid currentColor;
+  rotate:312deg;               /* pointing down */
+  transition:transform .2s ease;
+}
+/* when expanded, rotate chevron up */
+.prop-toggle-link[aria-expanded="true"]::after{
+  transform:rotate(94deg);
+  margin-bottom: 5px;
+}
+
+@media (max-width:680px){
+  .prop-title{ font-size:18px; }
+}
+
+/* make header stay in one row */
+.prop-head{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+/* title can shrink, toggle stays right */
+.prop-title{
+  flex:1;
+  min-width:0;
+  font-weight:800;
+}
+
+/* push Expenses to the right */
+.prop-toggle-link{
+  margin-left:auto;
+  white-space:nowrap;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+
+/* smaller on very narrow screens so it doesn't wrap */
+@media (max-width:480px){
+  .prop-title{
+    font-size:16px;
+  }
+  .prop-toggle-link{
+    font-size:13px;
+    padding:3px 8px;
+  }
+}
+
+/* header stays the same */
+.prop-head{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.prop-title{
+  flex:1;
+  min-width:0;
+  font-weight:800;
+}
+
+/* base table (desktop / tablet) */
+.prop-exp{
+  margin-top:8px;
+  border-top:1px dashed #e6eef6;
+  padding-top:8px;
+  display:none;
+}
+.prop-exp table{
+  width:100%;
+  border-collapse:collapse;
+}
+.prop-exp td{
+  padding:6px 8px;
+  vertical-align:top;
+}
+.prop-exp td:nth-child(1),
+.prop-exp td:nth-child(3){
+  font-weight:600;
+  color:#0f172a;
+  white-space:nowrap;
+}
+.prop-exp td:nth-child(2),
+.prop-exp td:nth-child(4){
+  text-align:right;
+}
+
+/* --------- very small screens ONLY (cards) --------- */
+@media (max-width:419px){
+  .prop-exp table{
+    display:block;
+  }
+  .prop-exp tr{
+    display:grid;
+    grid-template-columns: minmax(0, 1fr) auto; /* tighter */
+    align-items:center;
+    gap:4px 6px;
+    background:#f8fafc;
+    border-radius:10px;
+    margin-bottom:8px;
+    padding:6px 8px;
+  }
+  /* second pair goes to new row */
+  .prop-exp td:nth-child(3){
+    grid-column:1 / 2;
+  }
+  .prop-exp td:nth-child(4){
+    grid-column:2 / 3;
+    text-align:right;
+  }
+}
+
+/* small tweak for the pills above */
+@media (max-width:480px){
+  .prop-title{ font-size:16px; }
+  .prop-toggle-link{ font-size:13px; padding:3px 8px; }
+}
+
+/* ===== base / desktop ===== */
+.prop-exp table{
+  width:100%;
+  border-collapse:collapse;
+}
+.prop-exp td{
+  padding:6px 4px;
+  vertical-align:top;
+}
+
+/* left labels */
+.prop-exp td:nth-child(1),
+.prop-exp td:nth-child(3){
+  font-weight:600;
+  color:#0f172a;
+  white-space:normal;
+}
+
+
+
+/* second label – add space before it */
+
+
+/* value of second pair */
+.prop-exp td:nth-child(4){
+  text-align:right;
+  padding-left:8px;
+  white-space:nowrap;
+}
+
+/* ===== mobile: label can wrap, value stays right ===== */
+@media (max-width:480px){
+  .prop-exp tr{
+    display:flex;
+    flex-wrap:wrap;          /* so 1&2 on first line, 3&4 on second line */
+    gap:2px 0;
+    background:#f8fafc;
+    border-radius:10px;
+    margin-bottom:8px;
+    padding:6px 8px;
+  }
+
+  /* labels: take most of the width, can wrap */
+  .prop-exp td:nth-child(1),
+  .prop-exp td:nth-child(3){
+    flex:1 1 65%;
+    white-space:normal;      /* so “Repairs & Maintenance” can go to 2 lines */
+  }
+
+  /* values: stick to the right */
+  .prop-exp td:nth-child(2),
+  .prop-exp td:nth-child(4){
+    flex:0 0 auto;
+    margin-left:auto;
+    white-space:nowrap;
+    text-align:right;
+    padding-left:6px;
+  }
+
+  /* reduce the big left gap we added on desktop for #3 */
+  .prop-exp td:nth-child(3){
+    padding-left:0;
+  }
+}
+@media (min-width:1024px){
+.prop-exp td:nth-child(3){
+  padding-left:42px;    /* this creates the gap between "$4 CAD" and "Insurance" */
+}
+
+/* value of first pair – closer to label */
+.prop-exp td:nth-child(2){
+  text-align:right;
+  padding-left:8px;     /* small gap */
+  padding-right:20px;   /* just enough, not wide */
+  white-space:nowrap;
+}
+   }
 </style>
-
 
 <style>
 
@@ -4857,7 +5330,7 @@ select.fi-input option:disabled {
 }
 
 
-@media (max-width: 959px){
+@media (max-width: 640px){
   .form-button#intro-form{
     display:block !important;   /* avoid flex squeezing */
     text-align: initial;        /* stop centering from parent */
@@ -4875,7 +5348,7 @@ select.fi-input option:disabled {
 }
 
 /* Mobile: make ONLY the intro CONTINUE button full width */
-@media (max-width: 959px){
+@media (max-width: 640px){
   /* 1) Let the form occupy the whole row even in a flex parent */
   #intro-card #intro-form{
     display: block !important;
@@ -4895,19 +5368,954 @@ select.fi-input option:disabled {
     min-width: 0 !important;
   }
 }
-@media (max-width: 959px){
+@media (max-width: 640px){
   #intro-card .tax-cta{ display:block !important; }   /* stops right-aligned flex from shrinking the form */
 }
 .is-invalid .yn-btn{ /* outline/button radios */ border-color:#d93025 !important; } 
 .fi-error-text{ margin-top:6px;font-size:13px;line-height:1.3;color:#a11a12; }
 .qs-block .fi-error-text, .yn-group .fi-error-text, .xsel-wrap .fi-error-text{margin-left:2px}
 
+/* base error style */
+.fi-error-text{
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+}
+
+/* outline/button radios turn red when invalid */
+.is-invalid .yn-btn{
+  border-color: #d93025 !important;
+}
+
+/* ANY qs-block that has a yn-group and then an error → pull error up a bit */
+.qs-block .yn-group + .fi-error-text,
+.yn-group + .fi-error-text {
+  display: block;
+  margin-top: -20px; /* only buttons */
+}
+
+/* date blocks (any block that contains the date input) keep normal spacing */
+#status-date-block > .fi-error-text,
+#status-date-sdw-block > .fi-error-text {
+  margin-top: 6px;
+  display: block;
+}
 
 
 .children-table.is-invalid-table{
   border-bottom: 2px solid #d93025;
 }
 
+
+/* base error */
+.fi-error-text{
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+  text-align: left;
+}
+
+/* make invalid yes/no buttons red */
+#welcome-panel .is-invalid .yn-btn{
+  border-color: #d93025 !important;
+}
+
+/* ONLY these yes/no blocks: drop error under and pull up 20px */
+#welcome-panel #spouse-file-block > .fi-error-text,
+#welcome-panel #children-block > .fi-error-text,
+#welcome-panel .yn-group + .fi-error-text {
+  display: block;
+  margin-top: -20px;
+}
+
+/* date blocks on this page: normal spacing, no overlap with calendar */
+#welcome-panel #status-date-block > .fi-error-text,
+#welcome-panel #status-date-sdw-block > .fi-error-text {
+  margin-top: 6px;
+  display: block;
+}
+
+/* 1) yes/no groups on THIS page: make error take a full row */
+#welcome-panel .yn-group > .fi-error-text {
+  display: block;
+  flex: 0 0 100%;      /* force it under the buttons */
+  margin-left: 0;
+  margin-top: -20px;   /* pull up to compensate your 46px button bottom */
+}
+
+/* 2) BUT for the spouse-file block, don't pull it that high */
+#welcome-panel #spouse-file-block .yn-group > .fi-error-text {
+  margin-top: 6px;     /* normal spacing here */
+}
+
+/* all 3 yes/no rows on THIS page */
+#welcome-panel .yn-group {
+  display: flex;
+  column-gap: 18px;
+  row-gap: 0;
+  flex-wrap: wrap;        /* so the error can go to the next line */
+}
+
+/* error that JS appends INSIDE those yn-groups */
+#welcome-panel .yn-group > .fi-error-text {
+  flex: 0 0 100%;         /* full row under buttons */
+  margin-top: 6px;        /* <-- the 6px you wanted */
+  margin-left: 0;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+}
+
+/* keep your red outline on invalid buttons */
+#welcome-panel .is-invalid .yn-btn {
+  border-color: #d93025 !important;
+}
+
+
+/* personal panel: yes/no buttons */
+.pi-main[data-panel="personal"] .yn-group {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 18px;   /* space between buttons */
+  row-gap: 6px;       /* space between button row and error */
+}
+
+/* error under gender (and any other yn-group here) */
+.pi-main[data-panel="personal"] .yn-group > .fi-error-text {
+  flex: 0 0 100%;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+}
+
+/* personal panel: date (DOB) error — stay below, don’t push calendar */
+.pi-main[data-panel="personal"] .fi-group.is-invalid > .fi-error-text,
+.pi-main[data-panel="personal"] .fi-group > .fi-error-text {
+  display: block;
+  margin-top: 6px;
+}
+
+/* personal panel date row: keep error under row, not beside icon */
+.pi-main[data-panel="personal"] .fi-grid.is-invalid > .fi-error-text {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+}
+
+/* personal panel yes/no (gender) */
+.pi-main[data-panel="personal"] .yn-group {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 18px;
+  row-gap: 0;
+}
+
+.pi-main[data-panel="personal"] .yn-group > .fi-error-text {
+  flex: 0 0 100%;
+  margin-top: 6px;
+}
+
+/* personal panel: when a field in the grid is invalid, stack the row */
+.pi-main[data-panel="personal"] .fi-grid.is-invalid {
+  display: flex;           /* keep flex */
+  flex-direction: column;  /* but stack */
+  gap: 0;
+}
+
+/* the actual error line under DOB */
+.pi-main[data-panel="personal"] .fi-grid.is-invalid > .fi-error-text {
+  display: block;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+}
+
+/* only the DOB row: when it's invalid, stack and make the input full width */
+.pi-main[data-panel="personal"] .fi-grid:has(#dob).is-invalid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* inside that DOB row, make the actual field 100% */
+.pi-main[data-panel="personal"] .fi-grid:has(#dob).is-invalid .fi-group {
+  width: 50%;
+}
+
+@media (max-width:960px){
+.pi-main[data-panel="personal"] .fi-grid:has(#dob).is-invalid .fi-group {
+  width: 100%;
+}
+   }
+
+
+/* TAX panel yes/no groups */
+.pi-main[data-panel="tax"] .yn-group {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 18px;
+  row-gap: 0;   /* space between buttons and error */
+}
+
+/* error line must go UNDER the buttons */
+.pi-main[data-panel="tax"] .yn-group > .fi-error-text,
+.pi-main[data-panel="tax"] .qs-block .yn-group + .fi-error-text {
+  flex: 0 0 100%;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+}
+
+/* keep red outline on invalid buttons */
+.pi-main[data-panel="tax"] .is-invalid .yn-btn {
+  border-color: #d93025 !important;
+}
+
+/* date rows: when invalid, stack and show error below (so calendar icon stays right) */
+.pi-main[data-panel="tax"] .fi-grid.is-invalid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.pi-main[data-panel="tax"] .fi-grid.is-invalid > .fi-error-text {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+}
+
+/* generic error text */
+.pi-main[data-panel="tax"] .fi-error-text {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+  text-align: left;
+}
+
+/* narrow screens: date error keeps full width */
+@media (max-width: 960px) {
+  .pi-main[data-panel="tax"] .fi-grid.is-invalid .fi-group {
+    width: 100%;
+  }
+}
+
+
+.pi-main[data-panel="tax"] .yn-group > .fi-error-text,
+.pi-main[data-panel="tax"] .qs-block .yn-group + .fi-error-text {
+  flex: 0 0 100%;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+}
+
+/* keep red outline on invalid buttons */
+.pi-main[data-panel="tax"] .is-invalid .yn-btn {
+  border-color: #d93025 !important;
+}
+
+.pi-main[data-panel="tax"] .fi-group.is-invalid + .fi-error-text {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+}
+
+
+/* TAX PANEL - ERROR STATES ONLY (Preserves existing UI) */
+
+/* Base error text styling */
+.pi-main[data-panel="tax"] .fi-error-text {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+  text-align: left;
+}
+
+/* Yes/No groups - only wrap when error appears */
+.pi-main[data-panel="tax"] .yn-group.is-invalid {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 18px;
+}
+
+/* Error text under yes/no buttons */
+.pi-main[data-panel="tax"] .yn-group > .fi-error-text {
+  flex: 0 0 100%;
+  margin-top: 6px;
+}
+
+/* Red outline on invalid buttons */
+.pi-main[data-panel="tax"] .is-invalid .yn-btn {
+  border-color: #d93025 !important;
+}
+
+/* For date fields - place error below without affecting layout */
+.pi-main[data-panel="tax"] .fi-group.is-invalid .dob-input {
+  border-color: #d93025;
+}
+
+/* Error directly under date input fields */
+.pi-main[data-panel="tax"] .fi-group.is-invalid > .fi-error-text {
+  margin-top: 6px;
+}
+
+/* Prevent grid from breaking - maintain original column widths */
+.pi-main[data-panel="tax"] .fi-grid {
+  /* Keep your existing grid styles */
+}
+
+/* When date field has error, don't change grid structure */
+.pi-main[data-panel="tax"] .fi-grid .fi-group.is-invalid {
+  /* Maintain original width - no changes */
+}
+
+/* Error message positioned after the date group */
+.pi-main[data-panel="tax"] .fi-group.is-invalid + .fi-error-text {
+  grid-column: 1;
+  margin-top: 6px;
+  margin-bottom: 10px;
+}
+
+/* Province selects - only add red border on error */
+.pi-main[data-panel="tax"] select.is-invalid,
+.pi-main[data-panel="tax"] .fi-group.is-invalid select {
+  border-color: #d93025;
+}
+
+/* Text inputs - only add red border on error */
+.pi-main[data-panel="tax"] input.is-invalid,
+.pi-main[data-panel="tax"] .fi-group.is-invalid input:not([type="radio"]) {
+  border-color: #d93025;
+}
+
+/* Ensure error text doesn't push other elements */
+.pi-main[data-panel="tax"] .qs-block.is-invalid > .fi-error-text {
+  margin-top: 6px;
+  margin-bottom: 10px;
+}
+
+/* World Income inputs error state */
+#wi-wrapper .fi-group.is-invalid input {
+  border-color: #d93025;
+}
+
+#wi-wrapper .fi-group.is-invalid .fi-error-text {
+  position: absolute;
+  bottom: -20px;
+  left: 0;
+  font-size: 12px;
+}
+
+#wi-wrapper .wi-row {
+  position: relative;
+}
+
+/* Keep original responsive behavior */
+@media (max-width: 960px) {
+  /* Don't change grid structure on mobile */
+}
+
+/* date errors in TAX: don't push layout */
+.pi-main[data-panel="tax"] .fi-group.has-date-error {
+  position: relative;
+}
+.pi-main[data-panel="tax"] .fi-group .fi-error-abs {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+  pointer-events: none;
+  background: #fff; /* optional */
+}
+
+/* rent block error */
+#rent-addresses.is-invalid > .fi-error-text {
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+}
+
+/* your rent-gap class from earlier */
+.rent-gap {
+  margin-top: 46px !important;
+}
+
+
+.wi-row.wi-row-error {
+  height: 85px;               /* or whatever you liked in DevTools */
+}
+
+.pi-main[data-panel="tax"] #moved-section .fi-group.has-date-error {
+  margin-bottom: 20px;   /* pushes the selects down */
+}
+
+/* if you're using the absolute error style, keep it visible */
+.pi-main[data-panel="tax"] #moved-section .fi-group.has-date-error .fi-error-abs {
+  margin-top: 6px;
+}
+
+/* ---------------- TAX PANEL ERROR STYLES ---------------- */
+.pi-main[data-panel="tax"] .fi-error-text {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+  text-align: left;
+}
+
+/* Yes/No groups – error text under buttons */
+.pi-main[data-panel="tax"] .yn-group.is-invalid {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 18px;
+}
+.pi-main[data-panel="tax"] .yn-group.is-invalid > .fi-error-text {
+  flex: 0 0 100%;
+  margin-top: 6px;
+}
+
+/* date errors: keep field height, show error right below */
+.pi-main[data-panel="tax"] .fi-group.has-date-error {
+  position: relative;
+  margin-bottom: 20px;
+}
+.pi-main[data-panel="tax"] .fi-group.has-date-error .fi-error-abs {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 6px;
+  font-size: 13px;
+  color: #a11a12;
+}
+
+/* rent block error */
+.pi-main[data-panel="tax"] #rent-addresses.is-invalid > .fi-error-text {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #a11a12;
+}
+
+/* gap before “Are you living on Rent?” when owner extra field is visible */
+.rent-gap {
+  margin-top: 46px !important;
+}
+
+/* world income row grown when error (desktop) */
+.wi-row.wi-row-error {
+  height: 85px;
+}
+
+/* ---------------- MOBILE CARD PADDING ---------------- */
+@media (max-width: 680px) {
+  .wi-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #fff;
+    padding: 12px 14px;       /* normal */
+  }
+  /* get extra bottom padding only when JS adds .wi-card-error */
+  .wi-card.wi-card-error {
+    padding: 12px 14px 24px;
+  }
+}
+
+
+
+/* TAX – world income mobile error state */
+@media (max-width: 680px) {
+  /* when a card has an error, give it more bottom space */
+  .pi-main[data-panel="tax"] .wi-stack .wi-card.wi-card-error {
+    padding: 12px 14px 24px !important; /* beats the injected 12px 14px */
+    border-color: #d93025;
+  }
+
+  /* red border on the input inside the errored card */
+  .pi-main[data-panel="tax"] .wi-stack .wi-card.wi-card-error .fi-input {
+    border-color: #d93025;
+  }
+
+  /* error text inside the card */
+  .pi-main[data-panel="tax"] .wi-stack .wi-card .fi-error-text {
+    margin-top: 6px;
+    font-size: 13px;
+    line-height: 1.3;
+    color: #a11a12;
+  }
+}
+
+/* keep the rent block error visible under the table */
+.pi-main[data-panel="tax"] #rent-addresses.is-invalid > .fi-error-text {
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+}
+
+
+
+
+/* 1) make the suffix-positioned group a positioning context */
+.pi-main[data-panel="spouse"] .fi-group.fi-suf {
+  position: relative;
+}
+
+/* 2) pin the $ so growing height below does NOT move it */
+.pi-main[data-panel="spouse"] .fi-group.fi-suf .fi-suffix {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* 3) when there's an error, the error text goes under but 
+      we keep the input/suffix line intact */
+.pi-main[data-panel="spouse"] .fi-group.fi-suf.is-invalid .fi-error-text {
+  margin-top: 6px;
+}
+
+.pi-main[data-panel="spouse"] #spouse_income_cad.fi-input {
+  padding-right: 28px; /* or whatever fits your $ icon */
+}
+
+/* SPOUSE panel error positioning */
+.pi-main[data-panel="spouse"] .fi-group.has-date-error,
+.pi-main[data-panel="spouse"] .fi-group.has-suf-error {
+  position: relative;
+}
+
+.pi-main[data-panel="spouse"] .fi-group .fi-error-abs {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+  pointer-events: none;
+  background: #fff; /* optional */
+}
+
+/* keep the suffix row height constant even when invalid */
+.pi-main[data-panel="spouse"] .fi-group.has-suf-error .fi-suffix {
+  bottom: 0;          /* in case your suffix is absolutely positioned */
+}
+
+/* SPOUSE yes/no error positioning */
+.pi-main[data-panel="spouse"] .yn-group.is-invalid {
+  display: flex;
+  flex-wrap: wrap;           /* let the error drop below */
+  gap: 0 18px;               /* same left/right spacing as buttons */
+}
+
+.pi-main[data-panel="spouse"] .yn-group.is-invalid > .fi-error-text {
+  flex: 0 0 100%;            /* full width under buttons */
+  margin-top: 6px;           /* 6px gap from buttons */
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+}
+
+
+/* SPOUSE TAX – yes/no error under buttons */
+.pi-main[data-panel="spouse-tax"] .yn-group.is-invalid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 18px;
+}
+
+.pi-main[data-panel="spouse-tax"] .yn-group.is-invalid > .fi-error-text {
+  flex: 0 0 100%;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+}
+
+/* date errors in spouse-tax: keep layout clean */
+.pi-main[data-panel="spouse-tax"] .fi-group.has-date-error {
+  position: relative;
+}
+
+.pi-main[data-panel="spouse-tax"] .fi-group.has-date-error .fi-error-text {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+}
+
+/* world-income rows (spouse) get taller when there's an error */
+.pi-main[data-panel="spouse-tax"] .wi-row.wi-row-error {
+  height: 85px;
+}
+
+/* SPOUSE TAX: world income table error state */
+#sp-wi-wrapper .wi-row.wi-row-error {
+  height: 85px;             /* same as tax */
+  background: #fcfdfd;
+}
+
+/* make sure the cell itself keeps the padding */
+#sp-wi-wrapper .wi-row {
+  padding: 0 18px;
+}
+
+/* when the row is taller, keep the input vertically aligned */
+#sp-wi-wrapper .wi-row.wi-row-error .wi-inline {
+  display: flex;
+  align-items: left;
+}
+
+/* if your input has a $ pseudo or extra padding, keep it centered */
+#sp-wi-wrapper .wi-row.wi-row-error .fi-input {
+  line-height: normal;
+}
+
+/* MOBILE version — copy the “error = more padding” trick */
+@media (max-width: 680px) {
+  /* the cards the JS creates */
+  #sp-wi-wrapper .wi-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #fff;
+    padding: 12px 14px;              /* normal */
+  }
+  #sp-wi-wrapper .wi-card.wi-card-error {
+    padding: 12px 14px 24px;         /* when error */
+  }
+  /* if you have the leading $ inside mobile card */
+  #sp-wi-wrapper .wi-card .wi-inline {
+    position: relative;
+  }
+  #sp-wi-wrapper .wi-card .wi-inline .fi-input {
+    padding-left: 28px;
+  }
+  #sp-wi-wrapper .wi-card .wi-inline::before {
+    content: "$";
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6b7280;
+    font-weight: 600;
+    pointer-events: none;
+  }
+}
+
+/* SPOUSE TAX – world income table */
+.pi-main[data-panel="spouse-tax"] #sp-wi-wrapper .wi-inline {
+  position: relative;
+  width: 100%;
+  margin: 0;
+}
+
+/* normal $ badge */
+.pi-main[data-panel="spouse-tax"] #sp-wi-wrapper .wi-inline::before {
+  content: "$";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+/* make room for $ in the input */
+.pi-main[data-panel="spouse-tax"] #sp-wi-wrapper .wi-inline .fi-input {
+  padding-left: 28px;
+}
+
+/* error state – IMPORTANT: do NOT change display/layout */
+.pi-main[data-panel="spouse-tax"] #sp-wi-wrapper .wi-row.wi-row-error .wi-inline .fi-input {
+  border-color: #d93025;
+}
+
+/* place error text without pushing things down */
+.pi-main[data-panel="spouse-tax"] #sp-wi-wrapper .wi-row.wi-row-error .wi-inline .fi-error-text {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+}
+
+/* give the row a bit more room when there is an error */
+.pi-main[data-panel="spouse-tax"] #sp-wi-wrapper .wi-row.wi-row-error {
+  height: 85px;
+}
+
+/* ---- SPOUSE TAX: mobile dollar alignment ---- */
+@media (max-width: 680px) {
+  /* make sure the inline wrapper doesn't switch layout when there's an error */
+  .pi-main[data-panel="spouse-tax"] #sp-wi-wrapper .wi-row.wi-row-error .wi-inline {
+    display: block !important;
+  }
+
+  /* keep the $ centered vertically on mobile */
+  .pi-main[data-panel="spouse-tax"] #sp-wi-wrapper .wi-inline::before {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  /* keep the input size/padding stable (same as your injected mobile card css) */
+  .pi-main[data-panel="spouse-tax"] #sp-wi-wrapper .wi-inline .fi-input {
+    height: 44px;
+    padding: 10px 12px 10px 28px; /* room for $ */
+  }
+
+  /* when there is an error, don't let the input collapse and push the $ down */
+  .pi-main[data-panel="spouse-tax"] #sp-wi-wrapper .wi-row.wi-row-error .wi-inline .fi-input {
+    height: 44px;
+    padding: 10px 12px 10px 28px;
+  }
+}
+
+/* spouse tax – keep $ centered on mobile even when there's error text */
+@media (max-width: 680px) {
+  .pi-main[data-panel="spouse-tax"] #sp-wi-wrapper .wi-inline.sp-wi-has-error::before {
+    top: 22px;               /* half of 44px input */
+    transform: translateY(-50%);
+  }
+}
+
+/* spouse tax – base state: no extra gap */
+.pi-main[data-panel="spouse-tax"] #sp-moved-section .fi-group {
+  margin-bottom: 0;          /* <- back to normal */
+}
+
+/* spouse tax – when the date has an error, add space for the red text */
+.pi-main[data-panel="spouse-tax"] #sp-moved-section .fi-group.has-date-error {
+  margin-bottom: 20px;
+}
+
+
+/* OTHER INCOME — place error text under Yes/No buttons with a small gap */
+.pi-main[data-panel="other-income"] .yn-group.is-invalid .fi-error-text{
+  margin-top: 6px;
+}
+
+/* OTHER INCOME — extra breathing room only while a date field has an error */
+.pi-main[data-panel="other-income"] .fi-group.has-date-error{
+  margin-bottom: 20px;
+}
+
+
+/* OTHER INCOME — put error under Yes/No buttons */
+.pi-main[data-panel="other-income"] .yn-group.is-invalid .fi-error-text{
+  display:block;
+  width:100%;
+  margin-top:6px;           /* 6px gap from buttons */
+}
+
+/* OTHER INCOME — extra spacing only while a date has an error */
+.pi-main[data-panel="other-income"] .fi-group.has-date-error{
+  margin-bottom:20px;
+}
+
+/* RENT PROPERTIES — error placement under the table */
+.pi-main[data-panel="other-income"] #rental-table + .fi-error-text{
+  margin-top:10px;
+}
+
+/* OTHER INCOME: stack error under the Yes/No buttons */
+.pi-main[data-panel="other-income"] .yn-group.yn-error-stack{
+  display: grid !important;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  align-items: center;
+  gap: 12px;
+}
+
+.pi-main[data-panel="other-income"] .yn-group.yn-error-stack .fi-error-text{
+  grid-column: 1 / -1;   /* force full row under the buttons */
+  margin-top: 6px;
+}
+
+ .yn-group{
+    display:flex;
+    gap: 18px;
+    align-items:center;
+    flex-wrap:nowrap;
+  }
+
+  /* When invalid: let the error wrap to a new row under the buttons */
+  .yn-group.is-invalid{
+    flex-wrap:wrap;          /* allow the next line */
+    align-items:flex-start;  /* avoid vertical centering glitches */
+    gap: 0 18px;             /* no vertical gap between buttons */
+  }
+  .yn-group.is-invalid .fi-error-text{
+    order: 3;                /* force after the buttons */
+    width: 100%;
+    margin-top: 6px;         /* your requested spacing */
+  }
+
+  
+
+/* 1) Make any .fi-group that contains a date input a positioning context */
+.fi-group:has(.dob-input) { position: relative; }
+
+/* 2) Keep the text clear of the icon */
+.fi-group:has(.dob-input) .fi-input {
+  min-height: 44px;
+  padding-right: 48px;     /* room for the icon */
+}
+
+
+/* ===== HST date icon locking (applicant + spouse) ===== */
+.pi-main[data-panel="other-income"] #hst-fields .fi-group,
+.pi-main[data-panel="other-income"] #sp-hst-fields .fi-group{
+  position: relative;                 /* allow absolute children */
+}
+
+/* keep enough space for the icon + keep height stable */
+.pi-main[data-panel="other-income"] #hst-fields .fi-group .fi-input,
+.pi-main[data-panel="other-income"] #sp-hst-fields .fi-group .fi-input{
+  min-height: 44px;
+  padding-right: 48px;                /* room for the calendar icon */
+}
+
+/* pin any likely icon element (classed or raw svg/i/span) */
+.pi-main[data-panel="other-income"] #hst-fields .fi-group :is(.fi-calendar,.calendar-icon,.fi-icon,svg,i,span.calendar-icon),
+.pi-main[data-panel="other-income"] #sp-hst-fields .fi-group :is(.fi-calendar,.calendar-icon,.fi-icon,svg,i,span.calendar-icon){
+  position: absolute !important;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 44px;                       /* vertically center inside input line */
+  display: flex;
+  align-items: center;
+  pointer-events: auto;
+  z-index: 1;
+}
+
+/* error text spacing under the date without moving the icon */
+.pi-main[data-panel="other-income"] #hst-fields .fi-group.is-invalid .fi-error-text,
+.pi-main[data-panel="other-income"] #sp-hst-fields .fi-group.is-invalid .fi-error-text{
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+/* (Optional) yes/no error under the HST question buttons */
+.pi-main[data-panel="other-income"] #hst-q-block .yn-group.is-invalid,
+.pi-main[data-panel="other-income"] #sp-hst-q-block .yn-group.is-invalid{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 18px;
+}
+.pi-main[data-panel="other-income"] #hst-q-block .yn-group.is-invalid > .fi-error-text,
+.pi-main[data-panel="other-income"] #sp-hst-q-block .yn-group.is-invalid > .fi-error-text{
+  flex: 0 0 100%;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+}
+
+/* OTHER-INCOME panel: lock calendar icons to the input line */
+.pi-main[data-panel="other-income"] .fi-group:has(.dob-input) {
+  position: relative;               /* create positioning context */
+}
+
+/* draw/position the calendar icon */
+.pi-main[data-panel="other-income"] .fi-group:has(.dob-input)::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);      /* stays vertically centered */
+  width: 22px; height: 22px;
+  background: var(--cal-ico, url("../assets/img/icon-calendar.svg")) no-repeat center/contain;
+  pointer-events: none;
+}
+
+/* make room for the icon so text/caret don't collide */
+.pi-main[data-panel="other-income"] .fi-group .dob-input {
+  padding-right: 40px;              /* adjust to your icon width */
+}
+
+/* when there’s an error, keep the input line intact and put text under it */
+.pi-main[data-panel="other-income"] .fi-group.is-invalid .fi-error-text {
+  margin-top: 6px;                   /* gap UNDER the input */
+}
+
+/* (optional) if your theme adds thicker red borders on error that change height,
+   this keeps input height stable across states */
+.pi-main[data-panel="other-income"] .fi-group .dob-input {
+  box-sizing: border-box;
+  min-height: 44px;                  /* match your normal input height */
+}
+
+/* if you also need to pin suffixes like CAD / % on this panel */
+.pi-main[data-panel="other-income"] .fi-group.fi-suf { position: relative; }
+.pi-main[data-panel="other-income"] .fi-group.fi-suf .fi-suffix {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  pointer-events: none;
+}
+.pi-main[data-panel="other-income"] .fi-group.fi-suf .fi-input.with-suffix { padding-right: 48px; }
+
+/* OTHER-INCOME: calendar icon that never moves when errors show */
+.pi-main[data-panel="other-income"] .fi-group.fi-cal { 
+  position: relative;                /* positioning context for the icon */
+}
+
+/* draw/position the calendar icon */
+.pi-main[data-panel="other-income"] .fi-group.fi-cal::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);       /* vertically centers on the input line */
+  width: 22px; 
+  height: 22px;
+  background: var(--cal-ico, url("../assets/img/icon-calendar.svg")) no-repeat center/contain;
+  pointer-events: none;
+}
+
+/* make room so text/caret don't overlap the icon */
+.pi-main[data-panel="other-income"] .fi-group.fi-cal .dob-input {
+  padding-right: 44px;               /* match icon width + breathing room */
+  min-height: 44px;                  /* fix input height across normal/error states */
+  box-sizing: border-box;
+}
+
+/* keep error text below the input without shifting the icon */
+.pi-main[data-panel="other-income"] .fi-group.fi-cal.is-invalid .fi-error-text {
+  display: block;
+  margin-top: 6px;                   /* gap under the input line */
+}
+
+/* (optional) if you have any background-icons on inputs, neutralize them here */
+.pi-main[data-panel="other-income"] .fi-group.fi-cal .dob-input {
+  background-image: none !important;
+}
+
+  .fi-error-text.fi-error-afterhelp { margin-top: -18px; }
+
+ /* END OF ERROR STYLE */
 
 </style>
 
@@ -5408,7 +6816,7 @@ select.fi-input option:disabled {
 }
 
 
-@media (max-width: 959px) {
+@media (max-width: 640px) {
   /* your exact button */
   #intro-continue,
   .tax-cta-row .continue-btn,
@@ -5445,7 +6853,438 @@ select.fi-input option:disabled {
 }
 
 
+/* really force the wrapper to stop being flex in mobile */
+@media (max-width: 640px){
+  #intro-card .tax-cta,
+  #intro-card .tax-cta.tax-cta-row {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  #intro-card .tax-cta.tax-cta-row .form-button,
+  #intro-card .tax-cta.tax-cta-row form {
+    width: 100% !important;
+  }
+
+  #intro-card .tax-cta.tax-cta-row .continue-btn {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+}
+
+
 </style>
+
+
+<style>
+
+/* card */
+.confirm-card{
+  max-width:720px;
+  margin:0 auto;
+  background:#fff;
+  border-radius:16px;
+  box-shadow:0 16px 40px rgba(15,23,42,.08);
+  padding:36px 44px 30px;
+  text-align:center;
+}
+
+/* animated badge */
+.success-badge{
+  width:96px;
+  height:96px;
+  margin:0 auto 20px;
+  background:#22c55e;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 10px 28px rgba(34,197,94,.35);
+  animation:badge-pop .45s cubic-bezier(.23,1.4,.38,1) forwards;
+  position:relative;
+}
+
+.success-svg{
+  width:72px;
+  height:72px;
+}
+
+/* outer ring that pulses */
+.ring{
+  stroke:#ffffff55;
+  stroke-width:4;
+  stroke-dasharray:188;
+  stroke-dashoffset:188;
+  animation:ring-draw .5s ease-out .2s forwards,
+            ring-pulse .7s ease-out .6s 1;
+}
+
+/* check mark that draws */
+.tick{
+  stroke:#fff;
+  stroke-width:4.5;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  stroke-dasharray:60;
+  stroke-dashoffset:60;
+  animation:tick-draw .35s ease-out .4s forwards;
+}
+
+@keyframes badge-pop{
+  0%{transform:scale(.25); opacity:0;}
+  60%{transform:scale(1.05); opacity:1;}
+  100%{transform:scale(1);}
+}
+@keyframes ring-draw{
+  to{stroke-dashoffset:0;}
+}
+/* soft glow pulse */
+@keyframes ring-pulse{
+  0%{filter:drop-shadow(0 0 0 rgba(255,255,255,.0));}
+  50%{filter:drop-shadow(0 0 14px rgba(255,255,255,.65));}
+  100%{filter:drop-shadow(0 0 0 rgba(255,255,255,0));}
+}
+@keyframes tick-draw{
+  to{stroke-dashoffset:0;}
+}
+
+/* text */
+.confirm-heading{
+  font-size:1.25rem;
+  font-weight:700;
+  color:#0f172a;
+  line-height:1.35;
+  margin-bottom:10px;
+}
+.confirm-sub{
+  color:#64748b;
+  font-size:.9rem;
+  line-height:1.5;
+  margin-bottom:8px;
+}
+.confirm-linkline{
+  margin-top:10px;
+  margin-bottom:24px;
+}
+.confirm-highlight{
+  color:#0f7edb;
+  text-decoration:none;
+  font-weight:500;
+}
+
+/* buttons */
+.confirm-actions{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  align-items:center;
+}
+.confirm-primary{
+  background:#0077c8;
+  color:#fff;
+  border:none;
+  border-radius:999px;
+  padding:10px 44px;
+  font-weight:600;
+  cursor:pointer;
+}
+.confirm-primary:hover{ background:#0362a2; }
+.confirm-secondary{
+  background:transparent;
+  border:none;
+  color:#64748b;
+  display:flex;
+  gap:8px;
+  align-items:center;
+  cursor:pointer;
+  font-size:.82rem;
+}
+.circle-arrow{
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  border:1px solid #cbd5f1;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  color:#0f172a;
+}
+
+@media (max-width:640px){
+  .confirm-card{
+    margin:26px 12px;
+    padding:28px 16px 26px;
+  }
+  .confirm-heading{ font-size:1.03rem; }
+}
+
+.confirm-card{
+  max-width:720px;
+  margin:46px auto;
+  background:#fff;
+  border-radius:16px;
+  box-shadow:0 16px 40px rgba(15,23,42,.08);
+  padding:36px 44px 30px;
+  text-align:center;
+}
+
+/* reuse your cool check from earlier */
+.success-badge{
+  width:96px;
+  height:96px;
+  margin:0 auto 20px;
+  background:#22c55e;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 10px 28px rgba(34,197,94,.35);
+  animation:badge-pop .45s cubic-bezier(.23,1.4,.38,1) forwards;
+}
+.success-svg{width:72px;height:72px;}
+.ring{
+  stroke:#ffffff55;
+  stroke-width:4;
+  stroke-dasharray:188;
+  stroke-dashoffset:188;
+  animation:ring-draw .5s ease-out .2s forwards;
+}
+.tick{
+  stroke:#fff;
+  stroke-width:4.5;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  stroke-dasharray:60;
+  stroke-dashoffset:60;
+  animation:tick-draw .35s ease-out .4s forwards;
+}
+@keyframes badge-pop{
+  0%{transform:scale(.25);opacity:0;}
+  60%{transform:scale(1.05);opacity:1;}
+  100%{transform:scale(1);}
+}
+@keyframes ring-draw{to{stroke-dashoffset:0;}}
+@keyframes tick-draw{to{stroke-dashoffset:0;}}
+
+.confirm-heading{
+  font-size:1.25rem;
+  font-weight:700;
+  color:#0f172a;
+  margin-bottom:10px;
+}
+.confirm-sub{
+  color:#64748b;
+  font-size:.9rem;
+  line-height:1.5;
+  margin-bottom:6px;
+}
+
+
+/* buttons area */
+.confirm-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  justify-content:center;
+  margin-bottom:20px;
+}
+.confirm-primary{
+  background:#0077c8;
+  color:#fff;
+  border:none;
+  border-radius:999px;
+  padding:9px 34px;
+  font-weight:600;
+  text-decoration:none;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+}
+.confirm-ghost{
+  background:#fff;
+  border:1px solid #e2e8f0;
+  border-radius:999px;
+  padding:8px 20px 8px 14px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  color:#0f172a;
+  text-decoration:none;
+  font-weight:500;
+}
+.confirm-ghost .icon-box{
+  width:28px;
+  height:28px;
+  border-radius:999px;
+  background:#e2e8f0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#0f172a;
+}
+
+.confirm-contact{
+  font-size:.82rem;
+  color:#475569;
+  line-height:1.4;
+}
+.confirm-contact a{color:#0f7edb;text-decoration:none;}
+
+@media (max-width:640px){
+  .confirm-card{margin:26px 14px;padding:30px 16px;}
+  .confirm-actions{flex-direction:column;align-items:center;}
+}
+
+
+.confirm-actions{
+  display:flex;
+  gap:14px;
+  justify-content:center;
+  margin-bottom:20px;
+}
+
+.confirm-btn{
+  flex:1 1 0;
+  max-width:220px;          /* keeps them from being too wide on large screens */
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  height:50px;
+  border-radius:999px;
+  text-decoration:none;
+  font-weight:600;
+  font-size:.9rem;
+}
+
+.primary-btn{
+  background:#0077c8;
+  color:#fff;
+  border:1px solid #0077c8;
+}
+
+.ghost-btn{
+  background:#fff;
+  border:1px solid #e2e8f0;
+  color:#0f172a;
+}
+
+.ghost-btn .icon-box{
+  width:30px;
+  height:30px;
+  border-radius:999px;
+  background:#e2e8f0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:inherit;
+}
+
+/* mobile: stack like your pic */
+@media (max-width:640px){
+  .confirm-actions{
+    flex-direction:column;
+    align-items:stretch;
+  }
+  .confirm-btn{
+    max-width:none;
+    width:100%;
+    height: 50px;
+    padding: 19.1px 0;
+  }
+}
+
+
+/* desktop: put Home + Sign Out on the same line */
+@media (min-width: 641px){
+  .confirm-actions{
+    display:flex;
+    flex-direction:row !important;
+    justify-content:center;
+    gap:14px;
+  }
+  .confirm-actions .confirm-btn{
+    width:190px;          /* same width */
+    height:50px;          /* same height */
+  }
+}
+
+
+@media (min-width: 641px){
+  .confirm-card .confirm-actions{
+    flex-direction:row !important;
+  }
+}
+
+/* --- Textarea box style --- */
+.qs-block textarea.fi-input,
+.fi-group textarea.fi-input,
+textarea.fi-input {
+  width: 100%;
+  min-height: 150px;          /* your 5–6 rows */
+  background: #fff;
+  border: 1px solid #d4d9de;  /* light border */
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 15px;
+  line-height: 1.5;
+  resize: vertical;           /* allow taller on drag */
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.03);
+  transition: border 0.15s ease, box-shadow 0.15s ease;
+  margin-top: 24px;
+}
+
+/* focus state */
+.qs-block textarea.fi-input:focus,
+.fi-group textarea.fi-input:focus,
+textarea.fi-input:focus {
+  outline: none;
+  border-color: #0b66c3;      /* your blue */
+  box-shadow: 0 0 0 3px rgba(11, 102, 195, 0.09);
+}
+
+/* if you're using floating labels (placeholder=" ") keep top room */
+.fi-group.fi-float textarea.fi-input {
+  padding-top: 22px;
+}
+
+/* keep your general error look */
+.fi-error-text{
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #a11a12;
+}
+
+/* highlight invalid yes/no buttons */
+.is-invalid .yn-btn{
+  border-color: #d93025 !important;
+}
+
+/* make errors under button-groups float up a bit */
+.qs-block .yn-group + .fi-error-text,
+#children-block .yn-group + .fi-error-text,
+#spouse-file-block .yn-group + .fi-error-text {
+  margin-top: -20px;   /* only for buttons */
+  display: block;
+}
+
+/* other errors (like date) stay normal */
+#status-date-block > .fi-error-text,
+#status-date-sdw-block > .fi-error-text {
+  margin-top: 6px;
+}
+
+.rent-gap {
+  margin-top: 46px !important;
+}
+
+
+</style>
+
+
+
 
 
 </head>
@@ -5599,7 +7438,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     <div class="tax-cta tax-cta-row">
       <form class="form-button" id="intro-form">
         <input type="hidden" name="name" value="<?= $name; ?>">
-        <button class="continue-btn this-btn" type="button" id="intro-continue">CONTINUE</button>
+        <button class="continue-btn this-btn" type="button" id="intro-continue">Continue</button>
       </form>
     </div>
   </section>
@@ -5615,7 +7454,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
 
 
       <h2 id="qs-title" class="qs-title">
-        <?php echo $greetName; ?>, before we begin, we need to ask you a few questions.
+        <?php echo $greetName; ?>, SANITY CHECK before we begin, we need to ask you a few questions.
       </h2>
 
 <!-- Global error banner (hidden by default) -->
@@ -5672,7 +7511,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
 
       <!-- Married/Common Law: Date of Marriage + Canada + Spouse File + Children -->
       <div class="qs-block" id="status-date-block" style="display:none;margin-top: 46px;">
-        <label class="qs-label" id="status-date-label">Date of Marriage</label>
+        <label class="qs-label" id="status-date-label" style="margin-bottom: 24px;">Date of Marriage</label>
         <div class="fi-grid">
           <div class="fi-group fi-float">
             <input id="status_date" name="status_date" class="fi-input dob-input" placeholder=" ">
@@ -5687,25 +7526,29 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
   </p>
 
       </div>
-<h2 class="qs-title small" style="margin-bottom:12px;">Residing in Canada?</h2>
-<div class="yn-group" style="margin: 0;">
-  <input type="radio" id="spouse_in_canada_yes" name="spouse_in_canada" value="Yes">
-  <label for="spouse_in_canada_yes" class="yn-btn">Yes</label>
 
-  <input type="radio" id="spouse_in_canada_no" name="spouse_in_canada" value="No">
-  <label for="spouse_in_canada_no" class="yn-btn">No</label>
-</div>
+      <!-- Spouse residing in Canada -->
+      <div class="qs-block" id="spouse-in-canada-block">
+        <h2 class="qs-title small" style="margin-bottom:12px;">Is your spouse residing in Canada?</h2>
+        <div class="yn-group" style="margin: 24px 0 0 0;">
+          <input type="radio" id="spouse_in_canada_yes" name="spouse_in_canada" value="Yes">
+          <label for="spouse_in_canada_yes" class="yn-btn">Yes</label>
 
+          <input type="radio" id="spouse_in_canada_no" name="spouse_in_canada" value="No">
+          <label for="spouse_in_canada_no" class="yn-btn">No</label>
+        </div>
+      </div>
 
+      <!-- Spouse wants to file -->
       <div class="qs-block" id="spouse-file-block" style="display:none;">
-<label class="qs-title small">Does your spouse want to file taxes? <span class="qs-note">*</span></label>
-<div class="yn-group" style="margin: 0;">
-  <input type="radio" id="spouse_yes" name="spouseFile" value="yes">
-  <label for="spouse_yes" class="yn-btn">Yes</label>
+        <label class="qs-title small">Does your spouse want to file taxes? <span class="qs-note">*</span></label>
+        <div class="yn-group" style="margin-bottom: 0;">
+          <input type="radio" id="spouse_yes" name="spouseFile" value="yes">
+          <label for="spouse_yes" class="yn-btn">Yes</label>
 
-  <input type="radio" id="spouse_no" name="spouseFile" value="no">
-  <label for="spouse_no" class="yn-btn">No</label>
-</div>
+          <input type="radio" id="spouse_no" name="spouseFile" value="no">
+          <label for="spouse_no" class="yn-btn">No</label>
+        </div>
       </div>
 
      
@@ -5713,7 +7556,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
       <!-- Separated/Divorced/Widowed: separate block with UNIQUE IDs -->
       <div class="qs-block" id="status-date-sdw-block"  style="display:none;margin-top: 46px;">
         <label class="qs-label" id="status-date-sdw-label">Date</label>
-        <div class="fi-grid">
+        <div class="fi-grid" style="margin-top: 24px;">
           <div class="fi-group fi-float">
             <input id="status_date_sdw" name="status_date" class="fi-input dob-input" placeholder=" ">
             <label class="fi-float-label" for="status_date_sdw">DD | MMM | YYYY</label>
@@ -5771,7 +7614,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     <a class="pi-step" data-step="children" aria-disabled="true" tabindex="-1">Children Information</a>
     <a class="pi-step" data-step="other-income" aria-disabled="true" tabindex="-1">Other Income</a>
     <a class="pi-step" data-step="upload-self" aria-disabled="true" tabindex="-1">Add/Upload Documents (Applicant)</a>
-    <a class="pi-step" data-step="upload-spouse" aria-disabled="true" tabindex="-1">Spouse Add/Upload Documents</a>    
+    <a class="pi-step" data-step="upload-spouse" aria-disabled="true" tabindex="-1">Add/Upload Documents (Spouse)</a>    
     <a class="pi-step" data-step="review" aria-disabled="true" tabindex="-1">Review Information</a>
     <a class="pi-step" data-step="confirm" aria-disabled="true" tabindex="-1">Confirmation of Document Submission</a>
   </nav>
@@ -5808,7 +7651,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
       <!-- PAGE 1: PERSONAL  -->
       <div class="pi-main" data-panel="personal">
         
-        <div class="qs-block">
+      <div class="qs-block">
   		<label class="qs-title small" style="margin-top: -46px !important;">What’s your name?</label>
   		<div class="qs-help">Enter your name as it appears on your SIN number document.</div>
 		</div>
@@ -5834,7 +7677,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
           </div>
         </div>
 
-        <h2 class="qs-title small" style="margin-bottom:24px">What’s your date of birth?</h2>
+        <h2 class="qs-title small" style="margin-bottom:24px;">What’s your date of birth?</h2>
 <div class="fi-grid">
       <div class="fi-group fi-float">
   <input id="dob" name="dob" class="fi-input dob-input" autocomplete="bday"
@@ -5855,8 +7698,8 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
         </div>
         <div class="fi-hint"></div>
 </div>
-        <h2 class="qs-title small" style="margin-bottom:24px">What’s your gender?</h2>
-        <div class="yn-group" style="margin-bottom:24px">
+        <h2 class="qs-title small" style="margin-bottom:24px;">What’s your gender?</h2>
+        <div class="yn-group" style="margin-bottom:24px;">
           <input type="radio" id="gender_male"   name="gender" value="Male">
           <label for="gender_male" class="yn-btn">Male</label>
 
@@ -5864,7 +7707,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
           <label for="gender_female" class="yn-btn">Female</label>
         </div>
 
-        <h2 class="qs-title small" style="margin-bottom:24px">Address</h2>
+        <h2 class="qs-title small" style="margin-bottom:24px;">Address</h2>
         <div class="fi-grid">
           <div class="fi-group fi-float">
             <input id="street" name="street" class="fi-input" list="street-suggest"
@@ -5909,7 +7752,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
           </div>
         </div>
 
-        <h2 class="qs-title small" style="margin-bottom:24px">Contact info</h2>
+        <h2 class="qs-title small" style="margin-bottom:24px;">Contact info</h2>
         <div class="fi-grid">
           <div class="fi-group fi-float">
             <input id="phone" name="phone" class="fi-input" inputmode="tel"
@@ -5949,7 +7792,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
 <!-- BRANCH A: Prior customer / years (shown when FIRST-TIME = NO) -->
 <div id="prior-customer-section" class="qs-block is-hidden" aria-hidden="true">
   <label class="qs-label">Did you file earlier with Paragon Tax Services? <span class="qs-note">*</span></label>
-  <div class="yn-group" style="margin-bottom:24px">
+  <div class="yn-group" style="margin-bottom:24px;">
     <input type="radio" id="paragon_yes" name="paragon_prior" value="yes">
     <label for="paragon_yes" class="yn-btn">Yes</label>
 
@@ -5957,10 +7800,10 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     <label for="paragon_no" class="yn-btn">No</label>
   </div>
 <div class="fi-grid">
-  <div class="fi-group fi-float" style="margin-top:10px">
+  <div class="fi-group fi-float" style="margin-top:10px;">
     <input id="return_years" name="return_years" class="fi-input" placeholder=" ">
     <label class="fi-float-label" for="return_years">Which years do you want to file tax returns? <span class="qs-note">*</span></label>
-    <div class="qs-help" style="margin-top: 0">(Enter years separated by commas, e.g., 2024, 2023, 2022)</div>
+    <div class="qs-help">(Enter years separated by commas, e.g., 2024, 2023, 2022)</div>
   </div>
 </div>
 </div>
@@ -5970,7 +7813,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
 <!-- BRANCH B: First-time details (shown when FIRST-TIME = YES) -->
 <div id="firsttime-details" class="is-hidden" aria-hidden="true">
   <!-- Entry & Birth -->
-  <div class="fi-grid">
+  <div class="fi-grid" style="margin-bottom: 46px">
 <div class="fi-group fi-float">
   <input id="entry_date_display"
          class="fi-input dob-input"
@@ -5983,6 +7826,9 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
   <input type="hidden" id="entry_date" name="entry_date">
 </div>
 
+
+
+
 <div class="fi-group fi-float">
   <input id="birth_country" name="birth_country" class="fi-input" placeholder=" " list="country-list">
   <label class="fi-float-label" for="birth_country">
@@ -5990,9 +7836,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
   </label>
 
   <!-- help text -->
-  <p class="qs-help qs-help-alert">
-    Placeholders update from your Date of Entry.
-  </p>
+ 
 </div>
 
 </div>
@@ -6067,7 +7911,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
 <!-- When did you move? (toggled ) -->
 
 <div id="moved-section" class="qs-block is-hidden" aria-hidden="true">
-  <label class="qs-label">When did you move? <span class="qs-note">*</span></label>
+  <label class="qs-label" style="margin-bottom: 24px;">When did you move? <span class="qs-note">*</span></label>
 
 <div class="fi-grid">
 <div class="fi-group fi-float">
@@ -6091,7 +7935,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
 </div>
 </div>
 
-<div class="fi-grid" style="margin: 10px 0 46px;">
+<div class="fi-grid" style="margin: 30px 0 46px;">
   <div class="fi-group fi-float">
     <select id="prov_from" name="prov_from" class="fi-input" required>
       <option value="">Select State/Province</option>
@@ -6179,10 +8023,10 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
 <!-- Details (shown only when first_home_buyer = yes) -->
  <div class="qs-block">      
 
-<div class="fi-grid">                        
+<div class="qs-block">                        
 <div id="fthb-details" class="is-hidden" aria-hidden="true">
-                          <label class="qs-label"> When did you purchase your first home? <span class="qs-note">*</span></label>
-
+                          <label class="qs-label" style="margin-bottom: 24px;"> When did you purchase your first home? <span class="qs-note">*</span></label>
+<div class="fi-grid">
   <div class="fi-group fi-float" style="margin-bottom:46px;">
     <input id="first_home_purchase_display" name="first_home_purchase_display"
            class="fi-input dob-input" placeholder=" "
@@ -6195,22 +8039,26 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
   <input type="hidden" id="first_home_purchase" name="first_home_purchase"
          value="<?= htmlspecialchars($rowUser['first_home_purchase'] ?? '') ?>">
 </div>
+</div>
   </div>                      
                         
 <!-- Sole owner? (replaces "Do you want to claim the full amount?") -->
+<!-- Sole owner -->
 <div class="qs-block" style="margin-top:6px;">
   <label class="qs-label">Are you the sole owner of the home? <span class="qs-note">*</span></label>
-  <div class="yn-group">
-    <input type="radio" id="claim_full_yes" name="claim_full" value="yes">
+  <div class="yn-group" style="margin-bottom: 0;">
+    <input type="radio" id="claim_full_yes" name="claim_full" value="yes"
+      <?= (isset($rowUser['claim_full']) && $rowUser['claim_full']==='yes') ? 'checked' : '' ?>>
     <label for="claim_full_yes" class="yn-btn">Yes</label>
 
-    <input type="radio" id="claim_full_no" name="claim_full" value="no">
+    <input type="radio" id="claim_full_no" name="claim_full" value="no"
+      <?= (isset($rowUser['claim_full']) && $rowUser['claim_full']==='no') ? 'checked' : '' ?>>
     <label for="claim_full_no" class="yn-btn">No</label>
   </div>
 </div>
 
-<!-- Show ONLY when NOT sole owner -->
-<div class="fi-grid" style="margin-bottom: 28px;">
+<!-- extra field shown only when NOT sole owner -->
+<div class="fi-grid" id="owners-grid" style="margin-top: 46px;">
   <div id="owners-wrap"
        class="fi-group fi-float <?= (isset($rowUser['claim_full']) && $rowUser['claim_full']==='no') ? '' : 'is-hidden' ?>"
        aria-hidden="<?= (isset($rowUser['claim_full']) && $rowUser['claim_full']==='no') ? 'false' : 'true' ?>">
@@ -6226,10 +8074,9 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
   </div>
 </div>
 
-                        
 <!-- Living on Rent -->
-<div class="qs-block">
-  <label class="qs-label">Are you living on Rent?</label>
+<div class="qs-block" id="rent-block">
+  <label class="qs-label" style="margin-top: 0;">Are you living on Rent?</label>
   <div class="yn-group" id="onRentGroup">
     <input type="radio" id="onrent_yes" name="onRent" value="yes">
     <label for="onrent_yes" class="yn-btn">Yes</label>
@@ -6238,6 +8085,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     <label for="onrent_no" class="yn-btn">No</label>
   </div>
 </div>
+
 
 <!-- NEW: Claim rent benefit (only visible when onRent = Yes) -->
 <div class="qs-block" id="claim-rent-block" style="display:none;">
@@ -6350,7 +8198,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
   <div class="fi-group fi-float">
     <input id="spouse_dob" name="spouse_dob" class="fi-input dob-input" autocomplete="bday"
            value="<?= htmlspecialchars($rowSpouse['dob'] ?? '') ?>" placeholder=" ">
-    <label class="fi-float-label" for="spouse_dob">MM | DD | YYYY</label>
+    <label class="fi-float-label" for="spouse_dob">DD | MMM | YYYY</label>
   </div>
 </div>
 
@@ -6458,7 +8306,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
   </div>
 
   <!-- Contact Information -->
-  <h2 class="qs-title small" style="margin-top:0;">Spouse Contact Information</h2>
+  <h2 class="qs-title small" style="margin:0 0 24px 0; ">Spouse Contact Information</h2>
   <div class="fi-grid">
     <div class="fi-group fi-float">
       <input id="spouse_phone" name="spouse_phone" class="fi-input" inputmode="tel"
@@ -6511,47 +8359,45 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
   ?>
 
   <!-- CONTROLLER: First time filing (spouse) -->
-  <div class="qs-block" style="margin-top: -2px !important;">
-    <label class="qs-label">Is this the first time your spouse is filing tax? <span class="qs-note">*</span></label>
-    <div class="yn-group" id="sp-first-ctrl">
-      <input type="radio" id="sp_first_yes" name="sp_first_time" value="yes"
-             <?= ($spFirst === 'yes') ? 'checked' : '' ?>>
-      <label for="sp_first_yes" class="yn-btn">Yes</label>
+<div class="qs-block" style="margin-top: -2px !important;">
+  <label class="qs-label">Is this the first time your spouse is filing tax? <span class="qs-note">*</span></label>
+  <div class="yn-group" id="sp-first-ctrl">
+    <input type="radio" id="sp_first_yes" name="sp_first_time" value="yes"
+           <?= ($spFirst === 'yes') ? 'checked' : '' ?>>
+    <label for="sp_first_yes" class="yn-btn">Yes</label>
 
-      <input type="radio" id="sp_first_no" name="sp_first_time" value="no"
-             <?= ($spFirst === 'no') ? 'checked' : '' ?>>
-      <label for="sp_first_no" class="yn-btn">No</label>
-    </div>
+    <input type="radio" id="sp_first_no" name="sp_first_time" value="no"
+           <?= ($spFirst === 'no') ? 'checked' : '' ?>>
+    <label for="sp_first_no" class="yn-btn">No</label>
+  </div>
+</div>
+
+<?php
+  $spPrior  = isset($rowSpouseTax['paragon_prior']) ? strtolower($rowSpouseTax['paragon_prior']) : '';
+  $spYears  = $rowSpouseTax['return_years'] ?? '';
+?>
+
+<!-- BRANCH A (spouse): Prior customer / years -->
+<div id="sp-prior-customer-section" class="qs-block is-hidden" aria-hidden="true">
+  <label class="qs-label">Did your spouse file earlier with Paragon Tax Services? <span class="qs-note">*</span></label>
+  <div class="yn-group" style="margin-bottom:24px;">
+    <input type="radio" id="sp_paragon_yes" name="sp_paragon_prior" value="yes"
+           <?= ($spPrior === 'yes') ? 'checked' : '' ?>>
+    <label for="sp_paragon_yes" class="yn-btn">Yes</label>
+
+    <input type="radio" id="sp_paragon_no" name="sp_paragon_prior" value="no"
+           <?= ($spPrior === 'no') ? 'checked' : '' ?>>
+    <label for="sp_paragon_no" class="yn-btn">No</label>
   </div>
 
-
-  <!-- BRANCH A (spouse): Prior customer / years (should show only when FIRST-TIME = NO) -->
-  <?php
-    $spPrior  = isset($rowSpouseTax['paragon_prior']) ? strtolower($rowSpouseTax['paragon_prior']) : '';
-    $spYears  = $rowSpouseTax['return_years'] ?? '';
-    // we start hidden; JS should unhide when user clicks "No"
-  ?>
-  <div id="sp-prior-customer-section" class="qs-block is-hidden" aria-hidden="true">
-    <label class="qs-label">Did your spouse file earlier with Paragon Tax Services? <span class="qs-note">*</span></label>
-    <div class="yn-group">
-      <input type="radio" id="sp_paragon_yes" name="sp_paragon_prior" value="yes"
-             <?= ($spPrior === 'yes') ? 'checked' : '' ?>>
-      <label for="sp_paragon_yes" class="yn-btn">Yes</label>
-
-      <input type="radio" id="sp_paragon_no" name="sp_paragon_prior" value="no"
-             <?= ($spPrior === 'no') ? 'checked' : '' ?>>
-      <label for="sp_paragon_no" class="yn-btn">No</label>
-    </div>
-
-    <div class="fi-group fi-float fi-span2" style="margin-top:10px">
-      <input id="sp_return_years" name="sp_return_years" class="fi-input" placeholder=" "
-             value="<?= htmlspecialchars($spYears) ?>">
-      <label class="fi-float-label" for="sp_return_years">
-        Which Years Your Spouse want to file tax returns? <span class="qs-note">*</span>
-      </label>
+  <div class="fi-grid">
+    <div class="fi-group fi-float" style="margin-top:10px;">
+      <input id="sp_return_years" name="sp_return_years" class="fi-input" placeholder=" " value="<?= htmlspecialchars($spYears) ?>">
+      <label class="fi-float-label" for="sp_return_years">Which years do you want to file tax returns? <span class="qs-note">*</span></label>
       <div class="qs-help">(Enter years separated by commas, e.g., 2024, 2023, 2022)</div>
     </div>
   </div>
+</div>
 
 
   <!-- BRANCH B (spouse): First-time details (should show only when FIRST-TIME = YES) -->
@@ -6566,7 +8412,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
   ?>
   <div id="sp-firsttime-details" class="is-hidden" aria-hidden="true">
 
-    <div class="fi-grid">
+    <div class="fi-grid" style="margin-bottom: 46px">
       <!-- Spouse entry -->
       <div class="fi-group fi-float fi-span2">
         <input
@@ -6577,7 +8423,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
           value="<?= htmlspecialchars($spEntryDisp) ?>"
           data-bind="#sp_entry_date"
           data-dob-mode="ymd">
-        <label class="fi-float-label" for="sp_entry_date_display">MM | DD | YYYY</label>
+        <label class="fi-float-label" for="sp_entry_date_display">Date of Entry</label>
 
         <!-- Hidden stores YYYY-MM-DD -->
         <input type="hidden"
@@ -6592,9 +8438,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
         <label class="fi-float-label" for="birth_country">
           Country of Previous Residency <span class="qs-note">*</span>
         </label>
-        <p class="qs-help" style="margin:12px 0;">
-          Placeholders update from your Date of Entry.
-        </p>
+      
       </div>
     </div>
 
@@ -6680,7 +8524,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
 
   <!-- Spouse moved details (always hidden first; JS will show when yes) -->
   <div id="sp-moved-section" class="qs-block is-hidden" aria-hidden="true">
-    <label class="qs-label">When did your spouse move? <span class="qs-note">*</span></label>
+    <label class="qs-label" style="margin-bottom: 24px;">When did your spouse move? <span class="qs-note">*</span></label>
 
     <div class="fi-grid">
       <div class="fi-group fi-float">
@@ -6698,8 +8542,8 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
       </div>
     </div>
 
-    <div class="fi-grid" style="margin-top: 10px;">
-      <div class="fi-group fi-float">
+    <div class="fi-grid" style="margin-top: 30px !important;">
+      <div class="fi-group fi-float" >
         <select id="sp_prov_from" name="sp_prov_from" class="fi-input" data-value="<?= htmlspecialchars($spFromProv) ?>">
           <option value="">Select State/Province</option>
           <option>Alberta</option><option>British Columbia</option><option>Manitoba</option>
@@ -6846,15 +8690,15 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
 <!-- OTHER INCOME PANEL -->
 <div class="pi-main" data-panel="other-income">
 
-  <!-- Gig / Delivery income -->
-<div class="qs-block"  style="margin-top: -2px !important">
+<!-- Gig / Delivery income -->
+<div class="qs-block" style="margin-top: -2px !important">
   <label class="qs-label">Do you have income from Uber/Skip/Lyft/Doordash etc.? <span class="qs-note">*</span></label>
   <div class="yn-group" style="margin-bottom: 0;">
     <input type="radio" id="gig_income_yes" name="gig_income" value="yes">
-    <label for="gig_income_yes" class="yn-btn outline">Yes</label>
+    <label for="gig_income_yes" class="yn-btn">Yes</label>
 
-    <input type="radio" id="gig_income_no" name="gig_income" value="no" checked>
-    <label for="gig_income_no" class="yn-btn solid">No</label>
+    <input type="radio" id="gig_income_no" name="gig_income" value="no">
+    <label for="gig_income_no" class="yn-btn">No</label>
   </div>
 </div>
 
@@ -6865,16 +8709,25 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     <div class="fi-group fi-float fi-span2">
       <textarea id="gig_expenses_summary" name="gig_expenses_summary" class="fi-input" rows="5" placeholder=" "></textarea>
     </div>
+
+    <p class="qs-help qs-help-alert" id="sp-gig-expenses-help" style="margin-top:12px;">
+    <strong>Tip:</strong> List the business-related costs your spouse paid during the year.
+    <br>
+    <strong>Examples:</strong> Fuel / gas, vehicle insurance, phone &amp; data plan, car finance / lease payments,
+    maintenance &amp; repairs, parking or tolls, car wash, delivery bags / supplies, accounting or app fees.
+    Include any other costs needed to earn this income.
+  </p>
+
   </div>
 
   <div class="qs-block" id="hst-q-block">
     <label class="qs-label">Do you want to file HST for your Uber/Skip/Lyft/Doordash? <span class="qs-note">*</span></label>
     <div class="yn-group">
       <input type="radio" id="hst_yes" name="gig_hst" value="yes">
-      <label for="hst_yes" class="yn-btn outline">Yes</label>
+      <label for="hst_yes" class="yn-btn">Yes</label>
 
-      <input type="radio" id="hst_no" name="gig_hst" value="no" checked>
-      <label for="hst_no" class="yn-btn solid">No</label>
+      <input type="radio" id="hst_no" name="gig_hst" value="no">
+      <label for="hst_no" class="yn-btn">No</label>
     </div>
   </div>
 
@@ -6901,21 +8754,48 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     </div>
   </div>
 </div>
-                        
-<!-- Gig / Delivery income — SPOUSE -->
 
+
+<!-- Gig / Delivery income — SPOUSE -->
+<!-- your existing HTML (neutral) -->
 <div class="qs-block" id="sp-gig-question" style="display:none; margin-top:-2px!important">
   <label class="qs-label">
     Does your spouse have income from Uber/Skip/Lyft/Doordash etc.? <span class="qs-note">*</span>
   </label>
   <div class="yn-group" style="margin-bottom:0;">
     <input type="radio" id="sp_gig_income_yes" name="sp_gig_income" value="yes">
-    <label for="sp_gig_income_yes" class="yn-btn outline">Yes</label>
+    <label for="sp_gig_income_yes" class="yn-btn">Yes</label>
 
-    <input type="radio" id="sp_gig_income_no" name="sp_gig_income" value="no" checked>
-    <label for="sp_gig_income_no" class="yn-btn solid">No</label>
+    <input type="radio" id="sp_gig_income_no" name="sp_gig_income" value="no">
+    <label for="sp_gig_income_no" class="yn-btn">No</label>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const spYes = document.getElementById('sp_gig_income_yes');
+  const spNo  = document.getElementById('sp_gig_income_no');
+  const spBlock = document.getElementById('sp-gig-expenses-block');
+
+  // 1) undo any earlier script that auto-picked "no"
+  if (spYes && spNo) {
+    spYes.checked = false;
+    spNo.checked = false;
+  }
+
+  // 2) normal show/hide behavior
+  function refreshSpGig() {
+    if (!spBlock) return;
+    const show = spYes && spYes.checked;
+    spBlock.style.display = show ? '' : 'none';
+  }
+
+  spYes?.addEventListener('change', refreshSpGig);
+  spNo ?.addEventListener('change', refreshSpGig);
+  refreshSpGig();
+});
+</script>
+
 
 <!-- Shown only when sp_gig_income = yes -->
 <div id="sp-gig-expenses-block" style="display:none;">
@@ -6924,16 +8804,24 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     <div class="fi-group fi-float fi-span2">
       <textarea id="sp_gig_expenses_summary" name="sp_gig_expenses_summary" class="fi-input" rows="5" placeholder=" "></textarea>
     </div>
+
+    <p class="qs-help qs-help-alert" id="sp-gig-expenses-help" style="margin-top:12px;">
+    <strong>Tip:</strong> List the business-related costs your spouse paid during the year.
+    <br>
+    <strong>Examples:</strong> Fuel / gas, vehicle insurance, phone &amp; data plan, car finance / lease payments,
+    maintenance &amp; repairs, parking or tolls, car wash, delivery bags / supplies, accounting or app fees.
+    Include any other costs needed to earn this income.
+  </p>
   </div>
 
   <div class="qs-block" id="sp-hst-q-block">
     <label class="qs-label">File HST for spouse’s Uber/Skip/Lyft/Doordash? <span class="qs-note">*</span></label>
     <div class="yn-group">
       <input type="radio" id="sp_hst_yes" name="sp_gig_hst" value="yes">
-      <label for="sp_hst_yes" class="yn-btn outline">Yes</label>
+      <label for="sp_hst_yes" class="yn-btn">Yes</label>
 
-      <input type="radio" id="sp_hst_no" name="sp_gig_hst" value="no" checked>
-      <label for="sp_hst_no" class="yn-btn solid">No</label>
+      <input type="radio" id="sp_hst_no" name="sp_gig_hst" value="no">
+      <label for="sp_hst_no" class="yn-btn">No</label>
     </div>
   </div>
 
@@ -6959,6 +8847,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     </div>
   </div>
 </div>
+
                         
                         
 <!-- NEW: Rental Income (placeholder) -->
@@ -7182,7 +9071,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
           <input id="gig_tax_summary" name="gig_tax_summary[]" type="file" multiple style="display:none">
           <div class="dropzone-ui">
             <span>Drag files here or</span>
-            <button type="button" class="tax-btn" id="gig-browse">Browse</button>
+            <button type="button" class="tax-btn dz-browse" id="gig-browse">Browse</button>
           </div>
         </div>
         <div id="gig-files" class="dropzone-list"></div>
@@ -7192,17 +9081,18 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     <div class="qs-block">
       <h3 class="qs-label">ID Proof <span class="qs-note">*</span></h3>
       <p class="qs-help">In order to verify your identity, Please provide your ID proof. Examples: Driver license, passport.</p>
-      <div class="dropzone" data-input="#app_id_proof" data-list="#app_id_list">
+      <div class="dropzone" data-input="#app_id_proof" data-list="#app_id_list" data-required="true">
         <input id="app_id_proof" name="app_id_proof[]" type="file" multiple style="display:none">
         <div class="dropzone-ui">Drag files here or <button type="button" class="tax-btn dz-browse">Browse</button></div>
       </div>
       <div id="app_id_list" class="dropzone-list"></div>
     </div>
 
+
     <div class="qs-block">
       <h3 class="qs-label">T4 / T4A / T Slips</h3>
       <p class="qs-help">(If password-protected, include passwords in the message box.)</p>
-      <div class="dropzone" data-input="#app_tslips" data-list="#app_tslips_list">
+      <div class="dropzone" data-input="#app_tslips" data-list="#app_tslips_list" data-required="true">
         <input id="app_tslips" name="app_tslips[]" type="file" multiple style="display:none">
         <div class="dropzone-ui">Drag files here or <button type="button" class="tax-btn dz-browse">Browse</button></div>
       </div>
@@ -7212,7 +9102,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     <div class="qs-block">
       <h3 class="qs-label">T2202 (College Receipt)</h3>
       <p class="qs-help">Provide all T2202 college fee receipts if you want to claim credits.</p>
-      <div class="dropzone" data-input="#app_t2202_receipt" data-list="#app_t2202_receipt_list">
+      <div class="dropzone" data-input="#app_t2202_receipt" data-list="#app_t2202_receipt_list" data-required="true">
         <input id="app_t2202_receipt" name="app_t2202_receipt[]" type="file" multiple style="display:none">
         <div class="dropzone-ui">Drag files here or <button type="button" class="tax-btn dz-browse">Browse</button></div>
       </div>
@@ -7220,8 +9110,8 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     </div>
 
     <div class="qs-block">
-      <h3 class="qs-label">RRSP / FHSA / Investment Receipts</h3>
-      <div class="dropzone" data-input="#app_invest" data-list="#app_invest_list">
+      <h3 class="qs-label" style="margin-bottom: 24px;">RRSP / FHSA / Investment Receipts</h3>
+      <div class="dropzone" data-input="#app_invest" data-list="#app_invest_list" data-required="true">
         <input id="app_invest" name="app_invest[]" type="file" multiple style="display:none">
         <div class="dropzone-ui">Drag files here or <button type="button" class="tax-btn dz-browse">Browse</button></div>
       </div>
@@ -7229,8 +9119,8 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     </div>
 
     <div class="qs-block">
-      <h3 class="qs-label">Work from home / Employment expenses (T2200)</h3>
-      <div class="dropzone" data-input="#app_t2200_work" data-list="#app_t2200_work_list">
+      <h3 class="qs-label" style="margin-bottom: 24px;">Work from home / Employment expenses (T2200)</h3>
+      <div class="dropzone" data-input="#app_t2200_work" data-list="#app_t2200_work_list" data-required="true">
         <input id="app_t2200_work" name="app_t2200_work[]" type="file" multiple style="display:none">
         <div class="dropzone-ui">Drag files here or <button type="button" class="tax-btn dz-browse">Browse</button></div>
       </div>
@@ -7240,7 +9130,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     <div class="qs-block">
       <h3 class="qs-label">Summary of expenses</h3>
       <p class="qs-help">Expenses related to employment.</p>
-      <div class="dropzone" data-input="#app_exp_summary" data-list="#app_exp_summary_list">
+      <div class="dropzone" data-input="#app_exp_summary" data-list="#app_exp_summary_list" data-required="true">
         <input id="app_exp_summary" name="app_exp_summary[]" type="file" multiple style="display:none">
         <div class="dropzone-ui">Drag files here or <button type="button" class="tax-btn dz-browse">Browse</button></div>
       </div>
@@ -7250,7 +9140,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     <div class="qs-block">
       <h3 class="qs-label">Additional Documents</h3>
       <p class="qs-help">Anything not listed above.</p>
-      <div class="dropzone" data-input="#app_otherdocs" data-list="#app_otherdocs_list">
+      <div class="dropzone" data-input="#app_otherdocs" data-list="#app_otherdocs_list" data-required="true">
         <input id="app_otherdocs" name="app_otherdocs[]" type="file" multiple style="display:none">
         <div class="dropzone-ui">Drag files here or <button type="button" class="tax-btn dz-browse">Browse</button></div>
       </div>
@@ -7275,10 +9165,10 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
   <div class="qs-block">
     <label class="qs-label">Spouse – Add Self-employed Income <span class="qs-note">*</span></label>
     <div class="dropzone" id="sp-gig-drop">
-      <input id="sp_gig_tax_summary" name="sp_gig_tax_summary[]" type="file" multiple style="display:none">
+      <input id="sp_gig_tax_summary" name="sp_gig_tax_summary[]" type="file" multiple style="display:none" data-required="true">
       <div class="dropzone-ui">
         <span>Drag files here or</span>
-        <button type="button" class="tax-btn" id="sp-gig-browse">Browse</button>
+        <button type="button" class="tax-btn dz-browse" id="sp-gig-browse">Browse</button>
       </div>
     </div>
     <div id="sp-gig-files" class="dropzone-list"></div>
@@ -7289,7 +9179,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     <div class="qs-block">
       <h3 class="qs-label">ID Proof <span class="qs-note">*</span></h3>
       <p class="qs-help">Spouse ID (driver license, passport, etc.).</p>
-      <div class="dropzone" data-input="#sp_id_proof" data-list="#sp_id_list">
+      <div class="dropzone" data-input="#sp_id_proof" data-list="#sp_id_list" data-required="true">
         <input id="sp_id_proof" name="sp_id_proof[]" type="file" multiple style="display:none">
         <div class="dropzone-ui">Drag files here or <button type="button" class="tax-btn dz-browse">Browse</button></div>
       </div>
@@ -7297,8 +9187,8 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     </div>
 
     <div class="qs-block">
-      <h3 class="qs-label">RRSP / FHSA / Investment Receipts</h3>
-      <div class="dropzone" data-input="#sp_invest" data-list="#sp_invest_list">
+      <h3 class="qs-label" style="margin-bottom: 24px;">RRSP / FHSA / Investment Receipts</h3>
+      <div class="dropzone" data-input="#sp_invest" data-list="#sp_invest_list" data-required="true">
         <input id="sp_invest" name="sp_invest[]" type="file" multiple style="display:none">
         <div class="dropzone-ui">Drag files here or <button type="button" class="tax-btn dz-browse">Browse</button></div>
       </div>
@@ -7308,7 +9198,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     <div class="qs-block">
       <h3 class="qs-label">T2202 (College Receipt)</h3>
       <p class="qs-help">Provide spouse’s T2202 receipts if applicable.</p>
-      <div class="dropzone" data-input="#sp_t2202" data-list="#sp_t2202_list">
+      <div class="dropzone" data-input="#sp_t2202" data-list="#sp_t2202_list" data-required="true">
         <input id="sp_t2202" name="sp_t2202[]" type="file" multiple style="display:none">
         <div class="dropzone-ui">Drag files here or <button type="button" class="tax-btn dz-browse">Browse</button></div>
       </div>
@@ -7318,7 +9208,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     <div class="qs-block">
       <h3 class="qs-label">T4 / T4A / T Slips</h3>
       <p class="qs-help">(If password-protected, include passwords in the message box.)</p>
-      <div class="dropzone" data-input="#sp_tslips" data-list="#sp_tslips_list">
+      <div class="dropzone" data-input="#sp_tslips" data-list="#sp_tslips_list" data-required="true">
         <input id="sp_tslips" name="sp_tslips[]" type="file" multiple style="display:none">
         <div class="dropzone-ui">Drag files here or <button type="button" class="tax-btn dz-browse">Browse</button></div>
       </div>
@@ -7328,7 +9218,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     <div class="qs-block">
       <h3 class="qs-label">Additional Documents</h3>
       <p class="qs-help">Anything not listed above.</p>
-      <div class="dropzone" data-input="#sp_otherdocs" data-list="#sp_otherdocs_list">
+      <div class="dropzone" data-input="#sp_otherdocs" data-list="#sp_otherdocs_list" data-required="true">
         <input id="sp_otherdocs" name="sp_otherdocs[]" type="file" multiple style="display:none">
         <div class="dropzone-ui">Drag files here or <button type="button" class="tax-btn dz-browse">Browse</button></div>
       </div>
@@ -7380,7 +9270,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
   <dt class="pre-cond">Do you have children?</dt>
   <dd class="pre-cond"><span data-bind-radio="children" data-fallback="—"></span></dd>
 </dl>
-          <div class="rev-actions"><a href="#" class="rev-link" data-open="pre">Go to Pre-details</a></div>
+          <div class="rev-actions"><a href="#" class="rev-link" data-open="pre">Edit Pre-details</a></div>
         </div>
 
         <!-- PERSONAL -->
@@ -7433,7 +9323,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
   </dl>
 
   <div class="rev-actions">
-    <a href="#" class="rev-link" data-open="personal">Go to Personal</a>
+    <a href="#" class="rev-link" data-open="personal">Edit Personal</a>
   </div>
 </div>
 
@@ -7560,7 +9450,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
   </div>
 
   <div class="rev-actions">
-    <a href="#" class="rev-link" data-open="tax">Go to Tax Filing</a>
+    <a href="#" class="rev-link" data-open="tax">Edit Tax Filing</a>
   </div>
 </div>
 
@@ -7632,7 +9522,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     </dl>
   </div>
 
-  <div class="rev-actions"><a href="#" class="rev-link" data-open="spouse">Go to Spouse</a></div>
+  <div class="rev-actions"><a href="#" class="rev-link" data-open="spouse">Edit Spouse</a></div>
 </div>
 
 <!-- SPOUSE TAX (Review) -->
@@ -7704,7 +9594,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     </dl>
   </div>
 
-  <div class="rev-actions"><a href="#" class="rev-link" data-open="spouse-tax">Go to Spouse Tax</a></div>
+  <div class="rev-actions"><a href="#" class="rev-link" data-open="spouse-tax">Edit Spouse Tax</a></div>
 </div>
 
 
@@ -7736,7 +9626,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     </table>
   </div>
 
-  <div class="rev-actions"><a href="#" class="rev-link" data-open="children">Go to Children</a></div>
+  <div class="rev-actions"><a href="#" class="rev-link" data-open="children">Edit Children</a></div>
 </div>
 
 
@@ -7798,7 +9688,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     <tbody id="rev-props-list"></tbody>
   </table>
 
-  <div class="rev-actions"><a href="#" class="rev-link" data-open="other-income">Go to Other Income</a></div>
+  <div class="rev-actions"><a href="#" class="rev-link" data-open="other-income">Edit Other Income</a></div>
 </div>
 
 
@@ -7871,7 +9761,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
   </div>
 
   <div class="rev-actions">
-    <a href="#" class="rev-link" data-open="upload-self">Go to Applicant Uploads</a>
+    <a href="#" class="rev-link" data-open="upload-self">Edit Applicant Uploads</a>
   </div>
 </div>
 
@@ -7921,7 +9811,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
   </dl>
 
   <div class="rev-actions">
-    <a href="#" class="rev-link" data-open="upload-spouse">Go to Spouse Uploads</a>
+    <a href="#" class="rev-link" data-open="upload-spouse">Edit Spouse Uploads</a>
   </div>
 </div>
 
@@ -7948,15 +9838,78 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
 
               
                         
-<div class="pi-main" data-panel="confirm" hidden><p class="qs-lead">Confirmation (coming soon)</p>
-      
-         <!-- CTA -->
-   <div class="tax-cta tax-cta-row" style="margin-top:28px;">
-         <button type="button" class="tax-btn-secondary" data-goto="prev">Back</button>
-         <button type="button" class="continue-btn" data-goto="next">Continue</button>
-  </div>            
-                        
+<!-- CONFIRMATION PANEL -->
+<?php
+  // make sure this is lower-case like you wanted
+  // (set this earlier from your session/form)
+  // $greetname = $_SESSION['name'] ?? 'Guest';
+?>
+
+<div class="pi-main" data-panel="confirm" hidden>
+  <div class="confirm-card">
+    <div class="success-badge">
+      <svg viewBox="0 0 72 72" class="success-svg">
+        <circle class="ring" cx="36" cy="36" r="30" fill="none"></circle>
+        <path class="tick" d="M23 37.5 32 46 49 27" fill="none"></path>
+      </svg>
+    </div>
+
+    <h2 class="confirm-heading">
+      Hi <?php echo $greetName; ?>, thank you for filling out the form.
+    </h2>
+    <p class="confirm-sub">
+      We have received your personal details and the documents required for filing your taxes.
+    </p>
+    <p class="confirm-sub">
+      Our team will reach out to you shortly to process your tax returns.
+    </p>
+
+    <!-- the note goes here -->
+    <div class="qs-help">
+      <strong>Take note:</strong> Please check your junk/spam folder in case you haven’t
+      received communication from our team in the next couple of days.
+    </div>
+
+<div class="confirm-actions">
+  <a href="../" class="confirm-btn primary-btn">Home Page</a>
+
+  <?php if (!isset($_SESSION['email'])): ?>
+    <a href="../auth/" class="confirm-btn ghost-btn">
+      <span class="icon-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+          <polyline points="10 17 15 12 10 7"></polyline>
+          <line x1="15" y1="12" x2="3" y2="12"></line>
+        </svg>
+      </span>
+      Sign In
+    </a>
+  <?php else: ?>
+    <a href="../auth/logout.php" class="confirm-btn ghost-btn">
+      <span class="icon-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+      </span>
+      Sign Out
+    </a>
+  <?php endif; ?>
 </div>
+
+
+    <div class="confirm-contact">
+      <p>Want to contact?</p>
+      <p>Send Email: <a href="mailto:info@paragonafs.ca">info@paragonafs.ca</a></p>
+      <p>Call Us: 416-477-3359</p>
+    </div>
+  </div>
+</div>
+
+
+
+
 
     </div><!-- /pi-stage -->
   </section>
@@ -8096,8 +10049,14 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
       li.innerHTML = `
         <div class="prop-head">
           <div class="prop-title">${p.title}</div>
-          <a href="#" class="prop-toggle-link" aria-expanded="false" aria-controls="prop-exp-${idx}">Expenses</a>
-        </div>
+<a href="#"
+       class="prop-toggle-link"
+       aria-expanded="false"
+       aria-controls="prop-exp-${idx}">
+      Expenses
+    </a>
+    
+    </div>
 
         <div class="prop-meta">
           <span class="chip"><b>Start–End:</b> ${p.start} – ${p.end}</span>
@@ -8108,14 +10067,34 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
           <span class="chip"><b>Owner:</b> ${p.owner}</span>
         </div>
 
-        <div class="prop-exp" id="prop-exp-${idx}" hidden>
-          <table>
-            <tr><td>Mortgage Interest</td><td>${p.exp.mortgage}</td><td>Insurance</td><td>${p.exp.insurance}</td></tr>
-            <tr><td>Repairs & Maintenance</td><td>${p.exp.repairs}</td><td>Utilities</td><td>${p.exp.utilities}</td></tr>
-            <tr><td>Internet</td><td>${p.exp.internet}</td><td>Property Tax</td><td>${p.exp.propertytx}</td></tr>
-            <tr><td>Other</td><td>${p.exp.other}</td><td></td><td></td></tr>
-          </table>
-        </div>`;
+       <div class="prop-exp" id="prop-exp-${idx}" hidden>
+  <table>
+    <tr>
+      <td>Mortgage Interest</td>
+      <td>$${p.exp.mortgage} CAD</td>
+      <td>Insurance</td>
+      <td>$${p.exp.insurance} CAD</td>
+    </tr>
+    <tr>
+      <td>Repairs & Maintenance</td>
+      <td>$${p.exp.repairs} CAD</td>
+      <td>Utilities</td>
+      <td>$${p.exp.utilities} CAD</td>
+    </tr>
+    <tr>
+      <td>Internet</td>
+      <td>$${p.exp.internet} CAD</td>
+      <td>Property Tax</td>
+      <td>$${p.exp.propertytx} CAD</td>
+    </tr>
+    <tr>
+      <td>Other</td>
+      <td>$${p.exp.other} CAD</td>
+      <td></td>
+      <td></td>
+    </tr>
+  </table>
+</div>`;
       list.appendChild(li);
     });
   }
@@ -8674,6 +10653,122 @@ function ensureBackButton(panelEl){
 
 </script>
 
+<!-- YES 1 A -->
+
+<script>
+(function(){
+  // helper to get current marital status from either select or radios
+  function getCurrentStatus(){
+    const sel = document.getElementById('marital_status_select');
+    if (sel && sel.value) return sel.value;
+    const r = document.querySelector('input[name="marital_status"]:checked');
+    return r ? r.value : '';
+  }
+
+  // helpers for radio groups
+  function getRadioValue(name){
+    const r = document.querySelector('input[name="'+name+'"]:checked');
+    return r ? r.value : '';
+  }
+  function clearRadioGroup(name){
+    document.querySelectorAll('input[name="'+name+'"]').forEach(r => {
+      r.checked = false;
+    });
+  }
+  function setRadioValue(name, val){
+    if (!val) {
+      clearRadioGroup(name);
+      return;
+    }
+    const r = document.querySelector('input[name="'+name+'"][value="'+val+'"]');
+    if (r) r.checked = true;
+  }
+
+  // this will remember answers per marital status
+  const statusMemory = {}; 
+  // fields we want to remember/restore
+  const dependentFields = ['spouse_in_canada', 'spouseFile', 'children'];
+
+  let lastStatus = getCurrentStatus();
+
+  function saveCurrentStatusAnswers(){
+    if (!lastStatus) return;
+    const saved = {};
+    dependentFields.forEach(f => {
+      saved[f] = getRadioValue(f);   // '' if none
+    });
+    statusMemory[lastStatus] = saved;
+  }
+
+  function restoreStatusAnswers(newStatus){
+    const saved = statusMemory[newStatus];
+    dependentFields.forEach(f => {
+      if (saved && saved[f]) {
+        // restore previous choice for that status
+        setRadioValue(f, saved[f]);
+      } else {
+        // no previous answer for this status → neutral
+        clearRadioGroup(f);
+      }
+    });
+  }
+
+  // show/hide children block depending on status
+  function updateChildrenVisibility(status){
+    const cb = document.getElementById('children-block');
+    if (!cb) return;
+    // your rule: Married + Common Law show it
+    if (status === 'Married' || status === 'Common Law') {
+      cb.style.display = '';
+    } else {
+      cb.style.display = 'none';
+      // when hidden we can keep it stored in memory anyway
+    }
+  }
+
+  // hook: select change
+  const sel = document.getElementById('marital_status_select');
+  if (sel){
+    sel.addEventListener('change', function(){
+      // 1) save answers of previous status
+      saveCurrentStatusAnswers();
+
+      // 2) new status
+      const newStatus = sel.value;
+      lastStatus = newStatus;
+
+      // 3) restore answers (or clear to neutral)
+      restoreStatusAnswers(newStatus);
+
+      // 4) show/hide children
+      updateChildrenVisibility(newStatus);
+    });
+  }
+
+  // hook: if you also let them click the radio version of marital status
+  document.querySelectorAll('input[name="marital_status"]').forEach(ms => {
+    ms.addEventListener('change', function(){
+      // keep select in sync
+      if (sel) sel.value = this.value;
+
+      saveCurrentStatusAnswers();
+
+      const newStatus = this.value;
+      lastStatus = newStatus;
+
+      restoreStatusAnswers(newStatus);
+      updateChildrenVisibility(newStatus);
+    });
+  });
+
+  // init on load
+  const initStatus = getCurrentStatus();
+  if (initStatus){
+    lastStatus = initStatus;
+    updateChildrenVisibility(initStatus);
+  }
+})();
+</script>
 
 <!-- YES MOBILE 1 -->
 
@@ -9569,36 +11664,53 @@ document.addEventListener('DOMContentLoaded', function () {
                         
  <script>
 document.addEventListener('DOMContentLoaded', function(){
-  const ftYes = document.getElementById('first_yes');
-  const ftNo  = document.getElementById('first_no');
-  const prior = document.getElementById('prior-customer-section'); // BRANCH A
-  const first = document.getElementById('firsttime-details');      // BRANCH B
+  const ftYes  = document.getElementById('first_yes');
+  const ftNo   = document.getElementById('first_no');
+  const prior  = document.getElementById('prior-customer-section');
+  const first  = document.getElementById('firsttime-details');
 
-  function flip(section, on){
-    section.classList.toggle('is-hidden', !on);
-    section.setAttribute('aria-hidden', String(!on));
-    section.querySelectorAll('input, select, textarea').forEach(el=>{
-      if(!on){
-        if(el.required) el.dataset.wasRequired = '1';
+  function toggleSection(section, show){
+    if (!section) return;
+    section.classList.toggle('is-hidden', !show);
+    section.setAttribute('aria-hidden', String(!show));
+
+    // enable/disable inner inputs + restore required
+    section.querySelectorAll('input, select, textarea').forEach(el => {
+      if (!show) {
+        if (el.required) el.dataset.wasRequired = '1';
         el.required = false;
         el.disabled = true;
-      }else{
+      } else {
         el.disabled = false;
-        if(el.dataset.wasRequired === '1') el.required = true;
+        if (el.dataset.wasRequired === '1') el.required = true;
       }
     });
   }
 
   function sync(){
-    const firstTime = ftYes.checked;   // YES => show first-time details; hide prior-customer
-    flip(first,  firstTime);
-    flip(prior, !firstTime);
+    const pickedYes = ftYes.checked;
+    const pickedNo  = ftNo.checked;
+
+    // nothing picked -> hide both
+    if (!pickedYes && !pickedNo) {
+      toggleSection(first, false);
+      toggleSection(prior, false);
+      return;
+    }
+
+    if (pickedYes) {
+      toggleSection(first, true);
+      toggleSection(prior, false);
+    } else if (pickedNo) {
+      toggleSection(first, false);
+      toggleSection(prior, true);
+    }
   }
 
   ftYes.addEventListener('change', sync);
   ftNo.addEventListener('change', sync);
 
-  // initialize (respects saved PHP value)
+  // initial load: respect saved value if any, else hide both
   sync();
 });
 </script>
@@ -13394,363 +15506,397 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 <script>
-(function(){
-  function setOffsets(){
-    const header = document.querySelector('.mini-header') || document.querySelector('header');
-    const bar = document.getElementById('pi-mobilebar');
-    const hh = header ? header.offsetHeight : 90;
-    const bh = bar ? bar.offsetHeight : 56;
-    document.documentElement.style.setProperty('--mh-h', hh + 'px');
-    document.documentElement.style.setProperty('--bar-h', bh + 'px');
-    document.documentElement.style.setProperty('--mb-top', (hh + bh) + 'px');
-  }
-  setOffsets();
-  window.addEventListener('load', setOffsets);
-  window.addEventListener('resize', setOffsets);
-})();
+  (function(){
+    function setOffsets(){
+      const header = document.querySelector('.mini-header') || document.querySelector('header');
+      const bar = document.getElementById('pi-mobilebar');
+      const hh = header ? header.offsetHeight : 90;
+      const bh = bar ? bar.offsetHeight : 56;
+      document.documentElement.style.setProperty('--mh-h', hh + 'px');
+      document.documentElement.style.setProperty('--bar-h', bh + 'px');
+      document.documentElement.style.setProperty('--mb-top', (hh + bh) + 'px');
+    }
+    setOffsets();
+    window.addEventListener('load', setOffsets);
+    window.addEventListener('resize', setOffsets);
+  })();
 </script>
 
 <script>
-(function(){
-  const dl = document.getElementById('country-list');
-  const inputs = document.querySelectorAll('input[list="country-list"]');
+  (function(){
+    const dl = document.getElementById('country-list');
+    const inputs = document.querySelectorAll('input[list="country-list"]');
 
-  // Fallback list (used if API fails or offline)
-  const FALLBACK_COUNTRIES = [
-    "Canada","United States","Philippines","United Kingdom","Australia","New Zealand",
-    "India","Singapore","Malaysia","Indonesia","Thailand","Vietnam","Japan","South Korea",
-    "China","Hong Kong","Taiwan","United Arab Emirates","Saudi Arabia","Qatar",
-    "Mexico","Brazil","Argentina","Chile","Colombia","Peru","Spain","France","Germany",
-    "Italy","Netherlands","Belgium","Sweden","Norway","Denmark","Finland","Ireland",
-    "Switzerland","Austria","Portugal","Greece","Turkey","South Africa","Kenya","Nigeria",
-    "Egypt","Morocco"
-  ];
+    // Fallback list (used if API fails or offline)
+    const FALLBACK_COUNTRIES = [
+      "Canada","United States","Philippines","United Kingdom","Australia","New Zealand",
+      "India","Singapore","Malaysia","Indonesia","Thailand","Vietnam","Japan","South Korea",
+      "China","Hong Kong","Taiwan","United Arab Emirates","Saudi Arabia","Qatar",
+      "Mexico","Brazil","Argentina","Chile","Colombia","Peru","Spain","France","Germany",
+      "Italy","Netherlands","Belgium","Sweden","Norway","Denmark","Finland","Ireland",
+      "Switzerland","Austria","Portugal","Greece","Turkey","South Africa","Kenya","Nigeria",
+      "Egypt","Morocco"
+    ];
 
-  // Fill datalist options
-  function populate(list){
-    if (!dl) return;
-    const frag = document.createDocumentFragment();
-    list.forEach(name => {
-      const opt = document.createElement('option');
-      opt.value = name;
-      frag.appendChild(opt);
-    });
-    dl.innerHTML = "";
-    dl.appendChild(frag);
-  }
-
-  // Fetch countries from REST Countries API
-  async function loadCountries(){
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500); // 3.5s timeout
-    try{
-      const res = await fetch('https://restcountries.com/v3.1/all?fields=name', { signal: controller.signal });
-      clearTimeout(timeout);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      const names = data
-        .map(c => c?.name?.common)
-        .filter(Boolean)
-        .sort((a,b)=> a.localeCompare(b));
-
-      // Pin some common countries to the top
-      const pinned = ["Canada","United States","Philippines","United Kingdom","Australia"];
-      const pinSet = new Set(pinned);
-      const top = names.filter(n => pinSet.has(n));
-      const rest = names.filter(n => !pinSet.has(n));
-      populate([...top, ...rest]);
-    } catch(e){
-      // Fallback if API fails
-      populate(FALLBACK_COUNTRIES.sort((a,b)=> a.localeCompare(b)));
+    // Fill datalist options
+    function populate(list){
+      if (!dl) return;
+      const frag = document.createDocumentFragment();
+      list.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        frag.appendChild(opt);
+      });
+      dl.innerHTML = "";
+      dl.appendChild(frag);
     }
-  }
 
-  // Initialize
-  if (dl) loadCountries();
+    // Fetch countries from REST Countries API
+    async function loadCountries(){
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3500); // 3.5s timeout
+      try{
+        const res = await fetch('https://restcountries.com/v3.1/all?fields=name', { signal: controller.signal });
+        clearTimeout(timeout);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        const names = data
+          .map(c => c?.name?.common)
+          .filter(Boolean)
+          .sort((a,b)=> a.localeCompare(b));
 
-  // Optional: light validation (warns if typed country not in list)
-  inputs.forEach(input => {
-    input.addEventListener('change', ()=>{
-      const val = (input.value || '').trim();
-      const options = Array.from(dl?.options || []).map(o => o.value);
-      if (val && !options.includes(val)){
-        // optional: show a small hint or toast here
-        // console.warn('Unknown country:', val);
+        // Pin some common countries to the top
+        const pinned = ["Canada","United States","Philippines","United Kingdom","Australia"];
+        const pinSet = new Set(pinned);
+        const top = names.filter(n => pinSet.has(n));
+        const rest = names.filter(n => !pinSet.has(n));
+        populate([...top, ...rest]);
+      } catch(e){
+        // Fallback if API fails
+        populate(FALLBACK_COUNTRIES.sort((a,b)=> a.localeCompare(b)));
+      }
+    }
+
+    // Initialize
+    if (dl) loadCountries();
+
+    // Optional: light validation (warns if typed country not in list)
+    inputs.forEach(input => {
+      input.addEventListener('change', ()=>{
+        const val = (input.value || '').trim();
+        const options = Array.from(dl?.options || []).map(o => o.value);
+        if (val && !options.includes(val)){
+          // optional: show a small hint or toast here
+          // console.warn('Unknown country:', val);
+        }
+      });
+    });
+  })();
+</script>
+
+
+<script>
+  (function(){
+    // Normalize strings for safe comparisons
+    function norm(s){
+      return (s ?? "").toString().trim().toLowerCase();
+    }
+
+    // Ensure a <select> reflects a default value if provided in data-value
+    function applyDataValue(sel){
+      const dv = sel.getAttribute('data-value');
+      if (dv && !sel.value) {
+        sel.value = dv;
+      }
+    }
+
+    // Disable matching option in the opposite select
+    function syncPair(selA, selB){
+      if (!selA || !selB) return;
+
+      // If the form (or PHP) uses data-value, apply it first
+      applyDataValue(selA);
+      applyDataValue(selB);
+
+      const aVal = norm(selA.value);
+      const bVal = norm(selB.value);
+
+      // Re-enable everything first (except placeholder)
+      Array.from(selA.options).forEach(opt => { if (norm(opt.value) !== "") opt.disabled = false; });
+      Array.from(selB.options).forEach(opt => { if (norm(opt.value) !== "") opt.disabled = false; });
+
+      // Disable A's value in B
+      if (aVal){
+        Array.from(selB.options).forEach(opt => {
+          const ov = norm(opt.value || opt.text);
+          if (ov === aVal) opt.disabled = true;
+        });
+      }
+
+      // Disable B's value in A
+      if (bVal){
+        Array.from(selA.options).forEach(opt => {
+          const ov = norm(opt.value || opt.text);
+          if (ov === bVal) opt.disabled = true;
+        });
+      }
+
+      // If a now-disabled option is currently selected, clear it
+      if (selA.selectedOptions[0] && selA.selectedOptions[0].disabled){
+        selA.value = "";
+      }
+      if (selB.selectedOptions[0] && selB.selectedOptions[0].disabled){
+        selB.value = "";
+      }
+    }
+
+    // Wire a pair with change + programmatic updates
+    function linkPair(idFrom, idTo){
+      const selFrom = document.getElementById(idFrom);
+      const selTo   = document.getElementById(idTo);
+      if (!selFrom || !selTo) return;
+
+      const sync = () => syncPair(selFrom, selTo);
+
+      // Initial sync
+      sync();
+
+      // User changes
+      selFrom.addEventListener('change', sync);
+      selTo  .addEventListener('change',  sync);
+
+      // In case values are set later by other scripts
+      let lastAF = selFrom.value, lastBT = selTo.value;
+      setInterval(() => {
+        if (selFrom.value !== lastAF || selTo.value !== lastBT){
+          lastAF = selFrom.value; lastBT = selTo.value;
+          sync();
+        }
+      }, 250);
+    }
+
+    // Applicant
+    linkPair('prov_from','prov_to');
+    // Spouse
+    linkPair('sp_prov_from','sp_prov_to');
+  })();
+</script>
+
+<script>
+  (function(){
+    const ids = ['prov_from','prov_to','sp_prov_from','sp_prov_to'];
+    ids.forEach(id=>{
+      const sel = document.getElementById(id);
+      if (!sel) return;
+
+      // if it was hidden by xsel, make it visible
+      sel.classList.remove('xsel-native');
+
+      // if it sits inside an .xsel-wrap from earlier, unwrap it
+      const wrap = sel.closest('.xsel-wrap');
+      if (wrap) {
+        wrap.parentNode.insertBefore(sel, wrap);
+        wrap.remove();
       }
     });
-  });
-})();
-</script>
-
-
-<script>
-(function(){
-  // Normalize strings for safe comparisons
-  function norm(s){
-    return (s ?? "").toString().trim().toLowerCase();
-  }
-
-  // Ensure a <select> reflects a default value if provided in data-value
-  function applyDataValue(sel){
-    const dv = sel.getAttribute('data-value');
-    if (dv && !sel.value) {
-      sel.value = dv;
-    }
-  }
-
-  // Disable matching option in the opposite select
-  function syncPair(selA, selB){
-    if (!selA || !selB) return;
-
-    // If the form (or PHP) uses data-value, apply it first
-    applyDataValue(selA);
-    applyDataValue(selB);
-
-    const aVal = norm(selA.value);
-    const bVal = norm(selB.value);
-
-    // Re-enable everything first (except placeholder)
-    Array.from(selA.options).forEach(opt => { if (norm(opt.value) !== "") opt.disabled = false; });
-    Array.from(selB.options).forEach(opt => { if (norm(opt.value) !== "") opt.disabled = false; });
-
-    // Disable A's value in B
-    if (aVal){
-      Array.from(selB.options).forEach(opt => {
-        const ov = norm(opt.value || opt.text);
-        if (ov === aVal) opt.disabled = true;
-      });
-    }
-
-    // Disable B's value in A
-    if (bVal){
-      Array.from(selA.options).forEach(opt => {
-        const ov = norm(opt.value || opt.text);
-        if (ov === bVal) opt.disabled = true;
-      });
-    }
-
-    // If a now-disabled option is currently selected, clear it
-    if (selA.selectedOptions[0] && selA.selectedOptions[0].disabled){
-      selA.value = "";
-    }
-    if (selB.selectedOptions[0] && selB.selectedOptions[0].disabled){
-      selB.value = "";
-    }
-  }
-
-  // Wire a pair with change + programmatic updates
-  function linkPair(idFrom, idTo){
-    const selFrom = document.getElementById(idFrom);
-    const selTo   = document.getElementById(idTo);
-    if (!selFrom || !selTo) return;
-
-    const sync = () => syncPair(selFrom, selTo);
-
-    // Initial sync
-    sync();
-
-    // User changes
-    selFrom.addEventListener('change', sync);
-    selTo  .addEventListener('change',  sync);
-
-    // In case values are set later by other scripts
-    let lastAF = selFrom.value, lastBT = selTo.value;
-    setInterval(() => {
-      if (selFrom.value !== lastAF || selTo.value !== lastBT){
-        lastAF = selFrom.value; lastBT = selTo.value;
-        sync();
-      }
-    }, 250);
-  }
-
-  // Applicant
-  linkPair('prov_from','prov_to');
-  // Spouse
-  linkPair('sp_prov_from','sp_prov_to');
-})();
-</script>
-
-<script>
-(function(){
-  const ids = ['prov_from','prov_to','sp_prov_from','sp_prov_to'];
-  ids.forEach(id=>{
-    const sel = document.getElementById(id);
-    if (!sel) return;
-
-    // if it was hidden by xsel, make it visible
-    sel.classList.remove('xsel-native');
-
-    // if it sits inside an .xsel-wrap from earlier, unwrap it
-    const wrap = sel.closest('.xsel-wrap');
-    if (wrap) {
-      wrap.parentNode.insertBefore(sel, wrap);
-      wrap.remove();
-    }
-  });
-})();
+  })();
 </script>
 
 <!-- OVERRIDE: review-jump shows ONLY “Back to Review” -->
 <script>
-(function(){
-  if (window.__REV_ONLY_BACK) return; window.__REV_ONLY_BACK = true;
+  (function(){
+    if (window.__REV_ONLY_BACK) return; window.__REV_ONLY_BACK = true;
 
-  /* ---------- CSS: in review-jump, show only Back to Review ---------- */
-  (function injectOnlyBackCSS(){
-    const css = `
-      /* Hide ALL native nav CTAs when opened from Review */
-      .pi-main[data-review-jump="1"] .tax-cta [data-goto="next"],
-      .pi-main[data-review-jump="1"] .tax-cta [data-goto="prev"],
-      .pi-main[data-review-jump="1"] .tax-cta [data-goto="welcome"],
-      .pi-main[data-review-jump="1"] .tax-cta .continue-btn { display:none !important; }
+    /* ---------- CSS: in review-jump, show only Back to Review ---------- */
+    (function injectOnlyBackCSS(){
+      const css = `
+        /* Hide ALL native nav CTAs when opened from Review */
+        .pi-main[data-review-jump="1"] .tax-cta [data-goto="next"],
+        .pi-main[data-review-jump="1"] .tax-cta [data-goto="prev"],
+        .pi-main[data-review-jump="1"] .tax-cta [data-goto="welcome"],
+        .pi-main[data-review-jump="1"] .tax-cta .continue-btn { display:none !important; }
 
-      /* Back-to-Review only visible in review-jump */
-      .pi-main .tax-cta .review-back { display:none; }
-      .pi-main[data-review-jump="1"] .tax-cta .review-back { display:inline-flex !important; }
-    `;
-    const s = document.createElement('style'); s.textContent = css; document.head.appendChild(s);
-  })();
+        /* Back-to-Review only visible in review-jump */
+        .pi-main .tax-cta .review-back { display:none; }
+        .pi-main[data-review-jump="1"] .tax-cta .review-back { display:inline-flex !important; }
+      `;
+      const s = document.createElement('style'); s.textContent = css; document.head.appendChild(s);
+    })();
 
-  /* ---------- Helpers to hide/restore native CTAs (defensive) ---------- */
-  function hideNativeCTAs(scope){
-    (scope||document).querySelectorAll('.tax-cta [data-goto="next"], .tax-cta [data-goto="prev"], .tax-cta [data-goto="welcome"], .tax-cta .continue-btn')
-      .forEach(el=>{
-        if (el.dataset._savedDisplay === undefined) el.dataset._savedDisplay = el.style.display || '';
-        el.style.display = 'none';
+    /* ---------- Helpers to hide/restore native CTAs (defensive) ---------- */
+    function hideNativeCTAs(scope){
+      (scope||document).querySelectorAll('.tax-cta [data-goto="next"], .tax-cta [data-goto="prev"], .tax-cta [data-goto="welcome"], .tax-cta .continue-btn')
+        .forEach(el=>{
+          if (el.dataset._savedDisplay === undefined) el.dataset._savedDisplay = el.style.display || '';
+          el.style.display = 'none';
+        });
+    }
+    function restoreNativeCTAs(scope){
+      (scope||document).querySelectorAll('.tax-cta [data-goto="next"], .tax-cta [data-goto="prev"], .tax-cta [data-goto="welcome"], .tax-cta .continue-btn')
+        .forEach(el=>{
+          if (el.dataset._savedDisplay !== undefined){
+            el.style.display = el.dataset._savedDisplay;
+            delete el.dataset._savedDisplay;
+          }
+        });
+    }
+
+    /* ---------- Create the single Back-to-Review button ---------- */
+    function ensureBackButton(panelEl){
+    const cta = panelEl.querySelector('.tax-cta') || panelEl;
+    let back = cta.querySelector('.review-back');
+    if (!back){
+      back = document.createElement('button');
+      back.type = 'button';
+      back.className = 'tax-btn-secondary review-back';
+      back.textContent = 'Back to Review';
+      cta.appendChild(back);
+      back.addEventListener('click', ()=>{
+
+        // leave review-jump and clean up buttons
+        document.querySelectorAll('.pi-main[data-review-jump="1"]').forEach(p=>p.removeAttribute('data-review-jump'));
+        document.querySelectorAll('.review-back').forEach(b=>b.remove());
+
+        // show Review panel
+        document.querySelectorAll('.pi-main').forEach(p=> p.hidden = true);
+        const rev = document.querySelector('.pi-main[data-panel="review"]');
+        if (rev) rev.hidden = false;
+
+        // keep sidebar in sync
+        window.App?.updateProgress?.('review');
+
+        // 🔧 tell the mobile header we’re on "review"
+        document.dispatchEvent(new CustomEvent('pi:panel-changed', { detail: { panel: 'review' } }));
+
+        window.scrollTo({top:0, behavior:'smooth'});
       });
-  }
-  function restoreNativeCTAs(scope){
-    (scope||document).querySelectorAll('.tax-cta [data-goto="next"], .tax-cta [data-goto="prev"], .tax-cta [data-goto="welcome"], .tax-cta .continue-btn')
-      .forEach(el=>{
-        if (el.dataset._savedDisplay !== undefined){
-          el.style.display = el.dataset._savedDisplay;
-          delete el.dataset._savedDisplay;
-        }
-      });
-  }
-
-  /* ---------- Create the single Back-to-Review button ---------- */
-  function ensureBackButton(panelEl){
-  const cta = panelEl.querySelector('.tax-cta') || panelEl;
-  let back = cta.querySelector('.review-back');
-  if (!back){
-    back = document.createElement('button');
-    back.type = 'button';
-    back.className = 'tax-btn-secondary review-back';
-    back.textContent = 'Back to Review';
-    cta.appendChild(back);
-    back.addEventListener('click', ()=>{
-
-      // leave review-jump and clean up buttons
-      document.querySelectorAll('.pi-main[data-review-jump="1"]').forEach(p=>p.removeAttribute('data-review-jump'));
-      document.querySelectorAll('.review-back').forEach(b=>b.remove());
-
-      // show Review panel
-      document.querySelectorAll('.pi-main').forEach(p=> p.hidden = true);
-      const rev = document.querySelector('.pi-main[data-panel="review"]');
-      if (rev) rev.hidden = false;
-
-      // keep sidebar in sync
-      window.App?.updateProgress?.('review');
-
-      // 🔧 tell the mobile header we’re on "review"
-      document.dispatchEvent(new CustomEvent('pi:panel-changed', { detail: { panel: 'review' } }));
-
-      window.scrollTo({top:0, behavior:'smooth'});
-    });
-  } else {
-    back.style.display = '';
-  }
-}
-
-  /* ---------- Public hook used by Review “Go to …” links ---------- */
-  window.enterReviewJumpMode = function(panelEl){
-    if (!panelEl){
-      panelEl = document.querySelector('.pi-main[data-panel]:not([hidden])');
-    }
-    if (!panelEl) return;
-    panelEl.setAttribute('data-review-jump','1');
-    ensureBackButton(panelEl);
-  };
-
-  /* ---------- Wire Review links ---------- */
-  document.addEventListener('click', (e)=>{
-    const a = e.target.closest('.rev-link[data-open]');
-    if (!a) return;
-    e.preventDefault();
-
-    let step = a.getAttribute('data-open');
-
-    // smart route legacy "upload" to split pages if present
-    if (step === 'upload'){
-      const hasSplit = document.querySelector('.pi-main[data-panel="upload-self"], .pi-main[data-panel="upload-spouse"]');
-      if (hasSplit){
-        let spouseFiles = false;
-        try { spouseFiles = !!window.App?.flags()?.spouseFiles; } catch(e){}
-        step = spouseFiles ? 'upload-spouse' : 'upload-self';
-      }
-    }
-
-    if (step === 'pre' && window.App?.goToWelcome){
-      window.App.goToWelcome();
-      window.App.updateProgress?.('personal');
-      return;
-    }
-
-    if (window.App?.goToFormAndShow){
-      window.App.goToFormAndShow(step);
     } else {
-      document.querySelectorAll('.pi-main[data-panel]').forEach(p=> p.hidden = (p.dataset.panel !== step));
+      back.style.display = '';
     }
-
-    const panelEl = document.querySelector(`.pi-main[data-panel="${step}"]`);
-    if (panelEl){
-      window.enterReviewJumpMode(panelEl);
-      window.scrollTo({top:0, behavior:'smooth'});
-    }
-  }, true);
-
-  /* ---------- Clean up review-jump if user navigates via sidebar/mobile ---------- */
-  function leaveReviewJumpEverywhere(){
-    document.querySelectorAll('.review-back').forEach(b=>b.remove());
-    document.querySelectorAll('.pi-main[data-review-jump="1"]').forEach(p=>p.removeAttribute('data-review-jump'));
-    restoreNativeCTAs(document);
   }
-  document.querySelector('.pi-steps')?.addEventListener('click', leaveReviewJumpEverywhere);
-  document.addEventListener('click', (e)=>{
-    if (e.target.closest('.pi-mb-link, #pi-mb-back')) leaveReviewJumpEverywhere();
-  });
 
-})();
+    /* ---------- Public hook used by Review “Go to …” links ---------- */
+    window.enterReviewJumpMode = function(panelEl){
+      if (!panelEl){
+        panelEl = document.querySelector('.pi-main[data-panel]:not([hidden])');
+      }
+      if (!panelEl) return;
+      panelEl.setAttribute('data-review-jump','1');
+      ensureBackButton(panelEl);
+    };
+
+    /* ---------- Wire Review links ---------- */
+    document.addEventListener('click', (e)=>{
+      const a = e.target.closest('.rev-link[data-open]');
+      if (!a) return;
+      e.preventDefault();
+
+      let step = a.getAttribute('data-open');
+
+      // smart route legacy "upload" to split pages if present
+      if (step === 'upload'){
+        const hasSplit = document.querySelector('.pi-main[data-panel="upload-self"], .pi-main[data-panel="upload-spouse"]');
+        if (hasSplit){
+          let spouseFiles = false;
+          try { spouseFiles = !!window.App?.flags()?.spouseFiles; } catch(e){}
+          step = spouseFiles ? 'upload-spouse' : 'upload-self';
+        }
+      }
+
+      if (step === 'pre' && window.App?.goToWelcome){
+        window.App.goToWelcome();
+        window.App.updateProgress?.('personal');
+        return;
+      }
+
+      if (window.App?.goToFormAndShow){
+        window.App.goToFormAndShow(step);
+      } else {
+        document.querySelectorAll('.pi-main[data-panel]').forEach(p=> p.hidden = (p.dataset.panel !== step));
+      }
+
+      const panelEl = document.querySelector(`.pi-main[data-panel="${step}"]`);
+      if (panelEl){
+        window.enterReviewJumpMode(panelEl);
+        window.scrollTo({top:0, behavior:'smooth'});
+      }
+    }, true);
+
+    /* ---------- Clean up review-jump if user navigates via sidebar/mobile ---------- */
+    function leaveReviewJumpEverywhere(){
+      document.querySelectorAll('.review-back').forEach(b=>b.remove());
+      document.querySelectorAll('.pi-main[data-review-jump="1"]').forEach(p=>p.removeAttribute('data-review-jump'));
+      restoreNativeCTAs(document);
+    }
+    document.querySelector('.pi-steps')?.addEventListener('click', leaveReviewJumpEverywhere);
+    document.addEventListener('click', (e)=>{
+      if (e.target.closest('.pi-mb-link, #pi-mb-back')) leaveReviewJumpEverywhere();
+    });
+
+  })();
 </script>
 
 <script id="pi-mobilebar-offset-js">
-(function(){
-  function headerEl(){
-    // CHANGE selectors if your header has a different class
-    return document.querySelector('.mini-header') || document.querySelector('header');
-  }
-  function setHeaderOffset(){
-    var h = headerEl() ? Math.round(headerEl().getBoundingClientRect().height) : 0;
-    document.documentElement.style.setProperty('--pi-header-offset', h + 'px');
-  }
+  (function(){
+    function headerEl(){
+      // CHANGE selectors if your header has a different class
+      return document.querySelector('.mini-header') || document.querySelector('header');
+    }
+    function setHeaderOffset(){
+      var h = headerEl() ? Math.round(headerEl().getBoundingClientRect().height) : 0;
+      document.documentElement.style.setProperty('--pi-header-offset', h + 'px');
+    }
 
-  setHeaderOffset();
-  window.addEventListener('resize', setHeaderOffset);
-
-  // Recalculate & close the drawer when crossing the breakpoint
-  var mq = window.matchMedia('(max-width: 959px)');
-  function onMQChange(){
     setHeaderOffset();
-    var drawer = document.getElementById('pi-mb-drawer');
-    var toggle = document.getElementById('pi-mb-toggle');
-    if (drawer) drawer.hidden = true;
-    if (toggle) toggle.setAttribute('aria-expanded','false');
+    window.addEventListener('resize', setHeaderOffset);
+
+    // Recalculate & close the drawer when crossing the breakpoint
+    var mq = window.matchMedia('(max-width: 959px)');
+    function onMQChange(){
+      setHeaderOffset();
+      var drawer = document.getElementById('pi-mb-drawer');
+      var toggle = document.getElementById('pi-mb-toggle');
+      if (drawer) drawer.hidden = true;
+      if (toggle) toggle.setAttribute('aria-expanded','false');
+    }
+    if (mq.addEventListener) mq.addEventListener('change', onMQChange);
+    else mq.addListener(onMQChange); // older Safari
+  })();
+</script>
+
+<script>
+(function(){
+  const root   = document.documentElement;
+  const header = document.querySelector('.mini-header') || document.querySelector('header');
+  let headerH  = header ? header.offsetHeight : 0;
+
+  function measureHeader(){
+    headerH = header ? header.offsetHeight : 0;
   }
-  if (mq.addEventListener) mq.addEventListener('change', onMQChange);
-  else mq.addListener(onMQChange); // older Safari
+
+  function updateOffset(){
+    // how far did we scroll?
+    const scrolled = window.scrollY || document.documentElement.scrollTop || 0;
+    // at very top → push mobile bar below header
+    const offset = scrolled > 2 ? 0 : headerH;
+    root.style.setProperty('--pi-header-offset', offset + 'px');
+  }
+
+  // run once
+  measureHeader();
+  updateOffset();
+
+  // on resize, re-measure and re-apply
+  window.addEventListener('resize', function(){
+    measureHeader();
+    updateOffset();
+  });
+
+  // on scroll, just decide top vs 0
+  window.addEventListener('scroll', updateOffset, { passive: true });
 })();
 </script>
+
 
 
 <script>
@@ -13949,7 +16095,2561 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const spYes  = document.getElementById('sp_first_yes');
+  const spNo   = document.getElementById('sp_first_no');
+  const spPriorSec = document.getElementById('sp-prior-customer-section');
+
+  function toggleSpouseSection(section, show){
+    if (!section) return;
+    section.classList.toggle('is-hidden', !show);
+    section.setAttribute('aria-hidden', String(!show));
+    section.querySelectorAll('input, select, textarea').forEach(el => {
+      if (!show) {
+        if (el.required) el.dataset.wasRequired = '1';
+        el.required = false;
+        el.disabled = true;
+      } else {
+        el.disabled = false;
+        if (el.dataset.wasRequired === '1') el.required = true;
+      }
+    });
+  }
+
+  function syncSpouse(){
+    const pickedYes = spYes.checked;
+    const pickedNo  = spNo.checked;
+
+    // nothing picked → hide spouse prior block
+    if (!pickedYes && !pickedNo) {
+      toggleSpouseSection(spPriorSec, false);
+      return;
+    }
+
+    // if spouse is NOT first time → show spouse prior block
+    if (pickedNo) {
+      toggleSpouseSection(spPriorSec, true);
+    } else {
+      // spouse is first time → hide spouse prior block
+      toggleSpouseSection(spPriorSec, false);
+    }
+  }
+
+  spYes.addEventListener('change', syncSpouse);
+  spNo.addEventListener('change', syncSpouse);
+
+  // initial load: respect saved PHP values
+  syncSpouse();
+});
+</script>
+
+<!--  ERROR SCRIPT -->
+
+
+
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const yes = document.getElementById('claim_full_yes');
+  const no  = document.getElementById('claim_full_no');
+  const ownersWrap = document.getElementById('owners-wrap');
+  const rentBlock  = document.getElementById('rent-block');
+
+  function updateSoleOwnerUI(val) {
+    if (val === 'no') {
+      ownersWrap.classList.remove('is-hidden');
+      ownersWrap.setAttribute('aria-hidden', 'false');
+      // add space before “Are you living on Rent?”
+      rentBlock.classList.add('rent-gap');
+    } else {
+      ownersWrap.classList.add('is-hidden');
+      ownersWrap.setAttribute('aria-hidden', 'true');
+      rentBlock.classList.remove('rent-gap');
+    }
+  }
+
+  // initial state from PHP
+  <?php if (isset($rowUser['claim_full']) && $rowUser['claim_full']==='no'): ?>
+    updateSoleOwnerUI('no');
+  <?php else: ?>
+    updateSoleOwnerUI('yes');
+  <?php endif; ?>
+
+  yes?.addEventListener('change', () => updateSoleOwnerUI('yes'));
+  no?.addEventListener('change',  () => updateSoleOwnerUI('no'));
+});
+</script>
+
+
 <!-- ERROR SCRIPT -->
+
+<script>
+(function () {
+  function el(q, r = document) { return r.querySelector(q); }
+  function all(q, r = document) { return Array.from(r.querySelectorAll(q)); }
+  function isShown(node) {
+    if (!node) return false;
+    const s = getComputedStyle(node);
+    return s.display !== 'none' && s.visibility !== 'hidden';
+  }
+
+  function ensureBanner() {
+    const wrap = el('#welcome-panel .qs-wrap') || el('#welcome-panel');
+    let b = el('#qsError');
+    if (!b) {
+      b = document.createElement('div');
+      b.id = 'qsError';
+      b.className = 'qs-error-banner';
+      b.setAttribute('role', 'alert');
+      b.setAttribute('aria-live', 'polite');
+      b.innerHTML = '<h3>A selection is required.</h3><p>To proceed, please fill in or correct the required field(s).</p>';
+      wrap?.insertBefore(b, wrap.firstChild);
+    }
+    return b;
+  }
+
+  function clearErrors() {
+    el('#qsError')?.classList.remove('show');
+    all('#welcome-panel .is-invalid').forEach(n => n.classList.remove('is-invalid'));
+    all('#welcome-panel .fi-error-text').forEach(n => n.remove());
+  }
+
+  // clear error on a specific host
+  function clearErrorOn(host) {
+    if (!host) return;
+    host.classList.remove('is-invalid');
+    const e = host.querySelector('.fi-error-text');
+    if (e) e.remove();
+  }
+
+  function addError(host, msg) {
+    if (!host) host = el('#welcome-panel');
+    host.classList.add('is-invalid');
+    if (host.querySelector(':scope > .fi-error-text')) return host;
+    const m = document.createElement('div');
+    m.className = 'fi-error-text';
+    m.textContent = msg || 'This field is required.';
+    host.appendChild(m);
+    return host;
+  }
+
+  function radioVal(name) {
+    const r = el(`input[name="${name}"]:checked`);
+    return r ? r.value : '';
+  }
+  function clearRadioGroup(name) {
+    all(`input[name="${name}"]`).forEach(r => r.checked = false);
+  }
+  function setRadioValue(name, val) {
+    if (!val) { clearRadioGroup(name); return; }
+    const r = el(`input[name="${name}"][value="${val}"]`);
+    if (r) r.checked = true;
+  }
+  function selectValue(sel) {
+    if (!sel) return '';
+    const idx = sel.selectedIndex;
+    if (idx < 0) return '';
+    const opt = sel.options[idx];
+    if (!opt || opt.disabled || opt.value === '') return '';
+    return opt.value || opt.text || '';
+  }
+  function blockHasCheckedRadios(block) {
+    if (!block) return false;
+    return !!block.querySelector('input[type="radio"]:checked, input[type="checkbox"]:checked');
+  }
+
+  // ===== PER-STATUS MEMORY =====
+  const statusMemory = {};
+  const dependentFields = ['spouse_in_canada', 'spouseFile', 'children'];
+  let lastStatus = '';
+
+  function getCurrentStatus() {
+    const sel = el('#marital_status_select');
+    const msSel = selectValue(sel);
+    const msRad = radioVal('marital_status');
+    return msRad || msSel || '';
+  }
+
+  function saveCurrentStatusAnswers() {
+    if (!lastStatus) return;
+    const store = {};
+    dependentFields.forEach(name => {
+      store[name] = radioVal(name); // '' if none
+    });
+    statusMemory[lastStatus] = store;
+  }
+
+  function restoreStatusAnswers(newStatus) {
+    const saved = statusMemory[newStatus];
+    dependentFields.forEach(name => {
+      if (saved && saved[name]) {
+        setRadioValue(name, saved[name]);
+      } else {
+        clearRadioGroup(name);
+      }
+    });
+  }
+
+  // show/hide children (and clear errors when hidden)
+  function updateChildrenVisibility(status) {
+    const outer = el('#children-block');
+    const inner = outer ? outer.querySelector('.yn-group') : null;
+    if (!outer) return;
+
+    if (status && status !== 'Single') {
+      outer.style.display = '';
+    } else {
+      outer.style.display = 'none';
+      // clear errors on both wrappers
+      clearErrorOn(outer);
+      if (inner) clearErrorOn(inner);
+    }
+  }
+
+  // clear errors on dependent groups when status changes
+  function clearDependentErrors() {
+    // spouse in Canada
+    const spouseInner = el('.yn-group input[name="spouse_in_canada"]')?.closest('.yn-group');
+    // spouse file
+    const spouseFileInner = el('#spouse-file-block .yn-group');
+    // children
+    const childrenOuter = el('#children-block');
+    const childrenInner = childrenOuter ? childrenOuter.querySelector('.yn-group') : null;
+
+    clearErrorOn(spouseInner);
+    clearErrorOn(spouseFileInner);
+    clearErrorOn(childrenOuter);
+    clearErrorOn(childrenInner);
+
+    // hide banner if nothing else invalid
+    const panel = el('#welcome-panel');
+    if (panel && !panel.querySelector('.is-invalid')) {
+      el('#qsError')?.classList.remove('show');
+    }
+  }
+
+  function onMaritalStatusChange(newStatus) {
+    // save previous status answers
+    saveCurrentStatusAnswers();
+    // switch status
+    lastStatus = newStatus;
+    // restore answers for this status
+    restoreStatusAnswers(newStatus);
+    // show/hide blocks
+    updateChildrenVisibility(newStatus);
+    // clear old errors from previous status
+    clearDependentErrors();
+  }
+
+  // ===== VALIDATION =====
+  function validateWelcome() {
+    clearErrors(); // start clean
+    ensureBanner();
+    const errs = [];
+
+    const selMS = el('#marital_status_select');
+    const msSel = selectValue(selMS);
+    const msRad = radioVal('marital_status');
+    const ms = msRad || msSel;
+
+    if (!ms) {
+      errs.push(addError(selMS?.closest('.qs-block') || selMS || el('.qs-choicegrid'), 'Please select your marital status.'));
+    } else if (msSel) {
+      // keep radios in sync
+      const r = el(`input[name="marital_status"][value="${msSel}"]`);
+      if (r && !r.checked) r.checked = true;
+    }
+
+    const marriedLike = (ms === 'Married' || ms === 'Common Law');
+    const needsSDW = (ms === 'Separated' || ms === 'Divorced' || ms === 'Widowed');
+    const singleLike = (ms === 'Single');
+
+    // marriage/common-law date
+    const marryBlock = el('#status-date-block');
+    if (marriedLike && marryBlock) {
+      const d = el('#status_date');
+      if (!d || !d.value.trim()) {
+        errs.push(addError(marryBlock, ms === 'Common Law'
+          ? 'Please enter your common-law status date.'
+          : 'Please enter your date of marriage.'
+        ));
+      }
+    }
+
+    // separated/divorced/widowed date
+    const sdwBlock = el('#status-date-sdw-block');
+    if (needsSDW && sdwBlock) {
+      const sdw = el('#status_date_sdw');
+      const lbl = el('#status-date-sdw-label')?.textContent || 'date';
+      if (!sdw || !sdw.value.trim()) {
+        errs.push(addError(sdwBlock, `Please enter ${lbl.toLowerCase()}.`));
+      }
+    }
+
+    // spouse in Canada
+    if (marriedLike) {
+      const spouseYN = el('.yn-group input[name="spouse_in_canada"]')?.closest('.yn-group');
+      if (spouseYN && !blockHasCheckedRadios(spouseYN)) {
+        errs.push(addError(spouseYN, 'Please choose Yes or No.'));
+      }
+    }
+
+    // spouse wants to file
+    const inCanadaYes = el('#spouse_in_canada_yes')?.checked;
+    const spouseFileYN = el('#spouse-file-block .yn-group');
+    if (marriedLike && inCanadaYes && spouseFileYN && isShown(spouseFileYN)) {
+      if (!blockHasCheckedRadios(spouseFileYN)) {
+        errs.push(addError(spouseFileYN, 'Please indicate if your spouse will file.'));
+      }
+    }
+
+    // children – validate for ALL except single
+    const childrenOuter = el('#children-block');
+    const childrenInner = childrenOuter ? childrenOuter.querySelector('.yn-group') : null;
+    const childrenHost = childrenInner || childrenOuter;
+    if (!singleLike && childrenHost && isShown(childrenHost)) {
+      if (!blockHasCheckedRadios(childrenHost)) {
+        errs.push(addError(childrenHost, 'Please select if you have children.'));
+      }
+    }
+
+    if (errs.length) {
+      el('#qsError')?.classList.add('show');
+      const first = errs[0];
+      if (first) {
+        const focusable = first.querySelector('input, select, button, textarea');
+        if (focusable?.focus) focusable.focus();
+        first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return false;
+    }
+    return true;
+  }
+
+  // live clear
+  function attachLiveCleanup() {
+    const panel = el('#welcome-panel');
+    if (!panel) return;
+    function maybeClear(e) {
+      const host = e.target.closest('.is-invalid');
+      if (!host) return;
+      host.classList.remove('is-invalid');
+      host.querySelector('.fi-error-text')?.remove();
+      if (!panel.querySelector('.is-invalid')) el('#qsError')?.classList.remove('show');
+    }
+    panel.addEventListener('input', maybeClear, true);
+    panel.addEventListener('change', maybeClear, true);
+  }
+
+  function wireButton() {
+    const btn = el('#welcome-panel #qs-continue');
+    if (!btn) return;
+
+    // capture = true so this runs BEFORE the main app's listener
+    btn.addEventListener('click', function (ev) {
+      // keep UI in sync if your main app exposes this
+      if (window.App?.refreshWelcomeBlocks) {
+        window.App.refreshWelcomeBlocks();
+      }
+
+      const ok = validateWelcome();
+      if (!ok) {
+        // block navigation ONLY when invalid
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation(); // ← this stops the other click handler
+        return;
+      }
+      // if valid: do nothing — let the main script handle the panel switch
+    }, true);
+  }
+
+  function wireMaritalStatus() {
+    const sel = el('#marital_status_select');
+    if (sel) {
+      sel.addEventListener('change', function () {
+        onMaritalStatusChange(this.value);
+      });
+    }
+    all('input[name="marital_status"]').forEach(r => {
+      r.addEventListener('change', function () {
+        const s = el('#marital_status_select');
+        if (s) s.value = this.value;
+        onMaritalStatusChange(this.value);
+      });
+    });
+
+    // init
+    const initStatus = getCurrentStatus();
+    if (initStatus) {
+      lastStatus = initStatus;
+      updateChildrenVisibility(initStatus);
+      if (!statusMemory[initStatus]) statusMemory[initStatus] = {};
+    }
+  }
+
+  ensureBanner();
+  attachLiveCleanup();
+  wireButton();
+  wireMaritalStatus();
+})();
+</script>
+
+
+
+
+
+<!-- PERSONAL ERROR 2 SCRIPT -->
+
+<script>
+(function(){
+  // ---------- tiny helpers ----------
+  const $  = (q, r=document)=>r.querySelector(q);
+  const $$ = (q, r=document)=>Array.from(r.querySelectorAll(q));
+
+  const panel = document.querySelector('.pi-main[data-panel="personal"]');
+  if (!panel) return;
+
+  // ---------- banner ----------
+  function ensureBanner(){
+    let b = panel.querySelector('#personalError');
+    if (!b){
+      b = document.createElement('div');
+      b.id = 'personalError';
+      b.className = 'qs-error-banner';
+      b.setAttribute('role','alert');
+      b.setAttribute('aria-live','polite');
+      b.innerHTML = `
+        <h3>A selection is required.</h3>
+        <p>To proceed, please fill in or correct the required field(s).</p>
+      `;
+      panel.insertBefore(b, panel.firstElementChild);
+    }
+    return b;
+  }
+  function showBanner(){ ensureBanner().classList.add('show'); }
+  function hideBanner(){ panel.querySelector('#personalError')?.classList.remove('show'); }
+
+  // ---------- error helpers ----------
+  function clearErrors(){
+    hideBanner();
+    $$('.is-invalid', panel).forEach(n=>n.classList.remove('is-invalid'));
+    $$('.fi-error-text', panel).forEach(n=>n.remove());
+  }
+
+  // put error under the right container
+  function errorUnder(anchor, msg){
+    if (!anchor) return null;
+
+    // special case: DOB -> we want the error on the fi-grid so calendar icon doesn't drop
+    if (anchor.id === 'dob') {
+      const grid = anchor.closest('.fi-grid') || anchor.closest('.fi-group') || anchor.parentElement;
+      if (!grid) return null;
+      grid.classList.add('is-invalid');
+      if (!grid.querySelector(':scope > .fi-error-text')) {
+        const m = document.createElement('div');
+        m.className = 'fi-error-text';
+        m.textContent = msg || 'This field is required.';
+        grid.appendChild(m);
+      }
+      return grid;
+    }
+
+    const host = anchor.closest('.fi-group, .yn-group, .qs-block') || anchor.parentElement || anchor;
+    host.classList.add('is-invalid');
+
+    if (!host.querySelector(':scope > .fi-error-text')) {
+      const m = document.createElement('div');
+      m.className = 'fi-error-text';
+      m.textContent = msg || 'This field is required.';
+      host.appendChild(m);
+    }
+    return host;
+  }
+
+  // ---------- value helpers ----------
+  const get = id => panel.querySelector('#' + id);
+  const val = id => (get(id)?.value || '').trim();
+
+  // ---------- validators ----------
+  const twoLetters = v => /^[A-Za-z][A-Za-z\-' ]+$/.test(v) && v.replace(/[^A-Za-z]/g,'').length >= 2;
+
+  const MONTHS = {
+    jan:1, january:1,
+    feb:2, february:2,
+    mar:3, march:3,
+    apr:4, april:4,
+    may:5,
+    jun:6, june:6,
+    jul:7, july:7,
+    aug:8, august:8,
+    sep:9, sept:9, september:9,
+    oct:10, october:10,
+    nov:11, november:11,
+    dec:12, december:12
+  };
+
+  function isValidDate(y, m, d){
+    const dt = new Date(y, m-1, d);
+    return dt.getFullYear() === y && dt.getMonth() === m-1 && dt.getDate() === d;
+  }
+
+  // accepts: 05 | Jan | 2016, 5 Jan 2016, 05-Jan-2016, 05/Jan/2016
+  function parseDobDisplay(v){
+    if (!v) return null;
+    // split on any non-word-ish separator
+    const parts = v.trim().split(/[\s|\/\-]+/).filter(Boolean);
+    if (parts.length !== 3) return null;
+
+    const d = parseInt(parts[0], 10);
+    const mStr = parts[1].toLowerCase();
+    const y = parseInt(parts[2], 10);
+
+    const m = MONTHS[mStr];
+    if (!m || isNaN(d) || isNaN(y)) return null;
+    if (!isValidDate(y, m, d)) return null;
+
+    return { d, m, y };
+  }
+
+  const sinOk    = v => /^\d{9}$/.test(v.replace(/\D/g,''));
+  const postalOk = v => /^[A-Za-z]\d[A-Za-z]\s?\d[A-Za-z]\d$/.test(v.trim());
+  const phoneOk  = v => v.replace(/\D/g,'').length >= 10;
+  const emailOk  = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+
+  // ---------- main validate ----------
+  function validatePersonal(){
+    clearErrors();
+    const errs = [];
+
+    // names
+    if (!twoLetters(val('first_name')))
+      errs.push(errorUnder(get('first_name'), 'Your first name needs at least two letters.'));
+    if (!twoLetters(val('last_name')))
+      errs.push(errorUnder(get('last_name'), 'Your last name needs at least two letters.'));
+
+    // DOB (DD | MMM | YYYY)
+    const dobInput = get('dob');
+    const dobParsed = parseDobDisplay(val('dob'));
+    if (!dobParsed){
+      errs.push(errorUnder(dobInput, 'Enter date as DD | MMM | YYYY.'));
+    } else {
+      // normalize to your display style
+      const day = String(dobParsed.d).padStart(2,'0');
+      // find 3-letter month
+      const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const monthLabel = monthNames[dobParsed.m - 1];
+      dobInput.value = `${day} | ${monthLabel} | ${dobParsed.y}`;
+    }
+
+    // SIN
+    const sinRaw = val('sin').replace(/\D/g,'');
+    if (!sinOk(sinRaw))
+      errs.push(errorUnder(get('sin'), 'Enter a 9-digit SIN, numbers only.'));
+
+    // gender
+    if (!panel.querySelector('input[name="gender"]:checked')){
+      const anyGenderInput = panel.querySelector('input[name="gender"]');
+      errs.push(errorUnder(anyGenderInput, 'Please select a gender.'));
+    }
+
+    // address
+    if (!val('street'))   errs.push(errorUnder(get('street'),   'Street is required.'));
+    if (!val('city'))     errs.push(errorUnder(get('city'),     'City is required.'));
+    if (!val('province')) errs.push(errorUnder(get('province'), 'State/Province is required.'));
+    if (!postalOk(val('postal'))) errs.push(errorUnder(get('postal'), 'Enter a valid postal code (e.g., A1A 1A1).'));
+    if (!val('country'))  errs.push(errorUnder(get('country'),  'Country is required.'));
+
+    // contact
+    if (!phoneOk(val('phone'))) errs.push(errorUnder(get('phone'), 'Enter a valid phone number (10+ digits).'));
+    if (!emailOk(val('email'))) errs.push(errorUnder(get('email'), 'Enter a valid email address.'));
+
+    if (errs.length){
+      showBanner();
+      const first = errs[0];
+      if (first){
+        const focusable = first.querySelector('input, select, textarea, button') || first;
+        focusable?.focus?.();
+        first.scrollIntoView({ behavior:'smooth', block:'center' });
+      }
+      return false;
+    }
+    return true;
+  }
+
+// ------- Live cleanup when fixing fields -------
+panel.addEventListener('input', (e)=>{
+  // special case: DOB error sits on the grid
+  if (e.target.id === 'dob') {
+    const dobGrid = panel.querySelector('.fi-grid.is-invalid:has(#dob)');
+    if (dobGrid) {
+      dobGrid.classList.remove('is-invalid');
+      dobGrid.querySelector('.fi-error-text')?.remove();
+      if (!panel.querySelector('.is-invalid')) hideBanner();
+    }
+    return;
+  }
+
+  const host = e.target.closest('.fi-group, .yn-group, .qs-block, .fi-grid');
+  if (host?.classList.contains('is-invalid')){
+    host.classList.remove('is-invalid');
+    host.querySelector('.fi-error-text')?.remove();
+    if (!panel.querySelector('.is-invalid')) hideBanner();
+  }
+}, true);
+
+panel.addEventListener('change', (e)=>{
+  if (e.target.id === 'dob') {
+    const dobGrid = panel.querySelector('.fi-grid.is-invalid:has(#dob)');
+    if (dobGrid) {
+      dobGrid.classList.remove('is-invalid');
+      dobGrid.querySelector('.fi-error-text')?.remove();
+      if (!panel.querySelector('.is-invalid')) hideBanner();
+    }
+    return;
+  }
+
+  const host = e.target.closest('.fi-group, .yn-group, .qs-block, .fi-grid');
+  if (host?.classList.contains('is-invalid')){
+    host.classList.remove('is-invalid');
+    host.querySelector('.fi-error-text')?.remove();
+    if (!panel.querySelector('.is-invalid')) hideBanner();
+  }
+}, true);
+
+  // ---------- hook Continue ----------
+  const nextBtn = panel.querySelector('.continue-btn[data-goto="next"]');
+  if (nextBtn){
+    nextBtn.addEventListener('click', (ev)=>{
+      if (!validatePersonal()){
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation();
+      }
+    }, true);
+  }
+
+  // create banner hidden
+  ensureBanner();
+})();
+
+
+</script>
+
+
+<!-- TAX ERROR 3 SCRIPT -->
+<script>
+(function () {
+  const panel = document.querySelector('.pi-main[data-panel="tax"]');
+  if (!panel) return;
+
+  const $  = (q, r=document) => r.querySelector(q);
+  const $$ = (q, r=document) => Array.from(r.querySelectorAll(q));
+
+  function ensureBanner() {
+    let b = panel.querySelector('#taxError');
+    if (!b) {
+      b = document.createElement('div');
+      b.id = 'taxError';
+      b.className = 'qs-error-banner';
+      b.setAttribute('role','alert');
+      b.setAttribute('aria-live','polite');
+      b.innerHTML = `
+        <h3>A selection is required.</h3>
+        <p>To proceed, please fill in or correct the required field(s).</p>
+      `;
+      panel.insertBefore(b, panel.firstElementChild);
+    }
+    return b;
+  }
+  function showBanner(){ ensureBanner().classList.add('show'); }
+  function hideBanner(){ panel.querySelector('#taxError')?.classList.remove('show'); }
+
+  const MONTHS = {
+    jan:1,january:1, feb:2,february:2, mar:3,march:3,
+    apr:4,april:4, may:5, jun:6,june:6, jul:7,july:7,
+    aug:8,august:8, sep:9,sept:9,september:9,
+    oct:10,october:10, nov:11,november:11, dec:12,december:12
+  };
+  function isValidDate(y,m,d){
+    const dt = new Date(y,m-1,d);
+    return dt.getFullYear()===y && dt.getMonth()===m-1 && dt.getDate()===d;
+  }
+  function parseDobDisplay(v){
+    if (!v) return null;
+    const parts = v.trim().split(/[\s|\/\-]+/).filter(Boolean);
+    if (parts.length !== 3) return null;
+    const d = parseInt(parts[0],10);
+    const mStr = parts[1].toLowerCase();
+    const y = parseInt(parts[2],10);
+    const m = MONTHS[mStr];
+    if (!m || isNaN(d) || isNaN(y)) return null;
+    if (!isValidDate(y,m,d)) return null;
+    return {d,m,y};
+  }
+  function normalizeDateInput(inputEl){
+    const parsed = parseDobDisplay(inputEl.value);
+    if (!parsed) return false;
+    const day = String(parsed.d).padStart(2,'0');
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const monthLabel = monthNames[parsed.m - 1];
+    inputEl.value = `${day} | ${monthLabel} | ${parsed.y}`;
+    const bindSel = inputEl.getAttribute('data-bind');
+    if (bindSel) {
+      const hidden = panel.querySelector(bindSel);
+      if (hidden) hidden.value = `${parsed.y}-${String(parsed.m).padStart(2,'0')}-${day}`;
+    }
+    return true;
+  }
+
+  function isIncomeId(id){
+    return id === 'inc_y1' || id === 'inc_y2' || id === 'inc_y3';
+  }
+  function incomeIndexFromId(id){
+    if (id === 'inc_y1') return 0;
+    if (id === 'inc_y2') return 1;
+    if (id === 'inc_y3') return 2;
+    return -1;
+  }
+  function isValidMoney(v){
+    return /^\d+(\.\d{1,2})?$/.test(v);
+  }
+  function rentHasSavedRows(){
+    const rentWrap = $('#rent-addresses', panel);
+    if (!rentWrap) return false;
+    return !!rentWrap.querySelector('tbody tr.data-row');
+  }
+
+  function clearErrors() {
+    hideBanner();
+    $$('.is-invalid', panel).forEach(n => n.classList.remove('is-invalid'));
+    $$('.fi-error-text', panel).forEach(n => n.remove());
+  }
+
+  function errorUnder(anchor, msg) {
+    if (!anchor) return null;
+
+    if (
+      anchor.classList.contains('dob-input') ||
+      anchor.id === 'entry_date_display' ||
+      anchor.id === 'moved_date_display' ||
+      anchor.id === 'first_home_purchase_display'
+    ) {
+      const group = anchor.closest('.fi-group');
+      if (group) {
+        group.classList.add('is-invalid', 'has-date-error');
+        if (!group.querySelector('.fi-error-text')) {
+          const m = document.createElement('div');
+          m.className = 'fi-error-text fi-error-abs';
+          m.textContent = msg || 'Enter date as DD | MMM | YYYY.';
+          group.appendChild(m);
+        }
+        return group;
+      }
+    }
+
+    if (anchor.id && isIncomeId(anchor.id)) {
+      const g = anchor.closest('.fi-group') || anchor.parentElement;
+      if (g) {
+        g.classList.add('is-invalid');
+        if (!g.querySelector('.fi-error-text')) {
+          const m = document.createElement('div');
+          m.className = 'fi-error-text';
+          m.textContent = msg || 'Enter amount or 0.';
+          g.appendChild(m);
+        }
+      }
+      const idx = incomeIndexFromId(anchor.id);
+      const cards = panel.querySelectorAll('.wi-stack .wi-card');
+      if (cards[idx]) cards[idx].classList.add('wi-card-error');
+      return g;
+    }
+
+    if (anchor.id === 'rent-addresses' || (anchor.closest && anchor.closest('#rent-addresses'))) {
+      const wrap = anchor.id === 'rent-addresses' ? anchor : anchor.closest('#rent-addresses');
+      wrap.classList.add('is-invalid');
+      if (!wrap.querySelector(':scope > .fi-error-text')) {
+        const m = document.createElement('div');
+        m.className = 'fi-error-text';
+        m.textContent = msg || 'Please add at least one rent address.';
+        wrap.appendChild(m);
+      }
+      return wrap;
+    }
+
+    if (anchor.type === 'radio') {
+      const ynGroup = anchor.closest('.yn-group');
+      if (ynGroup) {
+        ynGroup.classList.add('is-invalid');
+        if (!ynGroup.querySelector('.fi-error-text')) {
+          const m = document.createElement('div');
+          m.className = 'fi-error-text';
+          m.textContent = msg || 'Please select Yes or No.';
+          ynGroup.appendChild(m);
+        }
+        return ynGroup;
+      }
+    }
+
+    const group = anchor.closest('.fi-group');
+    if (group) {
+      group.classList.add('is-invalid');
+      if (!group.querySelector('.fi-error-text')) {
+        const m = document.createElement('div');
+        m.className = 'fi-error-text';
+        m.textContent = msg || 'This field is required.';
+        group.appendChild(m);
+      }
+      return group;
+    }
+
+    const host = anchor.closest('.qs-block') || anchor.parentElement;
+    host.classList.add('is-invalid');
+    if (!host.querySelector(':scope > .fi-error-text')) {
+      const m = document.createElement('div');
+      m.className = 'fi-error-text';
+      m.textContent = msg || 'This field is required.';
+      host.appendChild(m);
+    }
+    return host;
+  }
+
+  const priorSection     = $('#prior-customer-section', panel);
+  const firsttimeDetails = $('#firsttime-details', panel);
+  const wiWrapper        = $('#wi-wrapper', panel);
+  const movedSection     = $('#moved-section', panel);
+  const movexpDetails    = $('#movexp-details', panel);
+  const fthbDetails      = $('#fthb-details', panel);
+  const ownersWrap       = $('#owners-wrap', panel);
+  const rentBlock        = $('#rent-block', panel);
+  const claimRentBlock   = $('#claim-rent-block', panel);
+  const rentAddresses    = $('#rent-addresses', panel);
+
+  function toggleFirstTime(){
+    const sel = panel.querySelector('input[name="first_time"]:checked');
+    if (!sel) {
+      priorSection?.classList.add('is-hidden');
+      firsttimeDetails?.classList.add('is-hidden');
+      wiWrapper?.classList.add('is-hidden');
+      return;
+    }
+    if (sel.value === 'no') {
+      priorSection?.classList.remove('is-hidden');
+      firsttimeDetails?.classList.add('is-hidden');
+      wiWrapper?.classList.add('is-hidden');
+    } else {
+      priorSection?.classList.add('is-hidden');
+      firsttimeDetails?.classList.remove('is-hidden');
+      const entry = $('#entry_date_display', panel);
+      if (entry && entry.value.trim() !== '') {
+        wiWrapper?.classList.remove('is-hidden');
+      }
+    }
+  }
+  function toggleMoved(){
+    const sel = panel.querySelector('input[name="moved_province"]:checked');
+    if (sel && sel.value === 'yes') movedSection?.classList.remove('is-hidden');
+    else movedSection?.classList.add('is-hidden');
+  }
+  function toggleMovExp(){
+    const sel = panel.querySelector('input[name="moving_expenses_claim"]:checked');
+    if (sel && sel.value === 'yes') movexpDetails?.classList.remove('is-hidden');
+    else movexpDetails?.classList.add('is-hidden');
+  }
+  function toggleFTHB(){
+    const sel = panel.querySelector('input[name="first_home_buyer"]:checked');
+    if (sel && sel.value === 'yes') fthbDetails?.classList.remove('is-hidden');
+    else fthbDetails?.classList.add('is-hidden');
+  }
+  function toggleClaimFull(){
+    const sel = panel.querySelector('input[name="claim_full"]:checked');
+    if (sel && sel.value === 'no') {
+      ownersWrap?.classList.remove('is-hidden');
+      ownersWrap?.setAttribute('aria-hidden','false');
+      rentBlock?.classList.add('rent-gap');
+    } else {
+      ownersWrap?.classList.add('is-hidden');
+      ownersWrap?.setAttribute('aria-hidden','true');
+      rentBlock?.classList.remove('rent-gap');
+    }
+  }
+  function toggleRent(){
+    const onRent = panel.querySelector('input[name="onRent"]:checked');
+    if (onRent && onRent.value === 'yes') {
+      claimRentBlock.style.display = '';
+      const claim = panel.querySelector('input[name="claimRent"]:checked');
+      if (claim && claim.value === 'yes') {
+        rentAddresses.style.display = '';
+      } else {
+        rentAddresses.style.display = 'none';
+      }
+    } else {
+      claimRentBlock.style.display = 'none';
+      rentAddresses.style.display = 'none';
+    }
+  }
+
+  function validateTaxPanel() {
+    clearErrors();
+    const errs = [];
+
+    const firstSel = panel.querySelector('input[name="first_time"]:checked');
+    if (!firstSel) {
+      errs.push(errorUnder($('#first_yes', panel), 'Please select Yes or No.'));
+    } else if (firstSel.value === 'no') {
+      if (!panel.querySelector('input[name="paragon_prior"]:checked')) {
+        errs.push(errorUnder($('#paragon_yes', panel), 'Please select Yes or No.'));
+      }
+      const years = $('#return_years', panel);
+      if (years && !years.value.trim()) {
+        errs.push(errorUnder(years, 'Please enter the year(s) you want to file.'));
+      }
+    } else if (firstSel.value === 'yes') {
+      const entryDisp = $('#entry_date_display', panel);
+      if (!parseDobDisplay(entryDisp.value)) {
+        errs.push(errorUnder(entryDisp, 'Enter date as DD | MMM | YYYY.'));
+      } else {
+        normalizeDateInput(entryDisp);
+      }
+      const birthCountry = $('#birth_country', panel);
+      if (!birthCountry.value.trim()) {
+        errs.push(errorUnder(birthCountry, 'Country is required.'));
+      }
+
+      if (wiWrapper && !wiWrapper.classList.contains('is-hidden')) {
+        const periodRows = panel.querySelectorAll('.wi-col--period .wi-row');
+
+        ['inc_y1','inc_y2','inc_y3'].forEach((id, idx) => {
+          const inp = $('#'+id, panel);
+          if (!inp) return;
+          const val = inp.value.trim();
+          if (!val) {
+            errs.push(errorUnder(inp, 'Enter amount or 0.'));
+          } else if (!isValidMoney(val)) {
+            errs.push(errorUnder(inp, 'Enter numbers only.'));
+          }
+
+          const incomeRow = inp.closest('.wi-row');
+          const periodRow = periodRows[idx];
+          if (!val || !isValidMoney(val)) {
+            incomeRow?.classList.add('wi-row-error');
+            periodRow?.classList.add('wi-row-error');
+            const cards = panel.querySelectorAll('.wi-stack .wi-card');
+            if (cards[idx]) cards[idx].classList.add('wi-card-error');
+          }
+        });
+      }
+    }
+
+    const movedSel = panel.querySelector('input[name="moved_province"]:checked');
+    if (!movedSel) {
+      errs.push(errorUnder($('#mprov_yes', panel), 'Please select Yes or No.'));
+    } else if (movedSel.value === 'yes') {
+      const movedDisp = $('#moved_date_display', panel);
+      if (!parseDobDisplay(movedDisp.value)) {
+        errs.push(errorUnder(movedDisp, 'Enter date as DD | MMM | YYYY.'));
+      } else {
+        normalizeDateInput(movedDisp);
+      }
+      const provFrom = $('#prov_from', panel);
+      const provTo   = $('#prov_to', panel);
+      if (!provFrom.value.trim()) errs.push(errorUnder(provFrom, 'Select a province.'));
+      if (!provTo.value.trim())   errs.push(errorUnder(provTo,   'Select a province.'));
+
+      const movexpSel = panel.querySelector('input[name="moving_expenses_claim"]:checked');
+      if (!movexpSel) {
+        errs.push(errorUnder($('#movexp_yes', panel), 'Please select Yes or No.'));
+      } else if (movexpSel.value === 'yes') {
+        const prevAddr = $('#moving_prev_address', panel);
+        const dist     = $('#moving_distance', panel);
+        if (!prevAddr.value.trim()) errs.push(errorUnder(prevAddr, 'Previous address is required.'));
+        if (!dist.value.trim())     errs.push(errorUnder(dist, 'Distance is required.'));
+      }
+    }
+
+    const fthbSel = panel.querySelector('input[name="first_home_buyer"]:checked');
+    if (!fthbSel) {
+      errs.push(errorUnder($('#fthb_yes', panel), 'Please select Yes or No.'));
+    } else if (fthbSel.value === 'yes') {
+      const purchase = $('#first_home_purchase_display', panel);
+      if (!parseDobDisplay(purchase.value)) {
+        errs.push(errorUnder(purchase, 'Enter date as DD | MMM | YYYY.'));
+      } else {
+        normalizeDateInput(purchase);
+      }
+    }
+
+    const claimSel = panel.querySelector('input[name="claim_full"]:checked');
+    if (!claimSel) {
+      errs.push(errorUnder($('#claim_full_yes', panel), 'Please select Yes or No.'));
+    } else if (claimSel.value === 'no') {
+      const ownerCount = $('#owner_count', panel);
+      if (!ownerCount.value.trim()) {
+        errs.push(errorUnder(ownerCount, '# of owners is required.'));
+      }
+    }
+
+    const rentSel = panel.querySelector('input[name="onRent"]:checked');
+    if (!rentSel) {
+      errs.push(errorUnder($('#onrent_yes', panel), 'Please choose Yes or No.'));
+    } else if (rentSel.value === 'yes') {
+      const claimRentSel = panel.querySelector('input[name="claimRent"]:checked');
+      if (!claimRentSel) {
+        errs.push(errorUnder($('#claimrent_yes', panel), 'Please choose Yes or No.'));
+      } else if (claimRentSel.value === 'yes') {
+        if (!rentHasSavedRows()) {
+          errs.push(errorUnder($('#rent-addresses', panel), 'Please add at least one rent address.'));
+        }
+      }
+    }
+
+    if (errs.length) {
+      showBanner();
+      const first = errs[0];
+      if (first) {
+        const focusable = first.querySelector('input,select,textarea,button') || first;
+        focusable?.focus?.();
+        first.scrollIntoView({behavior:'smooth', block:'center'});
+      }
+      return false;
+    }
+    return true;
+  }
+
+  panel.addEventListener('input', function(e){
+    const t = e.target;
+
+    if (isIncomeId(t.id)) {
+      const val = t.value.trim();
+      const idx = incomeIndexFromId(t.id);
+      const card = panel.querySelectorAll('.wi-stack .wi-card')[idx];
+      if (val !== '' && isValidMoney(val)) {
+        const host = t.closest('.fi-group');
+        host?.classList.remove('is-invalid');
+        host?.querySelector('.fi-error-text')?.remove();
+
+        const incomeRow = t.closest('.wi-row');
+        const periodRows = panel.querySelectorAll('.wi-col--period .wi-row');
+        incomeRow?.classList.remove('wi-row-error');
+        if (periodRows[idx]) periodRows[idx].classList.remove('wi-row-error');
+        card?.classList.remove('wi-card-error');
+      }
+      if (!panel.querySelector('.is-invalid')) hideBanner();
+      return;
+    }
+
+    const host = t.closest('.fi-group, .yn-group, .qs-block, #rent-addresses');
+    if (host && host.id !== 'rent-addresses') {
+      if (host.classList.contains('is-invalid')) {
+        host.classList.remove('is-invalid');
+        host.querySelector('.fi-error-text')?.remove();
+      }
+    }
+
+    if (t.id === 'moved_date_display') {
+      const g = t.closest('.fi-group');
+      if (g && g.classList.contains('has-date-error')) {
+        g.classList.remove('has-date-error');
+      }
+    }
+
+    if (!panel.querySelector('.is-invalid')) hideBanner();
+  }, true);
+
+  panel.addEventListener('change', function(e){
+    const t = e.target;
+    if (t.name === 'first_time') toggleFirstTime();
+    if (t.name === 'moved_province') toggleMoved();
+    if (t.name === 'moving_expenses_claim') toggleMovExp();
+    if (t.name === 'first_home_buyer') toggleFTHB();
+    if (t.name === 'claim_full') toggleClaimFull();
+    if (t.name === 'onRent' || t.name === 'claimRent') toggleRent();
+
+    const host = t.closest('.fi-group, .yn-group, .qs-block');
+    if (host?.classList.contains('is-invalid')) {
+      host.classList.remove('is-invalid');
+      host.querySelector('.fi-error-text')?.remove();
+    }
+    if (!panel.querySelector('.is-invalid')) hideBanner();
+  }, true);
+
+  /* NEW: catch clicks from the rent table (Save / Delete / Cancel) */
+  panel.addEventListener('click', function(e){
+    const inRent = e.target.closest('#rent-addresses');
+    if (!inRent) return;
+    // slight defer to let your rent script update the DOM
+    setTimeout(function(){
+      if (rentHasSavedRows()) {
+        const wrap = $('#rent-addresses', panel);
+        wrap.classList.remove('is-invalid');
+        wrap.querySelector('.fi-error-text')?.remove();
+        if (!panel.querySelector('.is-invalid')) hideBanner();
+      }
+    }, 0);
+  }, true);
+
+  const nextBtn = panel.querySelector('.continue-btn[data-goto="next"]');
+  if (nextBtn) {
+    nextBtn.addEventListener('click', function(ev){
+      if (!validateTaxPanel()) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation();
+      }
+    }, true);
+  }
+
+  toggleFirstTime();
+  toggleMoved();
+  toggleMovExp();
+  toggleFTHB();
+  toggleClaimFull();
+  toggleRent();
+  ensureBanner();
+})();
+</script>
+
+<!--  SPOUSE ERROR 4 SCRIPT -->
+
+<script>
+(function () {
+  const panel = document.querySelector('.pi-main[data-panel="spouse"]');
+  if (!panel) return;
+
+  const $  = (q, r=document) => r.querySelector(q);
+  const $$ = (q, r=document) => Array.from(r.querySelectorAll(q));
+  const shown = el => !!el && getComputedStyle(el).display !== 'none' && el.getAttribute('aria-hidden') !== 'true';
+
+  /* ------------------ banner ------------------ */
+  function ensureBanner() {
+    let b = panel.querySelector('#spouseError');
+    if (!b) {
+      b = document.createElement('div');
+      b.id = 'spouseError';
+      b.className = 'qs-error-banner';
+      b.setAttribute('role','alert');
+      b.setAttribute('aria-live','polite');
+      b.innerHTML = `
+        <h3>A selection is required.</h3>
+        <p>To proceed, please fill in or correct the required field(s).</p>
+      `;
+      panel.insertBefore(b, panel.firstElementChild);
+    }
+    return b;
+  }
+  function showBanner(){ ensureBanner().classList.add('show'); }
+  function hideBanner(){ panel.querySelector('#spouseError')?.classList.remove('show'); }
+
+  /* ------------------ date helpers ------------------ */
+  const MONTHS = {
+    jan:1,january:1,
+    feb:2,february:2,
+    mar:3,march:3,
+    apr:4,april:4,
+    may:5,
+    jun:6,june:6,
+    jul:7,july:7,
+    aug:8,august:8,
+    sep:9,sept:9,september:9,
+    oct:10,october:10,
+    nov:11,november:11,
+    dec:12,december:12
+  };
+  function isValidDate(y,m,d){
+    const dt = new Date(y,m-1,d);
+    return dt.getFullYear()===y && dt.getMonth()===m-1 && dt.getDate()===d;
+  }
+  function parseDobDisplay(v){
+    if (!v) return null;
+    const parts = v.trim().split(/[\s|\/\-]+/).filter(Boolean);
+    if (parts.length !== 3) return null;
+    const d = parseInt(parts[0],10);
+    const mStr = parts[1].toLowerCase();
+    const y = parseInt(parts[2],10);
+    const m = MONTHS[mStr];
+    if (!m || isNaN(d) || isNaN(y)) return null;
+    if (!isValidDate(y,m,d)) return null;
+    return {d,m,y};
+  }
+  function normalizeDate(inputEl){
+    const parsed = parseDobDisplay(inputEl.value);
+    if (!parsed) return false;
+    const day = String(parsed.d).padStart(2,'0');
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    inputEl.value = `${day} | ${monthNames[parsed.m - 1]} | ${parsed.y}`;
+    return true;
+  }
+
+  /* ------------------ small validators ------------------ */
+  const twoLetters = v => /^[A-Za-z][A-Za-z\-' ]+$/.test(v) && v.replace(/[^A-Za-z]/g,'').length >= 2;
+  const sinOk    = v => /^\d{9}$/.test(v.replace(/\D/g,''));      // 9 digits only
+  const phoneOk  = v => v.replace(/\D/g,'').length >= 10;          // 10+ digits
+  const emailOk  = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  const postalOk = v => /^[A-Za-z]\d[A-Za-z]\s?\d[A-Za-z]\d$/.test(v.trim());
+  const moneyOk  = v => /^(\d+(\.\d{1,2})?)$/.test(v.trim());
+
+  /* ------------------ clear + error placement ------------------ */
+  function clearErrors(){
+    hideBanner();
+    $$('.is-invalid', panel).forEach(n=>n.classList.remove('is-invalid','has-date-error','has-suf-error'));
+    $$('.fi-error-text', panel).forEach(n=>n.remove());
+  }
+
+  function errorUnder(anchor, msg){
+    if (!anchor) return null;
+
+    // 1) date -> error inside group, absolutely positioned
+    if (anchor.classList.contains('dob-input')) {
+      const group = anchor.closest('.fi-group');
+      if (group) {
+        group.classList.add('is-invalid','has-date-error');
+        if (!group.querySelector('.fi-error-text')) {
+          const e = document.createElement('div');
+          e.className = 'fi-error-text fi-error-abs';
+          e.textContent = msg || 'Enter date as DD | MMM | YYYY.';
+          group.appendChild(e);
+        }
+        return group;
+      }
+    }
+
+    // 2) spouse annual income with suffix
+    if (anchor.id === 'spouse_income_cad') {
+      const group = anchor.closest('.fi-group');
+      if (group) {
+        group.classList.add('is-invalid','has-suf-error');
+        if (!group.querySelector('.fi-error-text')) {
+          const e = document.createElement('div');
+          e.className = 'fi-error-text fi-error-abs';
+          e.textContent = msg || 'Enter a valid amount.';
+          group.appendChild(e);
+        }
+        return group;
+      }
+    }
+
+    // 3) yes/no radio
+    if (anchor.type === 'radio') {
+      const yn = anchor.closest('.yn-group');
+      if (yn) {
+        yn.classList.add('is-invalid');
+        if (!yn.querySelector('.fi-error-text')) {
+          const e = document.createElement('div');
+          e.className = 'fi-error-text';
+          e.textContent = msg || 'Please select Yes or No.';
+          yn.appendChild(e);
+        }
+        return yn;
+      }
+    }
+
+    // 4) normal inputs/selects
+    const host = anchor.closest('.fi-group, .qs-block') || anchor.parentElement;
+    host.classList.add('is-invalid');
+    if (!host.querySelector('.fi-error-text')) {
+      const e = document.createElement('div');
+      e.className = 'fi-error-text';
+      e.textContent = msg || 'This field is required.';
+      host.appendChild(e);
+    }
+    return host;
+  }
+
+  /* ------------------ main validate ------------------ */
+  function validateSpouse(){
+    clearErrors();
+    const errs = [];
+
+    // names
+    const fn = $('#spouse_first_name', panel);
+    const ln = $('#spouse_last_name', panel);
+    if (!twoLetters(fn.value.trim())) errs.push(errorUnder(fn, 'Spouse first name needs at least two letters.'));
+    if (!twoLetters(ln.value.trim())) errs.push(errorUnder(ln, 'Spouse last name needs at least two letters.'));
+
+    // DOB
+    const dob = $('#spouse_dob', panel);
+    if (!parseDobDisplay(dob.value)) {
+      errs.push(errorUnder(dob, 'Enter date as DD | MMM | YYYY.'));
+    } else {
+      normalizeDate(dob);
+    }
+
+    // "not in Canada" block
+    const foreignBlock = $('#spouse-foreign-income', panel);
+    if (shown(foreignBlock)) {
+      const inc = $('#spouse_income_outside_cad', panel);
+      if (!inc.value.trim()) {
+        errs.push(errorUnder(inc, 'Enter spouse income in CAD.'));
+      }
+    }
+
+    // remaining (in Canada)
+    const remaining = $('#spouse-remaining', panel);
+    if (shown(remaining)) {
+      // SIN
+      const ssin = $('#spouse_sin', panel);
+      if (!sinOk(ssin.value || '')) {
+        errs.push(errorUnder(ssin, 'Enter a 9-digit SIN, numbers only.'));
+      }
+
+      // address same?
+      const addrChoice = panel.querySelector('input[name="spouse_address_same"]:checked');
+      if (!addrChoice) {
+        errs.push(errorUnder($('#spouse_addr_same_yes', panel), 'Please select Yes or No.'));
+      }
+
+      // address fields if No
+      const addrFields = $('#spouse-address-fields', panel);
+      if (addrChoice && addrChoice.value === 'No' && shown(addrFields)) {
+        const street  = $('#spouse_street', panel);
+        const city    = $('#spouse_city', panel);
+        const prov    = $('#spouse_province', panel);
+        const postal  = $('#spouse_postal', panel);
+        const country = $('#spouse_country', panel);
+
+        if (!street.value.trim())  errs.push(errorUnder(street,  'Street is required.'));
+        if (!city.value.trim())    errs.push(errorUnder(city,    'City is required.'));
+        if (!prov.value.trim())    errs.push(errorUnder(prov,    'State/Province is required.'));
+        if (!postal.value.trim()) {
+          errs.push(errorUnder(postal, 'Postal Code is required.'));
+        } else if (!postalOk(postal.value)) {
+          errs.push(errorUnder(postal, 'Enter a valid postal code (e.g., A1A 1A1).'));
+        }
+        if (!country.value.trim()) errs.push(errorUnder(country, 'Country is required.'));
+      }
+
+      // contact
+      const phone = $('#spouse_phone', panel);
+      const email = $('#spouse_email', panel);
+      if (!phoneOk(phone.value || '')) errs.push(errorUnder(phone, 'Enter a valid phone number (10+ digits).'));
+      if (!emailOk(email.value || '')) errs.push(errorUnder(email, 'Enter a valid email address.'));
+    }
+
+    // CAD income block (when shown)
+    const cadBlock = $('#spouse-income', panel);
+    if (shown(cadBlock)) {
+      const cad = $('#spouse_income_cad', panel);
+      if (!cad.value.trim()) {
+        errs.push(errorUnder(cad, 'Enter spouse annual income.'));
+      } else if (!moneyOk(cad.value.trim())) {
+        errs.push(errorUnder(cad, 'Enter a valid amount.'));
+      }
+    }
+
+    if (errs.length) {
+      showBanner();
+      const first = errs[0];
+      if (first){
+        const f = first.querySelector('input,select,textarea,button') || first;
+        f?.focus?.();
+        first.scrollIntoView({behavior:'smooth', block:'center'});
+      }
+      return false;
+    }
+    return true;
+  }
+
+  /* ------------------ live cleanup ------------------ */
+  panel.addEventListener('input', function(e){
+    const host = e.target.closest('.fi-group, .yn-group, .qs-block');
+    if (host?.classList.contains('is-invalid')) {
+      host.classList.remove('is-invalid','has-date-error','has-suf-error');
+      // remove error inside
+      host.querySelector('.fi-error-text')?.remove();
+    }
+    if (!panel.querySelector('.is-invalid')) hideBanner();
+  }, true);
+
+  panel.addEventListener('change', function(e){
+    const t = e.target;
+
+    // toggle address fields
+    if (t.name === 'spouse_address_same') {
+      const addrFields = $('#spouse-address-fields', panel);
+      addrFields.style.display = (t.value === 'No') ? '' : 'none';
+    }
+
+    // clear error on change
+    const host = t.closest('.fi-group, .yn-group, .qs-block');
+    if (host?.classList.contains('is-invalid')) {
+      host.classList.remove('is-invalid','has-date-error','has-suf-error');
+      host.querySelector('.fi-error-text')?.remove();
+    }
+    if (!panel.querySelector('.is-invalid')) hideBanner();
+  }, true);
+
+  /* ------------------ hook continue ------------------ */
+  const nextBtn = panel.querySelector('.continue-btn[data-goto="next"]');
+  if (nextBtn) {
+    nextBtn.addEventListener('click', function(ev){
+      if (!validateSpouse()) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation();
+      }
+    }, true);
+  }
+
+  ensureBanner();
+})();
+</script>
+
+
+
+<!--  SPOUSE TAX ERROR 5 SCRIPT -->
+
+<script>
+(function () {
+  const panel = document.querySelector('.pi-main[data-panel="spouse-tax"]');
+  if (!panel) return;
+
+  const $  = (sel, root = panel) => root.querySelector(sel);
+  const $$ = (sel, root = panel) => Array.from(root.querySelectorAll(sel));
+
+  /* ----------------------------------------------------------
+     ERROR BANNER
+     ---------------------------------------------------------- */
+  function ensureBanner() {
+    let b = panel.querySelector('#spouseTaxError');
+    if (!b) {
+      b = document.createElement('div');
+      b.id = 'spouseTaxError';
+      b.className = 'qs-error-banner';
+      b.setAttribute('role', 'alert');
+      b.setAttribute('aria-live', 'polite');
+      b.innerHTML = `
+        <h3>A selection is required.</h3>
+        <p>To proceed, please fill in or correct the required field(s).</p>
+      `;
+      panel.insertBefore(b, panel.firstElementChild);
+    }
+    return b;
+  }
+  function showBanner() { ensureBanner().classList.add('show'); }
+  function hideBanner() { panel.querySelector('#spouseTaxError')?.classList.remove('show'); }
+
+  /* ----------------------------------------------------------
+     DATE HELPERS
+     ---------------------------------------------------------- */
+  const MONTHS = {
+    jan:1, january:1,
+    feb:2, february:2,
+    mar:3, march:3,
+    apr:4, april:4,
+    may:5,
+    jun:6, june:6,
+    jul:7, july:7,
+    aug:8, august:8,
+    sep:9, sept:9, september:9,
+    oct:10, october:10,
+    nov:11, november:11,
+    dec:12, december:12
+  };
+  const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  function isValidDate(y,m,d){
+    const dt = new Date(y, m - 1, d);
+    return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+  }
+
+  function parseDisplayDate(v) {
+    if (!v) return null;
+    const parts = v.trim().split(/[\s|\/\-]+/).filter(Boolean);
+    if (parts.length !== 3) return null;
+    const d = parseInt(parts[0], 10);
+    const mStr = parts[1].toLowerCase();
+    const y = parseInt(parts[2], 10);
+    const m = MONTHS[mStr];
+    if (!m || !d || !y) return null;
+    if (!isValidDate(y, m, d)) return null;
+    return { d, m, y };
+  }
+
+  function normalizeDisplayDate(inputEl) {
+    const parsed = parseDisplayDate(inputEl.value);
+    if (!parsed) return false;
+    const day = String(parsed.d).padStart(2, '0');
+    const label = MONTH_LABELS[parsed.m - 1];
+    inputEl.value = `${day} | ${label} | ${parsed.y}`;
+    const bindSel = inputEl.getAttribute('data-bind');
+    if (bindSel) {
+      const hidden = panel.querySelector(bindSel);
+      if (hidden) hidden.value = `${parsed.y}-${String(parsed.m).padStart(2,'0')}-${day}`;
+    }
+    return true;
+  }
+
+  /* ----------------------------------------------------------
+     WORLD-INCOME PLACEHOLDERS for SPOUSE
+     ---------------------------------------------------------- */
+  function setSpouseIncomePeriods(parsed) {
+    const y1 = $('#sp_period_y1');
+    const y2 = $('#sp_period_y2');
+    const y3 = $('#sp_period_y3');
+    if (!parsed || !y1 || !y2 || !y3) return;
+
+    const d = parsed.d;
+    const m = parsed.m;
+    const y = parsed.y;
+
+    const entryDateStr = `${MONTH_LABELS[m-1]} ${String(d).padStart(2,'0')}, ${y}`;
+    y1.textContent = `Jan 01, ${y} – ${entryDateStr}`;
+    y2.textContent = `Jan 01, ${y-1} – Dec 31, ${y-1}`;
+    y3.textContent = `Jan 01, ${y-2} – Dec 31, ${y-2}`;
+  }
+
+  /* ----------------------------------------------------------
+     CLEAR / ERROR
+     ---------------------------------------------------------- */
+  function clearErrors() {
+    hideBanner();
+    $$('.is-invalid', panel).forEach(el => el.classList.remove('is-invalid'));
+    $$('.fi-error-text', panel).forEach(el => el.remove());
+    // world-income inline error cleanup
+    $$('#sp-wi-wrapper .wi-inline.sp-wi-has-error', panel)
+      .forEach(el => el.classList.remove('sp-wi-has-error'));
+    // spouse moved date extra margin cleanup
+    $$('#sp-moved-section .fi-group.has-date-error', panel)
+      .forEach(el => el.classList.remove('has-date-error'));
+  }
+
+  function errorUnder(anchor, msg) {
+    if (!anchor) return null;
+
+    // date-like inputs
+    if (anchor.classList.contains('dob-input')) {
+      const group = anchor.closest('.fi-group');
+      if (group) {
+        group.classList.add('is-invalid', 'has-date-error');
+        if (!group.querySelector('.fi-error-text')) {
+          const e = document.createElement('div');
+          e.className = 'fi-error-text';
+          e.textContent = msg || 'Enter date as DD | MMM | YYYY.';
+          group.appendChild(e);
+        }
+        return group;
+      }
+    }
+
+    // yes/no
+    if (anchor.type === 'radio') {
+      const yn = anchor.closest('.yn-group');
+      if (yn) {
+        yn.classList.add('is-invalid');
+        if (!yn.querySelector('.fi-error-text')) {
+          const e = document.createElement('div');
+          e.className = 'fi-error-text';
+          e.textContent = msg || 'Please select Yes or No.';
+          yn.appendChild(e);
+        }
+        return yn;
+      }
+    }
+
+    // default host
+    const host = anchor.closest('.fi-group, .qs-block') || anchor.parentElement;
+    host.classList.add('is-invalid');
+    if (!host.querySelector('.fi-error-text')) {
+      const e = document.createElement('div');
+      e.className = 'fi-error-text';
+      e.textContent = msg || 'This field is required.';
+      host.appendChild(e);
+    }
+
+    // spouse world-income inputs → mark wrapper
+    if (anchor.id === 'sp_inc_y1' || anchor.id === 'sp_inc_y2' || anchor.id === 'sp_inc_y3') {
+      host.classList.add('sp-wi-has-error');
+    }
+
+    return host;
+  }
+
+  /* ----------------------------------------------------------
+     TOGGLES
+     ---------------------------------------------------------- */
+  function toggleFirstTime() {
+    const sel = panel.querySelector('input[name="sp_first_time"]:checked');
+    const priorSection = $('#sp-prior-customer-section');
+    const firstDetails = $('#sp-firsttime-details');
+    const wiWrap       = $('#sp-wi-wrapper');
+
+    if (!sel) {
+      priorSection?.classList.add('is-hidden');
+      priorSection?.setAttribute('aria-hidden', 'true');
+      firstDetails?.classList.add('is-hidden');
+      firstDetails?.setAttribute('aria-hidden', 'true');
+      wiWrap?.classList.add('is-hidden');
+      wiWrap?.setAttribute('aria-hidden','true');
+      return;
+    }
+
+    if (sel.value === 'no') {
+      priorSection?.classList.remove('is-hidden');
+      priorSection?.setAttribute('aria-hidden', 'false');
+      firstDetails?.classList.add('is-hidden');
+      firstDetails?.setAttribute('aria-hidden', 'true');
+      wiWrap?.classList.add('is-hidden');
+      wiWrap?.setAttribute('aria-hidden','true');
+    } else {
+      priorSection?.classList.add('is-hidden');
+      priorSection?.setAttribute('aria-hidden', 'true');
+      firstDetails?.classList.remove('is-hidden');
+      firstDetails?.setAttribute('aria-hidden', 'false');
+
+      const entry = $('#sp_entry_date_display');
+      const parsed = parseDisplayDate(entry?.value || '');
+      if (parsed) {
+        setSpouseIncomePeriods(parsed);
+        wiWrap?.classList.remove('is-hidden');
+        wiWrap?.setAttribute('aria-hidden','false');
+      }
+    }
+  }
+
+  function toggleSpouseMoved() {
+    const sel = panel.querySelector('input[name="sp_moved_province"]:checked');
+    const sec = $('#sp-moved-section');
+    if (sel && sel.value === 'yes') {
+      sec?.classList.remove('is-hidden');
+      sec?.setAttribute('aria-hidden','false');
+    } else {
+      sec?.classList.add('is-hidden');
+      sec?.setAttribute('aria-hidden','true');
+    }
+  }
+
+  /* ----------------------------------------------------------
+     VALIDATION
+     ---------------------------------------------------------- */
+  function validateSpouseTax() {
+    clearErrors();
+    const errs = [];
+
+    // 1. first time?
+    const firstSel = panel.querySelector('input[name="sp_first_time"]:checked');
+    if (!firstSel) {
+      errs.push(errorUnder($('#sp_first_yes'), 'Please select Yes or No.'));
+    } else if (firstSel.value === 'no') {
+      const priorSel = panel.querySelector('input[name="sp_paragon_prior"]:checked');
+      if (!priorSel) {
+        errs.push(errorUnder($('#sp_paragon_yes'), 'Please select Yes or No.'));
+      }
+      const years = $('#return_years');
+      if (!years.value.trim()) {
+        errs.push(errorUnder(years, 'Please enter the year(s) you want to file.'));
+      }
+    } else {
+      const entry = $('#sp_entry_date_display');
+      const parsed = parseDisplayDate(entry.value);
+      if (!parsed) {
+        errs.push(errorUnder(entry, 'Enter date as DD | MMM | YYYY.'));
+      } else {
+        normalizeDisplayDate(entry);
+        setSpouseIncomePeriods(parsed);
+        const wiWrap = $('#sp-wi-wrapper');
+        wiWrap?.classList.remove('is-hidden');
+        wiWrap?.setAttribute('aria-hidden','false');
+      }
+
+      const country = $('#birth_country');
+      if (!country.value.trim()) {
+        errs.push(errorUnder(country, 'Country is required.'));
+      }
+
+      // spouse world income
+      const wiWrap = $('#sp-wi-wrapper');
+      if (wiWrap && !wiWrap.classList.contains('is-hidden')) {
+        const perRows = panel.querySelectorAll('#sp-wi-wrapper .wi-col--period .wi-row');
+
+        ['sp_inc_y1','sp_inc_y2','sp_inc_y3'].forEach((id, idx) => {
+          const inp = $('#'+id);
+          if (!inp) return;
+          const raw = inp.value.trim();
+          const incRow = inp.closest('.wi-row');
+          const perRow = perRows[idx];
+          const card   = incRow?.closest('.wi-card');
+
+          if (!raw) {
+            errs.push(errorUnder(inp, 'Enter amount or 0.'));
+            incRow?.classList.add('wi-row-error');
+            perRow?.classList.add('wi-row-error');
+            card?.classList.add('wi-card-error');
+            return;
+          }
+
+          const clean = raw.replace(/,/g,'');
+          if (!/^\d+(\.\d{1,2})?$/.test(clean)) {
+            errs.push(errorUnder(inp, 'Enter numbers only.'));
+            incRow?.classList.add('wi-row-error');
+            perRow?.classList.add('wi-row-error');
+            card?.classList.add('wi-card-error');
+            return;
+          }
+
+          // valid
+          incRow?.classList.remove('wi-row-error');
+          perRow?.classList.remove('wi-row-error');
+          card?.classList.remove('wi-card-error');
+          inp.closest('.wi-inline')?.classList.remove('sp-wi-has-error');
+        });
+      }
+    }
+
+    // 2. spouse moved?
+    const movedSel = panel.querySelector('input[name="sp_moved_province"]:checked');
+    if (!movedSel) {
+      errs.push(errorUnder($('#sp_mprov_yes'), 'Please select Yes or No.'));
+    } else if (movedSel.value === 'yes') {
+      const d = $('#sp_moved_date_display');
+      const dGroup = d.closest('.fi-group');
+      if (!parseDisplayDate(d.value)) {
+        errs.push(errorUnder(d, 'Enter date as DD | MMM | YYYY.'));
+      } else {
+        normalizeDisplayDate(d);
+        // date is now good → remove special margin class
+        dGroup?.classList.remove('has-date-error');
+      }
+      const from = $('#sp_prov_from');
+      const to   = $('#sp_prov_to');
+      if (!from.value.trim()) errs.push(errorUnder(from, 'Select a province.'));
+      if (!to.value.trim())   errs.push(errorUnder(to,   'Select a province.'));
+    }
+
+    if (errs.length) {
+      showBanner();
+      const first = errs[0];
+      if (first) {
+        const focusable = first.querySelector('input,select,textarea,button') || first;
+        focusable?.focus?.();
+        first.scrollIntoView({behavior:'smooth', block:'center'});
+      }
+      return false;
+    }
+    return true;
+  }
+
+  /* ----------------------------------------------------------
+     LIVE CLEANUP
+     ---------------------------------------------------------- */
+  panel.addEventListener('input', function (e) {
+    const host = e.target.closest('.fi-group, .yn-group, .qs-block');
+    if (host?.classList.contains('is-invalid')) {
+      host.classList.remove('is-invalid');
+      host.querySelector('.fi-error-text')?.remove();
+      host.classList.remove('sp-wi-has-error');
+    }
+
+    // specifically for the spouse moved date → remove extra margin when user fixes it
+    if (e.target.id === 'sp_moved_date_display') {
+      const g = e.target.closest('.fi-group');
+      if (g && g.classList.contains('has-date-error')) {
+        g.classList.remove('has-date-error');
+      }
+    }
+
+    if (e.target.id === 'sp_inc_y1' || e.target.id === 'sp_inc_y2' || e.target.id === 'sp_inc_y3') {
+      const row = e.target.closest('.wi-row');
+      if (row && e.target.value.trim() !== '') {
+        row.classList.remove('wi-row-error');
+        const wrap = $('#sp-wi-wrapper');
+        if (wrap) {
+          const incRows = wrap.querySelectorAll('.wi-col--income .wi-row');
+          const idx = Array.from(incRows).indexOf(row);
+          if (idx > -1) {
+            const perRows = wrap.querySelectorAll('.wi-col--period .wi-row');
+            perRows[idx]?.classList.remove('wi-row-error');
+          }
+        }
+        row.closest('.wi-card')?.classList.remove('wi-card-error');
+      }
+    }
+
+    if (!panel.querySelector('.is-invalid')) hideBanner();
+  }, true);
+
+  panel.addEventListener('change', function (e) {
+    const t = e.target;
+    if (t.name === 'sp_first_time') toggleFirstTime();
+    if (t.name === 'sp_moved_province') toggleSpouseMoved();
+
+    // also clear margin when date becomes good on change
+    if (t.id === 'sp_moved_date_display') {
+      const g = t.closest('.fi-group');
+      if (g && g.classList.contains('has-date-error')) {
+        g.classList.remove('has-date-error');
+      }
+    }
+
+    const host = t.closest('.fi-group, .yn-group, .qs-block');
+    if (host?.classList.contains('is-invalid')) {
+      host.classList.remove('is-invalid');
+      host.querySelector('.fi-error-text')?.remove();
+      host.classList.remove('sp-wi-has-error');
+    }
+    if (!panel.querySelector('.is-invalid')) hideBanner();
+  }, true);
+
+  /* ----------------------------------------------------------
+     CONTINUE BTN
+     ---------------------------------------------------------- */
+  const nextBtn = panel.querySelector('.continue-btn[data-goto="next"]');
+  if (nextBtn) {
+    nextBtn.addEventListener('click', function (ev) {
+      if (!validateSpouseTax()) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation();
+      }
+    }, true);
+  }
+
+  /* ----------------------------------------------------------
+     INIT
+     ---------------------------------------------------------- */
+  toggleFirstTime();
+  toggleSpouseMoved();
+  ensureBanner();
+})();
+</script>
+
+<!--  CHILDREN ERROR 6 SCRIPT -->
+
+<script>
+(function(){
+  const panel = document.querySelector('.pi-main[data-panel="children"]');
+  if (!panel) return;
+
+  // ---------- helpers ----------
+  const $  = (q, r=document)=>r.querySelector(q);
+  const $$ = (q, r=document)=>Array.from(r.querySelectorAll(q));
+
+  function ensureBanner(){
+    let b = panel.querySelector('#childrenError');
+    if (!b){
+      b = document.createElement('div');
+      b.id = 'childrenError';
+      b.className = 'qs-error-banner';
+      b.setAttribute('role','alert');
+      b.setAttribute('aria-live','polite');
+      b.innerHTML = `
+        <h3>A selection is required.</h3>
+        <p>To proceed, please fill in or correct the required field(s).</p>
+      `;
+      panel.insertBefore(b, panel.firstElementChild);
+    }
+    return b;
+  }
+  function showBanner(){ ensureBanner().classList.add('show'); }
+  function hideBanner(){ panel.querySelector('#childrenError')?.classList.remove('show'); }
+
+  function clearInline(scope){
+    (scope || panel).querySelectorAll('.is-invalid').forEach(n=>n.classList.remove('is-invalid'));
+    (scope || panel).querySelectorAll('.fi-error-text').forEach(n=>n.remove());
+  }
+  function markError(anchor, msg){
+    if (!anchor) return null;
+    const host = anchor.closest('.fi-group, .yn-group, .qs-block') || anchor.parentElement || anchor;
+    host.classList.add('is-invalid');
+    if (!host.querySelector('.fi-error-text')){
+      const m = document.createElement('div');
+      m.className = 'fi-error-text';
+      m.textContent = msg || 'This field is required.';
+      (anchor.parentElement || host).appendChild(m);
+    }
+    return host;
+  }
+
+  // --- DOB helpers (DD | MMM | YYYY) ---
+  const MONTHS = {
+    jan:1, january:1,
+    feb:2, february:2,
+    mar:3, march:3,
+    apr:4, april:4,
+    may:5,
+    jun:6, june:6,
+    jul:7, july:7,
+    aug:8, august:8,
+    sep:9, sept:9, september:9,
+    oct:10, october:10,
+    nov:11, november:11,
+    dec:12, december:12
+  };
+  const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  function isValidDate(y,m,d){
+    const dt = new Date(y, m-1, d);
+    return dt.getFullYear()===y && (dt.getMonth()+1)===m && dt.getDate()===d;
+  }
+
+  // Accepts things like "5 | feb | 2018", "05 Feb 2018", "5-feb-2018" etc.
+  function parseDisplayDOB(v){
+    if (!v) return null;
+    const parts = v.trim().split(/[\s|\/\-]+/).filter(Boolean); // split by | space / -
+    if (parts.length !== 3) return null;
+
+    const d = parseInt(parts[0], 10);
+    const mStr = String(parts[1]).toLowerCase();
+    const y = parseInt(parts[2], 10);
+
+    const m = MONTHS[mStr];
+    if (!m || !d || !y) return null;
+    if (!isValidDate(y, m, d)) return null;
+
+    return { d, m, y };
+  }
+
+  function normalizeDisplayDOB(inputEl, parsed){
+    const day = String(parsed.d).padStart(2,'0');
+    const mon = MONTH_LABELS[parsed.m-1];
+    inputEl.value = `${day} | ${mon} | ${parsed.y}`;
+  }
+
+  // ---------- Validate modal on Save ----------
+  const modal = document.getElementById('child-modal');
+  const btnSave = document.getElementById('child-save');
+
+  if (btnSave){
+    btnSave.addEventListener('click', (ev)=>{
+      // Only validate if modal is visible
+      const visible = modal && getComputedStyle(modal).display !== 'none';
+      if (!visible) return;
+
+      clearInline(modal);
+      let errs = [];
+
+      const f = $('#child_first_name', modal);
+      const l = $('#child_last_name',  modal);
+      const d = $('#child_dob_display', modal);
+      const hiddenDob = $('#child_dob', modal);
+      const radioAny  = modal.querySelector('input[name="child_in_canada"]:checked');
+
+      if (!f.value.trim()) errs.push(markError(f, 'First name is required.'));
+      if (!l.value.trim()) errs.push(markError(l, 'Last name is required.'));
+
+      const parsed = parseDisplayDOB(d.value);
+      if (!parsed) {
+        errs.push(markError(d, 'Enter date as DD | MMM | YYYY.'));
+      } else {
+        // normalize visible field and set hidden ISO yyyy-mm-dd
+        normalizeDisplayDOB(d, parsed);
+        const mm = String(parsed.m).padStart(2,'0');
+        const dd = String(parsed.d).padStart(2,'0');
+        const yy = String(parsed.y);
+        if (hiddenDob) hiddenDob.value = `${yy}-${mm}-${dd}`;
+      }
+
+      if (!radioAny){
+        const r = modal.querySelector('.yn-group input[name="child_in_canada"]');
+        errs.push(markError(r, 'Please select Yes or No.'));
+      }
+
+      if (errs.length){
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation();
+        const first = errs[0];
+        const focusable = first.querySelector('input,select,textarea,button') || first;
+        focusable?.focus?.();
+        return;
+      }
+      // valid → let your existing save handler run
+    }, true);
+  }
+
+  // ---------- Require at least one child before Continue ----------
+  const nextBtn = panel.querySelector('.continue-btn[data-goto="next"]');
+  if (nextBtn){
+    nextBtn.addEventListener('click', (ev)=>{
+      panel.querySelector('#children-error-msg')?.remove();
+      panel.querySelector('.children-table')?.classList.remove('is-invalid-table');
+
+      const tbody = panel.querySelector('#children-tbody');
+      const hiddenBin = panel.querySelector('#children-hidden-inputs');
+
+      let hasRow = false;
+      if (tbody){
+        const rows = Array.from(tbody.querySelectorAll('tr')).filter(tr => tr.id !== 'children-empty-row');
+        hasRow = rows.some(tr => {
+          const t = tr.textContent.trim();
+          return t && !/no children added yet/i.test(t);
+        });
+      }
+      const hasHidden = !!(hiddenBin && hiddenBin.querySelector('[name]'));
+
+      if (!(hasRow || hasHidden)){
+        showBanner();
+        const tableEl = panel.querySelector('.children-table');
+        const msg = document.createElement('div');
+        msg.id = 'children-error-msg';
+        msg.className = 'fi-error-text';
+        msg.textContent = 'Add at least one child.';
+        if (tableEl){
+          tableEl.insertAdjacentElement('afterend', msg);
+          tableEl.classList.add('is-invalid-table');
+          tableEl.scrollIntoView({behavior:'smooth', block:'center'});
+        }
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation();
+      }
+    }, true);
+  }
+
+  // live cleanup
+  panel.addEventListener('input', (e)=>{
+    const host = e.target.closest('.fi-group, .yn-group, .qs-block');
+    if (host?.classList.contains('is-invalid')){
+      host.classList.remove('is-invalid');
+      host.querySelector('.fi-error-text')?.remove();
+      if (!panel.querySelector('.is-invalid')) hideBanner();
+    }
+    if (e.target.closest('.children-table')) {
+      panel.querySelector('#children-error-msg')?.remove();
+      panel.querySelector('.children-table')?.classList.remove('is-invalid-table');
+      hideBanner();
+    }
+  }, true);
+
+})();
+
+</script>
+
+<script>
+(function () {
+  const panel = document.querySelector('.pi-main[data-panel="children"]');
+  if (!panel) return;
+
+  function hasAtLeastOneChild() {
+    const tbody = panel.querySelector('#children-tbody');
+    const hiddenBin = panel.querySelector('#children-hidden-inputs');
+
+    // Any real row (not the placeholder “children-empty-row”)
+    let hasRow = false;
+    if (tbody) {
+      const rows = Array.from(tbody.querySelectorAll('tr')).filter(tr => tr.id !== 'children-empty-row');
+      hasRow = rows.some(tr => {
+        const t = tr.textContent.trim();
+        return t && !/no children added yet/i.test(t);
+      });
+    }
+
+    // Or hidden inputs created by your saver
+    const hasHidden = !!(hiddenBin && hiddenBin.querySelector('[name]'));
+    return hasRow || hasHidden;
+  }
+
+  function clearStaleErrors() {
+    panel.querySelectorAll('.is-invalid, .is-invalid-table').forEach(el => {
+      el.classList.remove('is-invalid', 'is-invalid-table');
+    });
+    panel.querySelector('#children-error-msg')?.remove();
+  }
+
+  function removeChildrenBannerIfValid() {
+    // If the panel is valid (has at least one child and no inline errors), nuke the banner
+    const anyInlineInvalid = panel.querySelector('.is-invalid, .is-invalid-table, .fi-error-text');
+    if (hasAtLeastOneChild() && !anyInlineInvalid) {
+      // Remove the specific banner if present
+      panel.querySelector('#childrenError')?.remove();
+      // Safety: remove any generic qs-error-banner that lives inside this panel
+      panel.querySelectorAll('.qs-error-banner').forEach(el => el.remove());
+    }
+  }
+
+  function reconcile() {
+    clearStaleErrors();
+    removeChildrenBannerIfValid();
+  }
+
+  // Run now and after the DOM settles (covers SPA re-renders / async row injection)
+  requestAnimationFrame(reconcile);
+  setTimeout(reconcile, 0);
+  setTimeout(reconcile, 150);
+  setTimeout(reconcile, 500);
+
+  // Re-run whenever the children table changes
+  const tbody = panel.querySelector('#children-tbody');
+  if (tbody) {
+    const mo = new MutationObserver(reconcile);
+    mo.observe(tbody, { childList: true });
+  }
+
+  // Extra safety for SPA navigation / visibility changes
+  document.addEventListener('visibilitychange', reconcile, true);
+})();
+</script>
+
+
+
+<!--  OTHER INCOME ERROR 7 SCRIPT -->
+
+<script>
+(function(){
+  const panel = document.querySelector('.pi-main[data-panel="other-income"]');
+  if (!panel) return;
+
+  /* ---------------------------- shorthands ---------------------------- */
+  const $  = (q, r=panel)=> r.querySelector(q);
+  const $$ = (q, r=panel)=> Array.from(r.querySelectorAll(q));
+
+  /* ------------------------------ helpers ----------------------------- */
+  function showBanner(){
+    let b = $('#otherIncomeError');
+    if (!b){
+      b = document.createElement('div');
+      b.id = 'otherIncomeError';
+      b.className = 'qs-error-banner';
+      b.setAttribute('role','alert');
+      b.innerHTML = '<h3>A selection is required.</h3><p>To proceed, please fill in or correct the required field(s).</p>';
+      panel.insertBefore(b, panel.firstElementChild);
+    }
+    b.classList.add('show');
+  }
+  function hideBanner(){ $('#otherIncomeError')?.classList.remove('show'); }
+
+  function isShown(node){
+    if (!node) return false;
+    const s = getComputedStyle(node);
+    if (s.display === 'none' || s.visibility === 'hidden') return false;
+    if (node.offsetParent === null && s.position !== 'fixed') return false;
+    return node.getAttribute('aria-hidden') !== 'true';
+  }
+
+  function clearErrors(scope=panel){
+    $$('.is-invalid', scope).forEach(n => n.classList.remove('is-invalid','has-date-error'));
+    $$('.fi-error-text', scope).forEach(n => n.remove());
+    $('.props-table-error', scope)?.remove();
+    hideBanner();
+  }
+
+  function clearSpouseErrors(){
+    // remove any spouse-specific errors if spouse UI is hidden/absent
+    ['#sp-gig-expenses-block', '#sp-hst-fields'].forEach(sel=>{
+      const wrap = $(sel);
+      if (!wrap || !isShown(wrap)) {
+        $$('.is-invalid', wrap || panel).forEach(n=>n.classList.remove('is-invalid'));
+        $$('.fi-error-text', wrap || panel).forEach(n=>n.remove());
+      }
+    });
+  }
+
+  function errorUnderRadio(radioEl, msg){
+    if (!radioEl) return null;
+    const group = radioEl.closest('.yn-group');
+    if (!group) return null;
+    group.classList.add('is-invalid');
+    if (!group.querySelector('.fi-error-text')){
+      const e = document.createElement('div');
+      e.className = 'fi-error-text';
+      e.textContent = msg || 'Please select Yes or No.';
+      group.appendChild(e); // sits under the buttons
+    }
+    return group;
+  }
+
+  function errorUnderField(inputEl, msg){
+    if (!inputEl) return null;
+    const group = inputEl.closest('.fi-group') || inputEl.parentElement;
+    const block = inputEl.closest('.qs-block');
+    const help  = block?.querySelector('.qs-help'); // the yellow note
+    group?.classList.add('is-invalid');
+
+    // avoid duplicates in this block
+    if (block?.querySelector('.fi-error-text')) return block || group;
+
+    const e = document.createElement('div');
+    e.className = 'fi-error-text';
+    e.textContent = msg || 'This field is required.';
+
+    // For Summary of Expenses (you or spouse), place AFTER the yellow note
+    if (inputEl.id === 'gig_expenses_summary' || inputEl.id === 'sp_gig_expenses_summary') {
+      e.classList.add('fi-error-afterhelp');
+      if (help) help.insertAdjacentElement('afterend', e);
+      else group?.appendChild(e);
+    } else {
+      group?.appendChild(e); // default: under the field
+    }
+    return group || block;
+  }
+
+  /* ----------------------- show/hide sections ------------------------ */
+  const youGigYes   = $('#gig_income_yes');
+  const youGigNo    = $('#gig_income_no');
+  const youGigBlock = $('#gig-expenses-block');
+
+  const spGigYes   = $('#sp_gig_income_yes');
+  const spGigNo    = $('#sp_gig_income_no');
+  const spGigBlock = $('#sp-gig-expenses-block');
+
+  function refreshYouGig(){
+    youGigBlock && (youGigBlock.style.display = youGigYes?.checked ? '' : 'none');
+  }
+  function refreshSpGig(){
+    const visible = !!spGigYes?.checked;
+    if (spGigBlock) spGigBlock.style.display = visible ? '' : 'none';
+    if (!visible) clearSpouseErrors();
+  }
+
+  youGigYes?.addEventListener('change', refreshYouGig);
+  youGigNo ?.addEventListener('change', refreshYouGig);
+  spGigYes ?.addEventListener('change', refreshSpGig);
+  spGigNo  ?.addEventListener('change', refreshSpGig);
+  refreshYouGig();
+  refreshSpGig();
+
+  // HST sub-sections
+  const youHstYes   = $('#hst_yes'),     youHstNo   = $('#hst_no'),     youHstWrap = $('#hst-fields');
+  const spHstYes    = $('#sp_hst_yes'),  spHstNo    = $('#sp_hst_no'),  spHstWrap  = $('#sp-hst-fields');
+
+  function refreshYouHst(){
+    youHstWrap && (youHstWrap.style.display = youHstYes?.checked ? '' : 'none');
+  }
+  function refreshSpHst(){
+    const visible = !!spHstYes?.checked;
+    if (spHstWrap) spHstWrap.style.display = visible ? '' : 'none';
+    if (!visible) clearSpouseErrors();
+  }
+
+  youHstYes?.addEventListener('change', refreshYouHst);
+  youHstNo ?.addEventListener('change', refreshYouHst);
+  spHstYes ?.addEventListener('change', refreshSpHst);
+  spHstNo  ?.addEventListener('change', refreshSpHst);
+  refreshYouHst();
+  refreshSpHst();
+
+  /* ----------------------------- validator -------------------------- */
+  function validateOtherIncome(){
+    clearErrors();
+    const errs = [];
+
+    /* ---- You ---- */
+    const youGigSel = $('input[name="gig_income"]:checked')?.value;
+    if (!youGigSel) errs.push(errorUnderRadio($('#gig_income_yes')));
+
+    if (youGigSel === 'yes'){
+      const youSummary = $('#gig_expenses_summary');
+      if (!youSummary?.value.trim()){
+        errs.push(errorUnderField(youSummary, 'Summary of expenses is required.'));
+      }
+      const youHstSel = $('input[name="gig_hst"]:checked')?.value;
+      if (!youHstSel) errs.push(errorUnderRadio($('#hst_yes')));
+      if (youHstSel === 'yes'){
+        if (!$('#hst_number')?.value.trim()) errs.push(errorUnderField($('#hst_number'), 'HST # is required.'));
+        if (!$('#hst_access')?.value.trim()) errs.push(errorUnderField($('#hst_access'), 'Access code is required.'));
+        if (!$('#hst_start') ?.value.trim()) errs.push(errorUnderField($('#hst_start'),  'Start Date is required.'));
+        if (!$('#hst_end')   ?.value.trim()) errs.push(errorUnderField($('#hst_end'),    'End Date is required.'));
+      }
+    }
+
+    /* ---- Spouse: validate ONLY if spouse UI exists AND is visible ---- */
+    const spouseUIExists =
+      !!$('#sp_gig_income_yes') || !!$('#sp_gig_income_no') || !!$('#sp-gig-expenses-block');
+
+    const spouseSectionVisible =
+      spouseUIExists && isShown($('#sp-gig-expenses-block') || $('#sp-hst-fields') || panel);
+
+    if (spouseSectionVisible) {
+      const spGigSel = $('input[name="sp_gig_income"]:checked')?.value;
+      if (!spGigSel) {
+        const anchor = $('#sp_gig_income_yes') || $('#sp_gig_income_no');
+        if (anchor) errs.push(errorUnderRadio(anchor));
+      }
+
+      if (spGigSel === 'yes'){
+        const spSummary = $('#sp_gig_expenses_summary');
+        if (!spSummary?.value.trim()){
+          errs.push(errorUnderField(spSummary, 'Summary of expenses is required.'));
+        }
+
+        const spHstSel = $('input[name="sp_gig_hst"]:checked')?.value;
+        if (!spHstSel){
+          const anchor = $('#sp_hst_yes') || $('#sp_hst_no');
+          if (anchor) errs.push(errorUnderRadio(anchor));
+        }
+        if (spHstSel === 'yes'){
+          if (!$('#sp_hst_number')?.value.trim()) errs.push(errorUnderField($('#sp_hst_number'), 'HST # is required.'));
+          if (!$('#sp_hst_access')?.value.trim()) errs.push(errorUnderField($('#sp_hst_access'), 'Access code is required.'));
+          if (!$('#sp_hst_start') ?.value.trim()) errs.push(errorUnderField($('#sp_hst_start'),  'Start Date is required.'));
+          if (!$('#sp_hst_end')   ?.value.trim()) errs.push(errorUnderField($('#sp_hst_end'),    'End Date is required.'));
+        }
+      }
+    } else {
+      // Spouse UI not in play → ensure no stray spouse errors linger
+      clearSpouseErrors();
+    }
+
+    /* ---- Rent properties: require at least one row ---- */
+    const tbody = $('#props-tbody');
+    const hasRows = !!tbody && Array.from(tbody.children).some(tr => !tr.id || !/props-empty-row/.test(tr.id));
+    if (!hasRows){
+      const tableWrap = $('#rental-table')?.parentElement;
+      if (tableWrap && !$('.props-table-error', tableWrap)){
+        const e = document.createElement('div');
+        e.className = 'props-table-error';
+        e.textContent = 'Please add at least one property.';
+        tableWrap.appendChild(e);
+      }
+      errs.push(tbody || $('#rental-table'));
+    }
+
+    if (errs.length){
+      showBanner();
+      const first = errs[0];
+      const focusable = first?.querySelector?.('input,textarea,select,button,.yn-btn') || first;
+      focusable?.focus?.();
+      first?.scrollIntoView?.({behavior:'smooth', block:'center'});
+      return false;
+    }
+    return true;
+  }
+
+  /* ---------------------------- live cleanup ------------------------ */
+  panel.addEventListener('input', (e)=>{
+    const host = e.target.closest('.fi-group, .yn-group');
+    if (host?.classList.contains('is-invalid')){
+      host.classList.remove('is-invalid','has-date-error');
+      host.querySelector('.fi-error-text')?.remove();
+      if (!panel.querySelector('.is-invalid')) hideBanner();
+    }
+    // interacting with rentals → remove table-level warning
+    if (e.target.closest('#rental-table') || e.target.closest('#add-prop-wrap-top') || e.target.closest('#add-prop-wrap-bottom')){
+      $('.props-table-error')?.remove();
+    }
+  }, true);
+
+  panel.addEventListener('change', (e)=>{
+    const host = e.target.closest('.fi-group, .yn-group');
+    if (host?.classList.contains('is-invalid')){
+      host.classList.remove('is-invalid','has-date-error');
+      host.querySelector('.fi-error-text')?.remove();
+      if (!panel.querySelector('.is-invalid')) hideBanner();
+    }
+  }, true);
+
+  /* ------------------------------ continue -------------------------- */
+  const nextBtn = panel.querySelector('.continue-btn[data-goto="next"]');
+  nextBtn?.addEventListener('click', (ev)=>{
+    if (!validateOtherIncome()){
+      ev.preventDefault();
+      ev.stopPropagation();
+      ev.stopImmediatePropagation();
+    }
+  }, true);
+
+  /* ---------------- calendar icon alignment hosts ------------------- */
+  panel.querySelectorAll('.dob-input').forEach(inp => {
+    inp.closest('.fi-group')?.classList.add('fi-cal');
+  });
+})();
+</script>
+
+<!--  UPLOAD ERROR 8 SCRIPT -->
+
+<script>
+(() => {
+  const panels = Array.from(document.querySelectorAll(
+    '.pi-main[data-panel="upload-self"], .pi-main[data-panel="upload-spouse"]'
+  ));
+  if (!panels.length) return;
+
+  const $  = (sel, r=document)=> r.querySelector(sel);
+  const $$ = (sel, r=document)=> Array.from(r.querySelectorAll(sel));
+
+  /* ------------ helpers ------------ */
+  function isShown(node){
+    if (!node) return false;
+    const s = getComputedStyle(node);
+    if (s.display === 'none' || s.visibility === 'hidden') return false;
+    if (node.closest('[hidden],[aria-hidden="true"],template')) return false;
+    const hiddenAncestor = node.closest('[style*="display:none"],[style*="display: none"]');
+    return !hiddenAncestor;
+  }
+  function isRequired(dz){
+    if (dz.hasAttribute('data-required')) return dz.getAttribute('data-required') === 'true';
+    if (dz.hasAttribute('data-optional')) return dz.getAttribute('data-optional') !== 'true';
+    return true;
+  }
+
+  function ensureBanner(panel){
+    const id = panel.matches('[data-panel="upload-self"]') ? 'uploadSelfError' : 'uploadSpouseError';
+    let b = panel.querySelector('#'+id);
+    if (!b){
+      b = document.createElement('div');
+      b.id = id;
+      b.className = 'qs-error-banner';
+      b.setAttribute('role','alert');
+      b.setAttribute('aria-live','polite');
+      b.innerHTML = '<h3>A selection is required.</h3><p>To proceed, please fill in or correct the required field(s).</p>';
+      panel.insertBefore(b, panel.firstElementChild);
+    }
+    return b;
+  }
+  const showBanner = (panel)=> ensureBanner(panel).classList.add('show');
+  const hideBanner = (panel)=> ensureBanner(panel).classList.remove('show');
+
+  function clearInline(panel){
+    $$('.is-invalid', panel).forEach(n=>n.classList.remove('is-invalid'));
+    $$('.fi-error-text', panel).forEach(n=>n.remove());
+  }
+
+  /* === always place error OUTSIDE the dashed border === */
+  function placeErrorOutsideDropzone(dz, msg){
+    // allow multiple, but de-dup identical text next to same dz
+    const sibs = Array.from(dz.parentElement?.querySelectorAll(':scope > .fi-error-text') || []);
+    const dupe = sibs.find(n => n.textContent.trim() === msg.trim());
+    if (dupe) return dupe;
+    const e = document.createElement('div');
+    e.className = 'fi-error-text';
+    e.textContent = msg;
+    dz.insertAdjacentElement('afterend', e);
+    return e;
+  }
+
+  /* ---- dropzone refs & counts ---- */
+  function dzRefs(dz, panel){
+    const inputSel = dz.getAttribute('data-input');
+    const listSel  = dz.getAttribute('data-list');
+    const input    = inputSel ? $(inputSel, panel) : dz.querySelector('input[type="file"]');
+    const list     = listSel  ? $(listSel, panel)  : dz.nextElementSibling;
+    return { input, list };
+  }
+  function dzFileCount(dz, panel){
+    const { input, list } = dzRefs(dz, panel);
+    if (list){
+      const items = list.querySelectorAll('.dz-item, .file-row, .dz-file, .dropzone-item');
+      if (items.length) return items.length;
+    }
+    return input?.files?.length || 0;
+  }
+
+  /* ---- Yes/No + password (radios or buttons) ---- */
+  function getYNState(item){
+    const yesRadio = item.querySelector('input[type="radio"][value="yes" i]');
+    const noRadio  = item.querySelector('input[type="radio"][value="no"  i]');
+    if (yesRadio || noRadio){
+      return { yes: !!(yesRadio && yesRadio.checked), no: !!(noRadio && noRadio.checked) };
+    }
+    const isBtn = b => b && (b.classList.contains('active') || b.getAttribute('aria-pressed') === 'true');
+    const yesBtn = Array.from(item.querySelectorAll('button, .btn, .yn-btn, .tax-btn'))
+      .find(b => (b.textContent || '').trim().toLowerCase() === 'yes');
+    const noBtn = Array.from(item.querySelectorAll('button, .btn, .yn-btn, .tax-btn'))
+      .find(b => (b.textContent || '').trim().toLowerCase() === 'no');
+
+    if (yesBtn || noBtn){
+      const hidden = item.querySelector('input[type="hidden"]');
+      const hv = (hidden?.value || '').trim().toLowerCase();
+      const hvYes = hv === 'yes', hvNo = hv === 'no';
+      return { yes: isBtn(yesBtn) || hvYes, no: isBtn(noBtn) || hvNo };
+    }
+    return { yes:false, no:false, none:true };
+  }
+
+  /* ---- validate one dropzone, collect messages to show OUTSIDE ---- */
+  function validateDropzone(panel, dz){
+    const problems = [];   // array of {anchor, message}
+    if (!isShown(dz)) return problems;
+
+    const required = isRequired(dz);
+    const min = Math.max(parseInt(dz.getAttribute('data-min') || '1', 10), 1);
+    const count = dzFileCount(dz, panel);
+
+    if (required && count < min){
+      dz.classList.add('is-invalid');
+      problems.push({ anchor: dz, message: (min === 1 ? 'Please upload at least one file.' : `Please upload at least ${min} files.`) });
+    }
+
+    const { list } = dzRefs(dz, panel);
+    if (list){
+      const items = list.querySelectorAll('.dz-item, .file-row, .dz-file, .dropzone-item');
+      items.forEach((item, idx) => {
+        if (!isShown(item)) return;
+
+        const yn = getYNState(item);
+        const pw = item.querySelector('.pw-input, input[type="password"]');
+
+        // if there is no Y/N UI at all, skip
+        if (!yn.none && !yn.yes && !yn.no){
+          item.classList.add('is-invalid');
+          problems.push({ anchor: dz, message: `File ${idx+1}: Please choose Yes or No.` });
+        } else if (yn.yes){
+          const v = (pw?.value || '').trim();
+          if (!v){
+            (pw || item).classList.add('is-invalid');
+            problems.push({ anchor: dz, message: `File ${idx+1}: Password is required when protected = Yes.` });
+          }
+        }
+      });
+    }
+
+    // render all messages OUTSIDE the dashed box
+    problems.forEach(p => placeErrorOutsideDropzone(dz, p.message));
+    return problems.length ? [dz] : []; // return one anchor for scrolling
+  }
+
+  function scrollToError(el){
+    const block = el.closest('.qs-block') || el;
+    const anchor = block.querySelector('.dropzone-ui') || block;
+    const y = anchor.getBoundingClientRect().top + window.scrollY - 80;
+    window.scrollTo({ top: y, behavior: 'smooth' });
+    const focusable = anchor.querySelector?.('input,button,select,textarea,[tabindex]') || anchor;
+    setTimeout(()=> focusable?.focus?.(), 300);
+  }
+
+  function validatePanel(panel){
+    clearInline(panel);
+    const anchors = [];
+    $$('.dropzone', panel).forEach(dz => anchors.push(...validateDropzone(panel, dz)));
+
+    if (anchors.length){
+      showBanner(panel);
+      scrollToError(anchors[0]);
+      return false;
+    }
+    hideBanner(panel);
+    return true;
+  }
+
+  function bindCleanup(panel){
+    function clearFrom(target){
+      const host = target.closest('.is-invalid');
+      if (host){
+        host.classList.remove('is-invalid');
+        // clear all outside-errors if no invalids remain in this block
+        const block = host.closest('.qs-block') || panel;
+        if (!block.querySelector('.is-invalid')){
+          // remove all error messages attached after dropzones in this block
+          $$('.dropzone + .fi-error-text', block).forEach(n=>n.remove());
+        }
+      }
+      if (!panel.querySelector('.is-invalid')) hideBanner(panel);
+    }
+    panel.addEventListener('input',  e => clearFrom(e.target), true);
+    panel.addEventListener('change', e => clearFrom(e.target), true);
+    panel.addEventListener('click',  e => {
+      const btn = e.target.closest('button, .yn-btn, .tax-btn');
+      if (btn) clearFrom(btn);
+    }, true);
+  }
+
+  panels.forEach(panel => {
+    bindCleanup(panel);
+    const nextBtn = panel.querySelector('.continue-btn[data-goto="next"]');
+    if (nextBtn){
+      nextBtn.addEventListener('click', (ev) => {
+        if (!validatePanel(panel)){
+          ev.preventDefault();
+          ev.stopPropagation();
+          ev.stopImmediatePropagation();
+        }
+      }, true);
+    }
+  });
+})();
+</script>
+
+
 
 
 </body>

@@ -16,13 +16,16 @@
    | DATABASE : First create the database using phpmyadmin or mysql and enter the name of database
    |
    */
-
+/*
     $GLOBALS['HOST']     = 'localhost';
     $GLOBALS['USERNAME'] = 'paragonafs';
     $GLOBALS['PASSWORD'] = 'W6j4jCV9zJj8Tk8';
     $GLOBALS['DATABASE'] = 'paragonafs';
-
-
+*/
+    $GLOBALS['HOST']     = '127.0.0.1';   // or 'localhost'
+    $GLOBALS['USERNAME'] = 'root';        // laragon/xampp default
+    $GLOBALS['PASSWORD'] = '';            // empty password W6j4jCV9zJj8Tk8CWD
+    $GLOBALS['DATABASE'] = 'paragon';     // the one you see in HeidiSQL
     /*
     |--------------------------------------------------------------------------
     | Application URL
@@ -30,10 +33,14 @@
     |
     | This URL will be used in the emails.
     |
+
+     $baseUrl = 'https://paragonafs.ca';
+     
     */
 
-    $baseUrl = 'https://paragonafs.ca';
+   
 
+$baseUrl = 'http://localhost:8000';
 
     /*
    |--------------------------------------------------------------------------

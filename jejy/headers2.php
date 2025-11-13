@@ -14,11 +14,12 @@
   .mini-header{
     position:sticky; top:0; z-index:1000;
     background:#fff; border-bottom:1px solid var(--border);
+    box-shadow: 0 0 2px 0 rgba(0, 25, 40, 0.04), 0 2px 2px 0 rgba(0, 25, 40, 0.04), 0 4px 4px 0 rgba(0, 25, 40, 0.1);
   }
   .mh-container{
-    max-width:1200px; margin:0 280px; height:90px;
+    max-width:1260px; margin:0 280px; height:90px;
     display:flex; align-items:center; justify-content:space-between;
-    padding:0 12px;
+    padding:0 -12px;
   }
   .mh-logo img{ height:50px; width:auto; display:block; }
 
@@ -215,7 +216,7 @@
 
 /* Center header container on wide screens */
 .mh-container{
-  max-width: 1200px;
+  max-width: 1290px;
   margin: 0 auto !important;
   padding: 0 16px;
 }
@@ -223,6 +224,45 @@
 /* Desktop/tablet: header sticky, not fixed */
 @media (min-width: 960px){
   .mini-header{ position: sticky !important; top: 0; }
+}
+
+
+/* base */
+.mini-header{
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* layout */
+.mh-container{
+  max-width: 1290px;
+  margin: 0 auto;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+
+/* ✅ mobile & tablet: let it scroll away too */
+@media (max-width: 959px){
+  .mini-header{
+    position: sticky;   /* not fixed anymore */
+    top: 0;
+  }
+  /* if you had this before to push content down, remove it: */
+  body{ padding-top: 0; }
+}
+
+/* desktop keeps same behavior */
+@media (min-width: 960px){
+  .mini-header{
+    position: sticky;
+    top: 0;
+  }
 }
 
 </style>

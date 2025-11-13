@@ -1,67 +1,191 @@
-<!-- Start of Footer -->
+<!-- ========== FOOTER ========== -->
+<style>
+  .pa-footer{
+    background:#f1f2f5;
+    margin-top:48px;
+    border-top:1px solid rgba(15, 23, 42, 0.04);
+    box-shadow:0 -3px 12px rgba(15, 23, 42, 0.03);
+    padding:22px 18px 16px;
+  }
 
-<footer>
-    <div class="row company_links">
-        <div class="col-lg-4 col-md-9 paragon_contact">
-            <img class="footer_logo" src="../assets/img/paragon_logo.png" alt="">
-            <ul class="info-list clearfix">
-                <li style="width: 250px;" class="footer_address_link"><img class="company_links_icon" src="https://paragonafs.ca/assets/icons/map.png" width="25" height="25" /> <a href="https://www.google.com/maps?ll=43.66714,-79.733547&z=16&t=m&hl=en&gl=PH&mapclient=embed&q=1+Bartley+Bull+Pkwy+%2319a+Brampton,+ON+L6W+3T7+Canada">#19A - 1, Bartley Bull Pkwy, Brampton, Ontario L6W 3T7</a> </li>
-                <li><img class="company_links_icon" src="https://paragonafs.ca/assets/icons/gmail.png" width="25" height="25" /> <a href="mailto:<a href=&quot;mailto:info@paragonafs.ca&quot;>info@paragonafs.ca</a>"></a><a href="mailto:info@paragonafs.ca">info@paragonafs.ca</a></li>
-                <li><img class="company_links_icon" src="https://paragonafs.ca/assets/icons/landline.png" width="25" height="25" /> <a href="tel:416-477-3359">416-477-3359</a></li>
-                <li><img class="company_links_icon" src="https://paragonafs.ca/assets/icons/iphone.png" width="25" height="25" /> <a href="tel:647-909-8484">647-909-8484</a></li>
-                <li><img class="company_links_icon" src="https://paragonafs.ca/assets/icons/iphone.png" width="25" height="25" /> <a href="tel:437-881-9175">437-881-9175</a></li>
-            </ul>
-        </div>
-        <div class="col-lg-2 col-md-3 paragon_links paragon_links_menu">
-            <h4>Quick Links</h4>
-            <ul>
-                <li><a href="/">Home</a></li>
-                <li><a href="/about.php">About Us</a></li>
-                <li><a href="/services.php">Services</a></li>
-                <li><a href="/documents-page.php">Documents</a></li>
-                <li><a href="/contact_us.php">Contact</a></li>
-                <li style="white-space: nowrap;"><a href="/form">Upload Documents</a></li>
-                <li style="white-space: nowrap;"><a href="https://paragon-accounting-and-financial-services-inc.square.site/">Book an Appointment</a></li>
-            </ul>
-        </div>
+  /* desktop: 2 columns so it’s not tall */
+  .pa-footer-top{
+    max-width:1190px;
+    margin:0 auto;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:20px;
+    align-items:flex-start;
+  }
 
-        <div class="col-lg-3 col-md-3 paragon_links" style="margin-right: 20px;">
-            <h4>Our Services</h4>
-            <ul>
-                <li><a href="/personal_tax.php">Personal Income Tax</a></li>
-                <li><a href="/corporate_tax.php" style="width: 100px;">Corporate Income Tax</a></li>
-                <li style="white-space: nowrap;"><a href="/incorporate.php">Incorporate / Register a Business</a></li>
-                <li><a href="/bookkeeping.php">Accounting / Bookkeeping</a></li>
-                <li><a href="/payroll_salary.php">Payroll & Salary Calculations</a></li>
-                <li><a href="/gst_hst.php">GST/HST Returns</a></li>
-            </ul>
-        </div>
+  /* left column */
+  .pa-footer-brand{
+    max-width:320px;
+  }
+  .pa-footer-logo{
+    height:58px;
+    width:auto;
+    display:block;
+    margin-bottom:6px;
+  }
+  .pa-footer-tag{
+    margin:0;
+    color:#475569;
+    font-size:0.88rem;
+    line-height:1.35;
+  }
 
-        <div class="col-lg-3 col-md-3">
-            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2886.08800044863!2d-79.7335473!3d43.667139600000006!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x882b3fd159b604b5%3A0x7eb23c5a1f69f3d6!2s1%20Bartley%20Bull%20Pkwy%20%2319a%2C%20Brampton%2C%20ON%20L6W%203T7%2C%20Canada!5e0!3m2!1sen!2sph!4v1674484191141!5m2!1sen!2sph" width="100%" height="95%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-            <!-- <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d6865.733003135475!2d-79.72891554662286!3d43.65471884918712!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x882b3fc3c877dd11%3A0x522c49ab8aed44b8!2s26%20Lafleur%20Ct%2C%20Brampton%2C%20ON%20L6Y%203L8%2C%20Canada!5e0!3m2!1sen!2sph!4v1672355306228!5m2!1sen!2sph" width="270px" height="95%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe> -->
-        </div>
+  /* right column: contacts */
+  .pa-footer-contact ul{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+  }
+  .pa-footer-contact li{
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+  }
+  .pa-icon{
+    width:20px;
+    height:20px;
+    flex:0 0 20px;
+    margin-top:1px;
+  }
+  .pa-footer-contact a{
+    color:#0f172a;
+    text-decoration:none;
+    line-height:1.25;
+  }
+  .pa-footer-contact a:hover{
+    color:#0b66c3;
+  }
 
-        <div class="row" style="border-top: 1px solid #cccccc;margin-top: 56px;">
+  /* bottom bar */
+  .pa-footer-bottom{
+    max-width:1190px;
+    margin:18px auto 0;
+    padding-top:12px;
+    border-top:1px solid rgba(15, 23, 42, 0.08);
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    align-items:center;
+    font-size:0.8rem;
+    color:#64748b;
+  }
+  .pa-made{
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+  .pa-cwd-pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background:#0f172a;
+    border-radius:999px;
+    padding:3px 10px;
+  }
+  .pa-cwd-pill img{
+    height:28px;
+    width:auto;
+    display:block;
+  }
+  .pa-copy{ white-space:nowrap; }
 
-            <div class="col-lg-6">
-                <h6 style="text-align: start;">
-                    <a href="https://canadianwebdesigns.ca/website-design-development/" target="_blank" rel="noopener">Designed</a>
-                    and
-                    <a href="https://canadianwebdesigns.ca/get-in-touch/" target="_blank" rel="noopener"> Marketed</a>
-                    by
-                    <a href="https://canadianwebdesigns.ca" target="_blank" style="margin-left: 10px;"> <img class="long-logo" src="https://canadianwebdesigns.ca/wp-content/uploads/2019/07/cwd-white.png" alt="cwd-logo-long" style="width: 100px;"></a>
-                </h6>
-            </div>
+  /* mobile */
+  @media (max-width: 768px){
+    .pa-footer{
+      padding:16px 20px 12px;
+    }
+    .pa-footer-top{
+      grid-template-columns: 1fr;
+      gap:14px;
+    }
+  .pa-footer-brand{
+    max-width:none;
+    margin:0 auto;              /* center the block */
+    display:flex;
+    flex-direction:column;      /* logo on top, text under */
+    align-items:center;         /* center horizontally */
+    text-align:center;          /* center the tagline text */
+  }
 
-            <div class="col-lg-6">
-                <h6 style=" margin-top: 8px;">Copyright © 2021. All rights reserved.</h6>
-            </div>
-        </div>
+    .pa-cwd-pill img{
+    height:22px;
+  }
+    .pa-footer-logo{
+      height:52px;
+    }
+    .pa-footer-contact ul{
+      gap:6px;
+    }
+    .pa-footer-bottom{
+      flex-direction:column;
+      align-items:flex-start;
+      gap:4px;
+    }
+    .pa-copy{
+      white-space:normal;
+    }
+  }
+</style>
 
-
+<footer class="pa-footer">
+  <div class="pa-footer-top">
+    <!-- left: logo with tagline UNDER it -->
+    <div class="pa-footer-brand">
+      <img src="../assets/img/paragon_logo.png" alt="Paragon Accounting and Financial Services" class="pa-footer-logo">
+      <p class="pa-footer-tag">Personal, accurate, and secure tax filing.</p>
     </div>
+
+    <!-- right: contact list -->
+    <div class="pa-footer-contact">
+      <ul>
+        <li>
+          <img src="https://paragonafs.ca/assets/icons/map.png" alt="" class="pa-icon">
+          <a href="https://www.google.com/maps?ll=43.66714,-79.733547&z=16&t=m&hl=en&gl=PH&mapclient=embed&q=1+Bartley+Bull+Pkwy+%2319a+Brampton,+ON+L6W+3T7+Canada" target="_blank" rel="noopener">
+            #19A - 1, Bartley Bull Pkwy, Brampton, Ontario L6W 3T7
+          </a>
+        </li>
+        <li>
+          <img src="https://paragonafs.ca/assets/icons/gmail.png" alt="" class="pa-icon">
+          <a href="mailto:info@paragonafs.ca">info@paragonafs.ca</a>
+        </li>
+        <li>
+          <img src="https://paragonafs.ca/assets/icons/landline.png" alt="" class="pa-icon">
+          <a href="tel:416-477-3359">416-477-3359</a>
+        </li>
+        <li>
+          <img src="https://paragonafs.ca/assets/icons/iphone.png" alt="" class="pa-icon">
+          <a href="tel:647-909-8484">647-909-8484</a>
+        </li>
+        <li>
+          <img src="https://paragonafs.ca/assets/icons/iphone.png" alt="" class="pa-icon">
+          <a href="tel:437-881-9175">437-881-9175</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="pa-footer-bottom">
+    <p class="pa-made">
+      Designed and marketed by
+      <a href="https://canadianwebdesigns.ca" target="_blank" rel="noopener">
+        <span class="pa-cwd-pill">
+          <img src="https://canadianwebdesigns.ca/wp-content/uploads/2019/07/cwd-white.png"
+               alt="Canadian Website Designs">
+        </span>
+      </a>
+    </p>
+    <p class="pa-copy">© 2021 Paragon AFS. All rights reserved.</p>
+  </div>
 </footer>
+<!-- ========== /FOOTER ========== -->
 
 
 <!-- End of Footer -->
