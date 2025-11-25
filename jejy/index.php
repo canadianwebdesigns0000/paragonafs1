@@ -20377,4 +20377,338 @@ panel.addEventListener('change', (e)=>{
   }, 1500);
 </script>
 
+
+<!--  ERROR NAV  -->
+
+<script>
+(function () {
+  if (window.__PI_STEP_GUARD) return;
+  window.__PI_STEP_GUARD = true;
+
+  // --- state ----------------------------------------------------
+  const visited   = new Set(); // panels we've ever shown
+  const completed = new Set(); // panels we've moved *forward* from
+  let furthestIdx = 0;         // index of furthest step we've reached
+
+  // Helpers
+  function currentKey() {
+    const el = document.querySelector('.pi-main[data-panel]:not([hidden])');
+    return el ? el.getAttribute('data-panel') : 'personal';
+  }
+
+  function sidebarOrder() {
+    const arr = [];
+    document.querySelectorAll('.pi-steps [data-step]').forEach(a => {
+      const k = a.getAttribute('data-step');
+      if (k && k !== 'pre') arr.push(k);
+    });
+    // fallback if somehow empty
+    return arr.length ? arr : [
+      'personal','tax','spouse','spouse-tax','children',
+      'other-income','upload-self','upload-spouse','review','confirm'
+    ];
+  }
+
+  function stepsNow() {
+    try {
+      if (window.App && typeof window.App.activeSteps === 'function') {
+        const s = window.App.activeSteps();
+        if (Array.isArray(s) && s.length) return s;
+      }
+    } catch (e) {}
+    return sidebarOrder();
+  }
+
+  // Decide if we are allowed to go to "key" from sidebar/mobile
+  function canGoTo(key) {
+    if (!key || key === 'pre') return false;
+
+    // Welcome / pre is always allowed via special buttons
+    if (key === 'welcome') return true;
+
+    const steps = stepsNow();
+    const idx   = steps.indexOf(key);
+    if (idx === -1) return false;
+
+    // You may go to any step whose index <= furthestIdx (already reached before)
+    return idx <= furthestIdx;
+  }
+
+  // --- patch showPanel + updateProgress after main app exists ----
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!window.App || typeof window.App.showPanel !== 'function') return;
+
+    const origShow    = window.App.showPanel.bind(window.App);
+    const origUpdate  = (window.App.updateProgress || function(){}).bind(window.App);
+
+    // Init state from wherever we land
+    (function initState(){
+      const steps = stepsNow();
+      const cur   = currentKey();
+      const idx   = steps.indexOf(cur);
+      if (idx >= 0) {
+        visited.add(cur);
+        furthestIdx = idx;
+      }
+    })();
+
+    function patchedUpdateProgress(currentKeyParam) {
+      const cur = currentKeyParam || currentKey();
+      const steps = stepsNow();
+
+      // Re-sync furthestIdx with visited when flags change
+      steps.forEach((k, i) => {
+        if (visited.has(k) && i > furthestIdx) furthestIdx = i;
+      });
+
+      const sidebar = document.querySelector('.pi-steps');
+      if (sidebar) {
+        document.querySelectorAll('.pi-steps [data-step]').forEach(el => {
+          const key = el.dataset.step;
+          if (key === 'pre') return;
+
+          if (!steps.includes(key)) {
+            el.style.display = 'none';
+            return;
+          }
+          el.style.display = '';
+
+          el.classList.remove('is-current','is-done','is-locked');
+
+          const idx = steps.indexOf(key);
+          const curIdx = steps.indexOf(cur);
+          const isCompleted = completed.has(key);
+          const reachable   = idx <= furthestIdx;
+
+          if (key === cur) {
+            el.classList.add('is-current');
+          } else if (isCompleted || idx < curIdx) {
+            // once completed, it always keeps the check
+            el.classList.add('is-done');
+          }
+
+          // Only steps beyond furthestIdx are "locked"
+          if (!reachable && !el.classList.contains('is-current') && !el.classList.contains('is-done')) {
+            el.classList.add('is-locked');
+          }
+        });
+      }
+
+      // Let existing code do anything else it needs
+      try { origUpdate(cur); } catch(e) {}
+    }
+
+    // Override showPanel
+    window.App.showPanel = function (targetKey) {
+      const steps = stepsNow();
+      const cur   = currentKey();
+      const curIdx = steps.indexOf(cur);
+      const tgtIdx = steps.indexOf(targetKey);
+
+      if (curIdx >= 0) visited.add(cur);
+
+      // If we move FORWARD in the flow, mark current as completed
+      if (tgtIdx >= 0 && curIdx >= 0 && tgtIdx > curIdx) {
+        completed.add(cur);
+        if (tgtIdx > furthestIdx) furthestIdx = tgtIdx;
+      }
+
+      // Call original
+      origShow(targetKey);
+
+      // Mark target as visited
+      if (tgtIdx >= 0) {
+        visited.add(targetKey);
+        if (tgtIdx > furthestIdx) furthestIdx = tgtIdx;
+      }
+
+      patchedUpdateProgress(targetKey);
+    };
+
+    // Replace updateProgress with patched version
+    window.App.updateProgress = patchedUpdateProgress;
+
+    // Initial paint
+    setTimeout(() => patchedUpdateProgress(currentKey()), 0);
+  });
+
+  // --- intercept SIDEBAR clicks (back & allowed forwards only) ----
+  document.addEventListener('click', function (e) {
+    const link = e.target.closest('.pi-steps .pi-step[data-step]');
+    if (!link) return;
+
+    const key = link.dataset.goto || link.dataset.step;
+    if (!key || key === 'pre') return;
+
+    if (!canGoTo(key)) {
+      // future step that has never been reached → block
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    }
+    // if allowed, do nothing here – your original sidebar handler + App.showPanel run as usual
+  }, true);
+
+  // --- intercept MOBILE drawer clicks similarly -------------------
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('#pi-mb-nav .pi-mb-link[data-goto]');
+    if (!btn) return;
+
+    let key = btn.getAttribute('data-goto');
+    if (key === 'upload') {
+      // same logic your mobile script uses
+      const f = (window.App && window.App.flags) ? window.App.flags() : {};
+      key = f.spouseFiles ? 'upload-spouse' : 'upload-self';
+    }
+
+    if (!canGoTo(key)) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    }
+  }, true);
+
+})();
+</script>
+
+
+<script>
+(function () {
+  // Run when DOM is ready
+  function onReady(fn) {
+    if (document.readyState !== 'loading') fn();
+    else document.addEventListener('DOMContentLoaded', fn);
+  }
+
+  // Master order of steps (same as your ORDER)
+  const ORDER = [
+    'personal',
+    'tax',
+    'spouse',
+    'spouse-tax',
+    'children',
+    'other-income',
+    'upload-self',
+    'upload-spouse',
+    'review',
+    'confirm'
+  ];
+
+  // Steps that are COMPLETED (user clicked Continue → Next there)
+  const doneSteps = new Set();
+
+  // Furthest step index user has ever visited (in ORDER)
+  let visitedMax = 0;
+
+  // --- 1) Track furthest visited step via pi:panel-changed ---
+  document.addEventListener('pi:panel-changed', function (e) {
+    const key = e.detail && e.detail.panel;
+    const idx = ORDER.indexOf(key);
+    if (idx >= 0 && idx > visitedMax) {
+      visitedMax = idx;
+    }
+  });
+
+  // --- 2) Mark step as DONE when user clicks Continue → Next ---
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('#form-panel .continue-btn[data-goto="next"]');
+    if (!btn) return;
+
+    const currentPanel = document.querySelector(
+      '#form-panel .pi-main[data-panel]:not([hidden])'
+    );
+    if (!currentPanel) return;
+
+    const key = currentPanel.dataset.panel;
+    if (key) {
+      doneSteps.add(key);   // ✅ keep checkmark forever
+    }
+  }, true); // capture so it always fires
+
+  // --- 3) Override App.updateProgress to use DONE + VISITED logic ---
+  onReady(function () {
+    if (!window.App || typeof window.App.updateProgress !== 'function') return;
+
+    const originalUpdate = window.App.updateProgress.bind(window.App);
+    const sidebar   = document.querySelector('.pi-steps');
+    const formPanel = document.getElementById('form-panel');
+
+    window.App.updateProgress = function (currentKey) {
+      if (!sidebar) {
+        // Fallback to original if sidebar missing
+        originalUpdate(currentKey);
+        return;
+      }
+
+      // Active steps (respect marital / spouse / children logic)
+      let stepsActive = [];
+      try {
+        stepsActive = (window.App.activeSteps && window.App.activeSteps()) || [];
+      } catch (e) {}
+      if (!stepsActive || !stepsActive.length) {
+        stepsActive = ORDER.slice();
+      }
+
+      // Ensure visitedMax is at least the current step
+      const curOrderIdx = ORDER.indexOf(currentKey);
+      if (curOrderIdx >= 0 && curOrderIdx > visitedMax) {
+        visitedMax = curOrderIdx;
+      }
+      const maxAllowedIndex = visitedMax;
+
+      sidebar.querySelectorAll('[data-step]').forEach(el => {
+        const key = el.dataset.step;
+        if (!key) return;
+
+        // Hide steps that are not active (e.g. spouse steps when single)
+        if (key !== 'pre' && !stepsActive.includes(key)) {
+          el.style.display = 'none';
+          return;
+        }
+        el.style.display = '';
+
+        // Reset classes
+        el.classList.remove('is-current', 'is-done', 'is-locked');
+        el.removeAttribute('aria-current');
+
+        // "Pre-details" logic stays the same
+        if (key === 'pre') {
+          if (formPanel && formPanel.style.display !== 'none') {
+            el.classList.add('is-done');
+          }
+          return;
+        }
+
+        const orderIndex = ORDER.indexOf(key);
+        const canVisit   = (orderIndex <= maxAllowedIndex);
+        const isCurrent  = (key === currentKey);
+        const isDone     = doneSteps.has(key);
+
+        // Current step highlight
+        if (isCurrent) {
+          el.classList.add('is-current');
+          el.setAttribute('aria-current', 'step');
+        }
+        // Persist checkmarks only for truly done steps
+        if (isDone) {
+          el.classList.add('is-done');
+        }
+
+        // Lock ONLY steps beyond furthest visited
+        if (!canVisit && !isCurrent) {
+          el.classList.add('is-locked');
+        }
+      });
+    };
+
+    // Initial sync (in case you enter in the middle)
+    const firstPanel = document.querySelector('#form-panel .pi-main[data-panel]:not([hidden])');
+    if (firstPanel) {
+      window.App.updateProgress(firstPanel.dataset.panel);
+    }
+  });
+})();
+</script>
+
+
 </body>
