@@ -1010,3 +1010,1234 @@ function toggleClaimFull(){
   ensureBanner();
 })();
 </script>
+
+
+
+<!--  ERROR NAV  -->
+
+<script>
+(function () {
+  if (window.__PI_STEP_GUARD) return;
+  window.__PI_STEP_GUARD = true;
+
+  // --- state ----------------------------------------------------
+  const visited   = new Set(); // panels we've ever shown
+  const completed = new Set(); // panels we've moved *forward* from
+  let furthestIdx = 0;         // index of furthest step we've reached
+
+  // Helpers
+  function currentKey() {
+    const el = document.querySelector('.pi-main[data-panel]:not([hidden])');
+    return el ? el.getAttribute('data-panel') : 'personal';
+  }
+
+  function sidebarOrder() {
+    const arr = [];
+    document.querySelectorAll('.pi-steps [data-step]').forEach(a => {
+      const k = a.getAttribute('data-step');
+      if (k && k !== 'pre') arr.push(k);
+    });
+    // fallback if somehow empty
+    return arr.length ? arr : [
+      'personal','tax','spouse','spouse-tax','children',
+      'other-income','upload-self','upload-spouse','review','confirm'
+    ];
+  }
+
+  function stepsNow() {
+    try {
+      if (window.App && typeof window.App.activeSteps === 'function') {
+        const s = window.App.activeSteps();
+        if (Array.isArray(s) && s.length) return s;
+      }
+    } catch (e) {}
+    return sidebarOrder();
+  }
+
+  // Decide if we are allowed to go to "key" from sidebar/mobile
+  function canGoTo(key) {
+    if (!key || key === 'pre') return false;
+
+    // Welcome / pre is always allowed via special buttons
+    if (key === 'welcome') return true;
+
+    const steps = stepsNow();
+    const idx   = steps.indexOf(key);
+    if (idx === -1) return false;
+
+    // You may go to any step whose index <= furthestIdx (already reached before)
+    return idx <= furthestIdx;
+  }
+
+  // --- patch showPanel + updateProgress after main app exists ----
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!window.App || typeof window.App.showPanel !== 'function') return;
+
+    const origShow    = window.App.showPanel.bind(window.App);
+    const origUpdate  = (window.App.updateProgress || function(){}).bind(window.App);
+
+    // Init state from wherever we land
+    (function initState(){
+      const steps = stepsNow();
+      const cur   = currentKey();
+      const idx   = steps.indexOf(cur);
+      if (idx >= 0) {
+        visited.add(cur);
+        furthestIdx = idx;
+      }
+    })();
+
+    function patchedUpdateProgress(currentKeyParam) {
+      const cur = currentKeyParam || currentKey();
+      const steps = stepsNow();
+
+      // Re-sync furthestIdx with visited when flags change
+      steps.forEach((k, i) => {
+        if (visited.has(k) && i > furthestIdx) furthestIdx = i;
+      });
+
+      const sidebar = document.querySelector('.pi-steps');
+      if (sidebar) {
+        document.querySelectorAll('.pi-steps [data-step]').forEach(el => {
+          const key = el.dataset.step;
+          if (key === 'pre') return;
+
+          if (!steps.includes(key)) {
+            el.style.display = 'none';
+            return;
+          }
+          el.style.display = '';
+
+          el.classList.remove('is-current','is-done','is-locked');
+
+          const idx = steps.indexOf(key);
+          const curIdx = steps.indexOf(cur);
+          const isCompleted = completed.has(key);
+          const reachable   = idx <= furthestIdx;
+
+          if (key === cur) {
+            el.classList.add('is-current');
+          } else if (isCompleted || idx < curIdx) {
+            // once completed, it always keeps the check
+            el.classList.add('is-done');
+          }
+
+          // Only steps beyond furthestIdx are "locked"
+          if (!reachable && !el.classList.contains('is-current') && !el.classList.contains('is-done')) {
+            el.classList.add('is-locked');
+          }
+        });
+      }
+
+      // Let existing code do anything else it needs
+      try { origUpdate(cur); } catch(e) {}
+    }
+
+    // Override showPanel
+    window.App.showPanel = function (targetKey) {
+      const steps = stepsNow();
+      const cur   = currentKey();
+      const curIdx = steps.indexOf(cur);
+      const tgtIdx = steps.indexOf(targetKey);
+
+      if (curIdx >= 0) visited.add(cur);
+
+      // If we move FORWARD in the flow, mark current as completed
+      if (tgtIdx >= 0 && curIdx >= 0 && tgtIdx > curIdx) {
+        completed.add(cur);
+        if (tgtIdx > furthestIdx) furthestIdx = tgtIdx;
+      }
+
+      // Call original
+      origShow(targetKey);
+
+      // Mark target as visited
+      if (tgtIdx >= 0) {
+        visited.add(targetKey);
+        if (tgtIdx > furthestIdx) furthestIdx = tgtIdx;
+      }
+
+      patchedUpdateProgress(targetKey);
+    };
+
+    // Replace updateProgress with patched version
+    window.App.updateProgress = patchedUpdateProgress;
+
+    // Initial paint
+    setTimeout(() => patchedUpdateProgress(currentKey()), 0);
+  });
+
+  // --- intercept SIDEBAR clicks (back & allowed forwards only) ----
+  document.addEventListener('click', function (e) {
+    const link = e.target.closest('.pi-steps .pi-step[data-step]');
+    if (!link) return;
+
+    const key = link.dataset.goto || link.dataset.step;
+    if (!key || key === 'pre') return;
+
+    if (!canGoTo(key)) {
+      // future step that has never been reached → block
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    }
+    // if allowed, do nothing here – your original sidebar handler + App.showPanel run as usual
+  }, true);
+
+  // --- intercept MOBILE drawer clicks similarly -------------------
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('#pi-mb-nav .pi-mb-link[data-goto]');
+    if (!btn) return;
+
+    let key = btn.getAttribute('data-goto');
+    if (key === 'upload') {
+      // same logic your mobile script uses
+      const f = (window.App && window.App.flags) ? window.App.flags() : {};
+      key = f.spouseFiles ? 'upload-spouse' : 'upload-self';
+    }
+
+    if (!canGoTo(key)) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    }
+  }, true);
+
+})();
+</script>
+
+
+<script>
+(function () {
+  // Run when DOM is ready
+  function onReady(fn) {
+    if (document.readyState !== 'loading') fn();
+    else document.addEventListener('DOMContentLoaded', fn);
+  }
+
+  // Master order of steps (same as your ORDER)
+  const ORDER = [
+    'personal',
+    'tax',
+    'spouse',
+    'spouse-tax',
+    'children',
+    'other-income',
+    'upload-self',
+    'upload-spouse',
+    'review',
+    'confirm'
+  ];
+
+  // Steps that are COMPLETED (user clicked Continue → Next there)
+  const doneSteps = new Set();
+
+  // Furthest step index user has ever visited (in ORDER)
+  let visitedMax = 0;
+
+  // --- 1) Track furthest visited step via pi:panel-changed ---
+  document.addEventListener('pi:panel-changed', function (e) {
+    const key = e.detail && e.detail.panel;
+    const idx = ORDER.indexOf(key);
+    if (idx >= 0 && idx > visitedMax) {
+      visitedMax = idx;
+    }
+  });
+
+  // --- 2) Mark step as DONE when user clicks Continue → Next ---
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('#form-panel .continue-btn[data-goto="next"]');
+    if (!btn) return;
+
+    const currentPanel = document.querySelector(
+      '#form-panel .pi-main[data-panel]:not([hidden])'
+    );
+    if (!currentPanel) return;
+
+    const key = currentPanel.dataset.panel;
+    if (key) {
+      doneSteps.add(key);   // ✅ keep checkmark forever
+    }
+  }, true); // capture so it always fires
+
+  // --- 3) Override App.updateProgress to use DONE + VISITED logic ---
+  onReady(function () {
+    if (!window.App || typeof window.App.updateProgress !== 'function') return;
+
+    const originalUpdate = window.App.updateProgress.bind(window.App);
+    const sidebar   = document.querySelector('.pi-steps');
+    const formPanel = document.getElementById('form-panel');
+
+    window.App.updateProgress = function (currentKey) {
+      if (!sidebar) {
+        // Fallback to original if sidebar missing
+        originalUpdate(currentKey);
+        return;
+      }
+
+      // Active steps (respect marital / spouse / children logic)
+      let stepsActive = [];
+      try {
+        stepsActive = (window.App.activeSteps && window.App.activeSteps()) || [];
+      } catch (e) {}
+      if (!stepsActive || !stepsActive.length) {
+        stepsActive = ORDER.slice();
+      }
+
+      // Ensure visitedMax is at least the current step
+      const curOrderIdx = ORDER.indexOf(currentKey);
+      if (curOrderIdx >= 0 && curOrderIdx > visitedMax) {
+        visitedMax = curOrderIdx;
+      }
+      const maxAllowedIndex = visitedMax;
+
+      sidebar.querySelectorAll('[data-step]').forEach(el => {
+        const key = el.dataset.step;
+        if (!key) return;
+
+        // Hide steps that are not active (e.g. spouse steps when single)
+        if (key !== 'pre' && !stepsActive.includes(key)) {
+          el.style.display = 'none';
+          return;
+        }
+        el.style.display = '';
+
+        // Reset classes
+        el.classList.remove('is-current', 'is-done', 'is-locked');
+        el.removeAttribute('aria-current');
+
+        // "Pre-details" logic stays the same
+        if (key === 'pre') {
+          if (formPanel && formPanel.style.display !== 'none') {
+            el.classList.add('is-done');
+          }
+          return;
+        }
+
+        const orderIndex = ORDER.indexOf(key);
+        const canVisit   = (orderIndex <= maxAllowedIndex);
+        const isCurrent  = (key === currentKey);
+        const isDone     = doneSteps.has(key);
+
+        // Current step highlight
+        if (isCurrent) {
+          el.classList.add('is-current');
+          el.setAttribute('aria-current', 'step');
+        }
+        // Persist checkmarks only for truly done steps
+        if (isDone) {
+          el.classList.add('is-done');
+        }
+
+        // Lock ONLY steps beyond furthest visited
+        if (!canVisit && !isCurrent) {
+          el.classList.add('is-locked');
+        }
+      });
+    };
+
+    // Initial sync (in case you enter in the middle)
+    const firstPanel = document.querySelector('#form-panel .pi-main[data-panel]:not([hidden])');
+    if (firstPanel) {
+      window.App.updateProgress(firstPanel.dataset.panel);
+    }
+  });
+})();
+</script>
+
+
+
+
+
+
+
+
+<?php
+session_start();
+include '../auth/config.php';
+
+
+// ---------- confirm panel flag ----------
+$showConfirmPanel = !empty($_SESSION['show_confirm_panel']);
+if ($showConfirmPanel) {
+    // one-time use
+    unset($_SESSION['show_confirm_panel']);
+}
+
+
+// ---------------------------------------------------------
+//  Helpers
+// ---------------------------------------------------------
+function field($name, $default = null) {
+    if (!isset($_POST[$name])) return $default;
+    $v = $_POST[$name];
+
+    // If it’s an array, don’t try to trim it
+    if (is_array($v)) return $default;
+
+    return trim($v);
+}
+
+function parseDateField($name) {
+    if (empty($_POST[$name])) return null;
+
+    // original raw value from the form (e.g. "19 | Nov | 2003")
+    $raw = trim($_POST[$name]);
+
+    // normalize: turn pipes into spaces and compress multiple spaces
+    // "19 | Nov | 2003" -> "19 Nov 2003"
+    $norm = preg_replace('/\s+/', ' ', str_replace('|', ' ', $raw));
+
+    // Try a few formats safely
+    $formats = ['Y-m-d', 'd-m-Y', 'd/m/Y', 'd M Y', 'd M, Y'];
+
+    // 1) try normalized string
+    foreach ($formats as $fmt) {
+        $dt = DateTime::createFromFormat($fmt, $norm);
+        if ($dt instanceof DateTime) {
+            return $dt->format('Y-m-d');  // store as YYYY-MM-DD
+        }
+    }
+
+    // 2) last resort: strtotime on normalized value
+    $ts = strtotime($norm);
+    if ($ts !== false) {
+        return date('Y-m-d', $ts);
+    }
+
+    // if cannot be parsed, store NULL instead of garbage
+    return null;
+}
+
+
+/**
+ * For DECIMAL columns.
+ * - empty string / missing  => NULL
+ * - "1,234.56"              => "1234.56"
+ */
+function decimalField($name) {
+    $raw = field($name);
+
+    // 1) Not present or empty => NULL
+    if ($raw === '' || $raw === null) {
+        return null;
+    }
+
+    // 2) Normalize: remove commas and spaces (e.g. "1,234.56")
+    $raw = str_replace([',', ' '], '', $raw);
+
+    // 3) Strip anything that isn't digit / dot / minus
+    $raw = preg_replace('/[^0-9.\-]/', '', $raw);
+
+    // 4) If still not numeric, treat as NULL
+    if ($raw === '' || !is_numeric($raw)) {
+        return null;
+    }
+
+    // 5) Return as string, PDO/MySQL will handle it
+    return $raw;
+}
+
+
+/**
+ * For INT columns like owner_count.
+ */
+function intField($name) {
+    $raw = field($name);
+    if ($raw === '' || $raw === null) {
+        return null;
+    }
+    return (int)$raw;
+}
+
+/**
+ * For JSON columns (children_json, rent_addresses_json, rental_props_json).
+ * If the field is missing or empty string, we return a default valid JSON string.
+ */
+function jsonField($name, $default = '[]') {
+    if (!isset($_POST[$name])) {
+        return $default;
+    }
+    $v = trim($_POST[$name]);
+    if ($v === '') {
+        return $default;
+    }
+    return $v; // assume JS sent valid JSON
+}
+
+function handleMultiUpload($fieldName, $subdir, $userFolderBase, &$errors = []) {
+    if (empty($_FILES[$fieldName]) || !is_array($_FILES[$fieldName]['name'])) {
+        return [];
+    }
+
+    $results = [];
+
+    // base directory for this group
+    $targetBase = rtrim($userFolderBase, '/').'/'.$subdir;
+    if (!is_dir($targetBase)) {
+        mkdir($targetBase, 0775, true);
+    }
+
+    $names      = $_FILES[$fieldName]['name'];
+    $tmp        = $_FILES[$fieldName]['tmp_name'];
+    $errorsCode = $_FILES[$fieldName]['error'];
+    $sizes      = $_FILES[$fieldName]['size'];
+
+    // ---------------- NEW: grab password meta arrays ----------------
+    $pwProtKey = $fieldName . '_pw_protected';
+    $pwKey     = $fieldName . '_pw';
+
+    $pwProtectedList = (isset($_POST[$pwProtKey]) && is_array($_POST[$pwProtKey]))
+        ? array_values($_POST[$pwProtKey])
+        : [];
+
+    $pwList = (isset($_POST[$pwKey]) && is_array($_POST[$pwKey]))
+        ? array_values($_POST[$pwKey])
+        : [];
+    // ---------------------------------------------------------------
+
+    foreach ($names as $i => $origName) {
+        if ($errorsCode[$i] === UPLOAD_ERR_NO_FILE || $origName === '') {
+            continue; // user didn't select a file in this slot
+        }
+
+        if ($errorsCode[$i] !== UPLOAD_ERR_OK) {
+            $errors[] = "Error uploading file '$origName' (code {$errorsCode[$i]})";
+            continue;
+        }
+
+        // Simple size guard (e.g. 10 MB)
+        if ($sizes[$i] > 10 * 1024 * 1024) {
+            $errors[] = "File '$origName' is too large (max 10MB).";
+            continue;
+        }
+
+        $safeOrig = preg_replace('/[^A-Za-z0-9._-]/', '_', $origName);
+        $newName  = uniqid().'-'.$safeOrig;
+        $target   = $targetBase.'/'.$newName;
+
+        if (!move_uploaded_file($tmp[$i], $target)) {
+            $errors[] = "Failed to move uploaded file '$origName'.";
+            continue;
+        }
+
+        // -------- NEW: attach password info --------
+        $protRaw = $pwProtectedList[$i] ?? '';   // 'yes' | 'no' | ''
+        $pwRaw   = $pwList[$i] ?? '';           // user-typed password or ''
+
+        $isProtected = ($protRaw === 'yes');
+
+        // encrypt only if password is provided + marked protected
+        $pwStored = null;
+        if ($isProtected && $pwRaw !== '') {
+            $pwStored = encrypt_decrypt('encrypt', $pwRaw);
+        }
+        // -------------------------------------------
+
+        $results[] = [
+            'original'       => $origName,
+            'stored'         => $target,
+            'size'           => $sizes[$i],
+            'pw_protected'   => $isProtected ? 'yes' : ($protRaw === 'no' ? 'no' : ''),
+            'pw_encrypted'   => $pwStored,
+        ];
+    }
+
+    return $results;
+}
+
+
+// ---------------------------------------------------------
+//  SESSION CHECK
+// ---------------------------------------------------------
+if (!isset($_SESSION['email'])) {
+    header('location:../auth');
+    exit();
+}
+
+$loginEmail = $_SESSION['email'];
+
+// ---------------------------------------------------------
+//  FETCH BASE USER (from your existing users table)
+// ---------------------------------------------------------
+$userRow = null;
+try {
+    $stmtUser = $db->prepare('SELECT * FROM users WHERE email = ? LIMIT 1');
+    $stmtUser->execute([$loginEmail]);
+    $userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
+} catch (Throwable $e) {
+    // if users table doesn't exist or something, just ignore
+    $userRow = null;
+}
+
+// ---------------------------------------------------------
+//  FETCH or CREATE personal_tax ROW
+// ---------------------------------------------------------
+$stmtTax = $db->prepare('SELECT * FROM personal_tax WHERE email = ? LIMIT 1');
+$stmtTax->execute([$loginEmail]);
+$rowTax = $stmtTax->fetch(PDO::FETCH_ASSOC);
+
+if (!$rowTax) {
+    // First time here → create minimal row seeded from users table/session
+    $insert = $db->prepare("
+        INSERT INTO personal_tax (
+          user_id, email,
+          first_name, last_name,
+          phone_plain, email_display,
+          created_at, updated_at
+        ) VALUES (
+          :user_id, :email,
+          :first_name, :last_name,
+          :phone_plain, :email_display,
+          NOW(), NOW()
+        )
+    ");
+
+    $insert->execute([
+        ':user_id'       => $userRow['id']         ?? null,
+        ':email'         => $loginEmail,
+        ':first_name'    => $userRow['first_name'] ?? ($_SESSION['first_name'] ?? ''),
+        ':last_name'     => $userRow['last_name']  ?? ($_SESSION['last_name']  ?? ''),
+        ':phone_plain'   => $userRow['phone']      ?? ($_SESSION['phone']      ?? ''),
+        ':email_display' => $loginEmail,
+    ]);
+
+    // Re-load row
+    $stmtTax->execute([$loginEmail]);
+    $rowTax = $stmtTax->fetch(PDO::FETCH_ASSOC);
+}
+
+$taxId = $rowTax['id'];
+
+// ---------------------------------------------------------
+//  HANDLE POST (SAVE FORM)
+// ---------------------------------------------------------
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+  error_log('FULL POST: ' . print_r($_POST, true));
+    // ---------- PERSONAL ----------
+    $first_name   = field('first_name');
+    $middle_name  = field('middle_name');
+    $last_name    = field('last_name');
+    $dob          = parseDateField('dob');  // stored as DATE in DB (not encrypted)
+    $gender       = field('gender');
+
+    $street       = field('street');
+    $unit         = field('unit');
+    $city         = field('city');
+    $province     = field('province');
+    $postal       = field('postal');
+    $country      = field('country');
+
+    $phone_plain  = field('phone');              // form name is "phone"
+    $email_disp   = field('email');              // separate from login email
+    $sin          = field('sin');
+
+    // ---------- WELCOME / MARITAL ----------
+    $marital_status   = field('marital_status');
+    $status_date      = parseDateField('status_date');      // married/common-law
+    $status_date_sdw  = parseDateField('status_date_sdw');  // separated/divorced/widowed
+
+    $spouse_in_canada = field('spouse_in_canada');          // Yes / No
+    $spouseFile       = field('spouseFile');                // yes / no
+    $children_flag    = field('children');                  // yes / no
+
+    // ---------- TAX PANEL ----------
+    $first_time       = field('first_time');
+    $paragon_prior    = field('paragon_prior');
+    $return_years     = field('return_years');
+
+    $entry_date       = parseDateField('entry_date');       // hidden YYYY-MM-DD
+    $birth_country    = field('birth_country');
+
+    // DECIMAL
+    $inc_y1           = decimalField('inc_y1');
+    $inc_y2           = decimalField('inc_y2');
+    $inc_y3           = decimalField('inc_y3');
+
+    $moved_province   = field('moved_province');
+    $moved_date       = parseDateField('moved_date');       // hidden YYYY-MM-DD
+    $prov_from        = field('prov_from');
+    $prov_to          = field('prov_to');
+
+    $moving_expenses_claim = field('moving_expenses_claim');
+    $moving_prev_address   = field('moving_prev_address');
+    $moving_distance       = field('moving_distance');
+
+    $first_home_buyer    = field('first_home_buyer');
+    $first_home_purchase = parseDateField('first_home_purchase');
+    $claim_full          = field('claim_full');
+    $owner_count         = intField('owner_count');         // INT helper
+
+    $onRent            = field('onRent');
+    $claimRent         = field('claimRent');
+
+    // JSON from your JS (rent addresses)
+    $rent_addresses_json = jsonField('rent_addresses_json', '[]');
+
+    // ---------- SPOUSE PANEL ----------
+    $spouse_first_name        = field('spouse_first_name');
+    $spouse_middle_name       = field('spouse_middle_name');
+    $spouse_last_name         = field('spouse_last_name');
+    $spouse_dob               = parseDateField('spouse_dob'); // DATE in DB (not encrypted)
+
+    // we mirror top-level question
+    $spouse_in_canada_flag    = $spouse_in_canada;
+
+    // DECIMAL
+    $spouse_income_outside_cad = decimalField('spouse_income_outside_cad');
+    $spouse_income_cad         = decimalField('spouse_income_cad');
+
+    error_log('RAW spouse_income_cad: ' . ($_POST['spouse_income_cad'] ?? 'MISSING'));
+    error_log('FINAL spouse_income_cad: ' . var_export($spouse_income_cad, true));
+
+    $spouse_sin           = field('spouse_sin');
+    $spouse_address_same  = field('spouse_address_same');  // Yes/No
+
+    $spouse_street        = field('spouse_street');
+    $spouse_unit          = field('spouse_unit');
+    $spouse_city          = field('spouse_city');
+    $spouse_province      = field('spouse_province');
+    $spouse_postal        = field('spouse_postal');
+    $spouse_country       = field('spouse_country');
+
+    $spouse_phone         = field('spouse_phone');
+    $spouse_email         = field('spouse_email');
+
+    // ---------- SPOUSE TAX PANEL ----------
+    $sp_first_time    = field('sp_first_time');
+    $sp_paragon_prior = field('sp_paragon_prior');
+    $sp_return_years  = field('sp_return_years');
+
+    $sp_entry_date    = parseDateField('sp_entry_date');
+    $sp_birth_country = field('sp_birth_country'); // make name="sp_birth_country" in HTML
+
+    // DECIMAL
+    $sp_inc_y1        = decimalField('sp_inc_y1');
+    $sp_inc_y2        = decimalField('sp_inc_y2');
+    $sp_inc_y3        = decimalField('sp_inc_y3');
+
+    $sp_moved_province = field('sp_moved_province');
+    $sp_moved_date     = parseDateField('sp_moved_date');
+    $sp_prov_from      = field('sp_prov_from');
+    $sp_prov_to        = field('sp_prov_to');
+
+    // ---------- CHILDREN (JSON) ----------
+    error_log('RAW children_json POST: ' . (isset($_POST['children_json']) ? $_POST['children_json'] : 'MISSING'));
+
+    $children_json = '[]';
+
+    if (!empty($_POST['child_rows']) && is_array($_POST['child_rows'])) {
+        $list = [];
+
+        foreach ($_POST['child_rows'] as $row) {
+            $first = isset($row['first_name']) ? trim($row['first_name']) : '';
+            $last  = isset($row['last_name'])  ? trim($row['last_name'])  : '';
+            $dob   = isset($row['dob'])        ? trim($row['dob'])        : '';
+            $inCan = isset($row['in_canada'])  ? trim($row['in_canada'])  : '';
+
+            // skip completely empty rows
+            if ($first === '' && $last === '' && $dob === '') {
+                continue;
+            }
+
+            $list[] = [
+                'first_name'  => $first,
+                'last_name'   => $last,
+                'dob'         => $dob,           // ISO from JS
+                'dob_display' => $dob,           // or keep separate if you want
+                'in_canada'   => $inCan !== '' ? $inCan : 'Yes',
+            ];
+        }
+
+        if (!empty($list)) {
+            $children_json = json_encode($list, JSON_UNESCAPED_SLASHES);
+        }
+    } else {
+        $children_json = jsonField('children_json', '[]');
+    }
+
+    error_log('children_json going into DB: ' . $children_json);
+
+    // ---------- OTHER INCOME ----------
+    $gig_income           = field('gig_income');
+    $gig_expenses_summary = field('gig_expenses_summary');
+    $gig_hst              = field('gig_hst');
+    $hst_number           = field('hst_number');
+    $hst_access           = field('hst_access');
+    $hst_start            = parseDateField('hst_start');
+    $hst_end              = parseDateField('hst_end');
+
+    $sp_gig_income           = field('sp_gig_income');
+    $sp_gig_expenses_summary = field('sp_gig_expenses_summary');
+    $sp_gig_hst              = field('sp_gig_hst');
+    $sp_hst_number           = field('sp_hst_number');
+    $sp_hst_access           = field('sp_hst_access');
+    $sp_hst_start            = parseDateField('sp_hst_start');
+    $sp_hst_end              = parseDateField('sp_hst_end');
+
+    // ---------- RENTAL PROPERTIES (JSON) ----------
+    $rental_props_json = '[]';
+
+    if (!empty($_POST['rental_props']) && is_array($_POST['rental_props'])) {
+
+        $props = [];
+
+        foreach ($_POST['rental_props'] as $idx => $row) {
+            if (!is_array($row)) continue;
+
+            $owner       = isset($row['owner'])        ? trim($row['owner'])        : '';
+            $address     = isset($row['address'])      ? trim($row['address'])      : '';
+            $startDisp   = isset($row['start_display'])? trim($row['start_display']): '';
+            $endDisp     = isset($row['end_display'])  ? trim($row['end_display'])  : '';
+            $partner     = isset($row['partner'])      ? trim($row['partner'])      : '';
+            $ownerPct    = isset($row['owner_pct'])    ? trim($row['owner_pct'])    : '';
+            $ownUsePct   = isset($row['ownuse_pct'])   ? trim($row['ownuse_pct'])   : '';
+            $grossIncome = isset($row['gross'])        ? trim($row['gross'])        : '';
+
+            $exp = isset($row['expenses']) && is_array($row['expenses'])
+                ? $row['expenses']
+                : [];
+
+            $props[] = [
+                'owner'          => $owner,
+                'address'        => $address,
+                'start_display'  => $startDisp,
+                'end_display'    => $endDisp,
+                'partner'        => $partner,
+                'owner_pct'      => $ownerPct,
+                'own_use_pct'    => $ownUsePct,
+                'gross_income'   => $grossIncome,
+                'exp_mortgage'   => trim($exp['mortgage']     ?? ''),
+                'exp_insurance'  => trim($exp['insurance']    ?? ''),
+                'exp_repairs'    => trim($exp['repairs']      ?? ''),
+                'exp_utilities'  => trim($exp['utilities']    ?? ''),
+                'exp_internet'   => trim($exp['internet']     ?? ''),
+                'exp_propertytax'=> trim($exp['property_tax'] ?? ''),
+                'exp_other'      => trim($exp['other']        ?? ''),
+            ];
+        }
+
+        if (!empty($props)) {
+            $rental_props_json = json_encode($props, JSON_UNESCAPED_SLASHES);
+        }
+
+    } else {
+        $rental_props_json = jsonField('rental_props_json', '[]');
+    }
+
+    error_log('DEBUG rental_props (array): ' . (isset($_POST['rental_props'])
+        ? print_r($_POST['rental_props'], true)
+        : 'MISSING'));
+    error_log('FINAL rental_props_json going into DB: ' . $rental_props_json);
+
+
+    // ---------- FILE UPLOADS ----------
+    $userUploadFolder = __DIR__ . '/../uploads/tax/user_' . $taxId;
+
+    $uploadErrors = [];
+
+    /**
+     * Applicant uploads
+     */
+    $appUploads = [
+        'id_proof'   => [],
+        'tslips'     => [],
+        't2202'      => [],
+        'invest'     => [],
+        't2200'      => [],
+        'exp_summary'=> [],
+        'otherdocs'  => [],
+        'gig'        => [],
+    ];
+
+    $gigFiles = handleMultiUpload('gig_tax_summary', 'app_gig_tax', $userUploadFolder, $uploadErrors);
+    if ($gigFiles) {
+        $appUploads['gig'] = $gigFiles;
+    }
+
+    $idProofFiles = handleMultiUpload('app_id_proof', 'app_id_proof', $userUploadFolder, $uploadErrors);
+    if ($idProofFiles) {
+        $appUploads['id_proof'] = $idProofFiles;
+    }
+
+    $tslipsFiles = handleMultiUpload('app_tslips', 'app_tslips', $userUploadFolder, $uploadErrors);
+    if ($tslipsFiles) {
+        $appUploads['tslips'] = $tslipsFiles;
+    }
+
+    $t2202Files = handleMultiUpload('app_t2202_receipt', 'app_t2202', $userUploadFolder, $uploadErrors);
+    if ($t2202Files) {
+        $appUploads['t2202'] = $t2202Files;
+    }
+
+    $investFiles = handleMultiUpload('app_invest', 'app_invest', $userUploadFolder, $uploadErrors);
+    if ($investFiles) {
+        $appUploads['invest'] = $investFiles;
+    }
+
+    $t2200Files = handleMultiUpload('app_t2200_work', 'app_t2200_work', $userUploadFolder, $uploadErrors);
+    if ($t2200Files) {
+        $appUploads['t2200'] = $t2200Files;
+    }
+
+    $expSummaryFiles = handleMultiUpload('app_exp_summary', 'app_exp_summary', $userUploadFolder, $uploadErrors);
+    if ($expSummaryFiles) {
+        $appUploads['exp_summary'] = $expSummaryFiles;
+    }
+
+    $otherDocsFiles = handleMultiUpload('app_otherdocs', 'app_otherdocs', $userUploadFolder, $uploadErrors);
+    if ($otherDocsFiles) {
+        $appUploads['otherdocs'] = $otherDocsFiles;
+    }
+
+    /**
+     * Spouse uploads
+     */
+    $spouseUploads = [
+        'id_proof'  => [],
+        'tslips'    => [],
+        't2202'     => [],
+        'invest'    => [],
+        'otherdocs' => [],
+        'gig'       => [],
+    ];
+
+    $spGigFiles = handleMultiUpload('sp_gig_tax_summary', 'sp_gig_tax', $userUploadFolder, $uploadErrors);
+    if ($spGigFiles) {
+        $spouseUploads['gig'] = $spGigFiles;
+    }
+
+    $spIdProofFiles = handleMultiUpload('sp_id_proof', 'sp_id_proof', $userUploadFolder, $uploadErrors);
+    if ($spIdProofFiles) {
+        $spouseUploads['id_proof'] = $spIdProofFiles;
+    }
+
+    $spT2202Files = handleMultiUpload('sp_t2202', 'sp_t2202', $userUploadFolder, $uploadErrors);
+    if ($spT2202Files) {
+        $spouseUploads['t2202'] = $spT2202Files;
+    }
+
+    $spTslipsFiles = handleMultiUpload('sp_tslips', 'sp_tslips', $userUploadFolder, $uploadErrors);
+    if ($spTslipsFiles) {
+        $spouseUploads['tslips'] = $spTslipsFiles;
+    }
+
+    $spInvestFiles = handleMultiUpload('sp_invest', 'sp_invest', $userUploadFolder, $uploadErrors);
+    if ($spInvestFiles) {
+        $spouseUploads['invest'] = $spInvestFiles;
+    }
+
+    $spOtherDocsFiles = handleMultiUpload('sp_otherdocs', 'sp_otherdocs', $userUploadFolder, $uploadErrors);
+    if ($spOtherDocsFiles) {
+        $spouseUploads['otherdocs'] = $spOtherDocsFiles;
+    }
+
+    $app_uploads_json    = json_encode($appUploads, JSON_UNESCAPED_SLASHES);
+    $spouse_uploads_json = json_encode($spouseUploads, JSON_UNESCAPED_SLASHES);
+
+    // -------------------------------------------------
+    //  ENCRYPT SENSITIVE FIELDS (SIN only)
+    // -------------------------------------------------
+    // *** NEW: encrypt applicant SIN & spouse SIN before saving to DB
+    $sin_encrypted        = $sin        ? encrypt_decrypt('encrypt', $sin)        : null;   // ***
+    $spouse_sin_encrypted = $spouse_sin ? encrypt_decrypt('encrypt', $spouse_sin) : null;   // ***
+    // (DOBs remain plain DATE columns so you can still do date logic in SQL)
+
+    // -------------------------------------------------
+    //  UPDATE personal_tax
+    // -------------------------------------------------
+    $updateSql = "
+      UPDATE personal_tax SET
+        /* PERSONAL */
+        first_name      = :first_name,
+        middle_name     = :middle_name,
+        last_name       = :last_name,
+        dob             = :dob,
+        gender          = :gender,
+        street          = :street,
+        unit            = :unit,
+        city            = :city,
+        province        = :province,
+        postal          = :postal,
+        country         = :country,
+        phone_plain     = :phone_plain,
+        sin             = :sin,
+        email_display   = :email_display,
+
+        /* WELCOME / MARITAL */
+        marital_status       = :marital_status,
+        status_date          = :status_date,
+        status_date_sdw      = :status_date_sdw,
+        spouse_in_canada     = :spouse_in_canada,
+        spouseFile           = :spouseFile,
+        children_flag        = :children_flag,
+
+        /* TAX PANEL */
+        first_time           = :first_time,
+        paragon_prior        = :paragon_prior,
+        return_years         = :return_years,
+
+        entry_date           = :entry_date,
+        birth_country        = :birth_country,
+        inc_y1               = :inc_y1,
+        inc_y2               = :inc_y2,
+        inc_y3               = :inc_y3,
+
+        moved_province       = :moved_province,
+        moved_date           = :moved_date,
+        prov_from            = :prov_from,
+        prov_to              = :prov_to,
+        moving_expenses_claim = :moving_expenses_claim,
+        moving_prev_address  = :moving_prev_address,
+        moving_distance      = :moving_distance,
+
+        first_home_buyer     = :first_home_buyer,
+        first_home_purchase  = :first_home_purchase,
+        claim_full           = :claim_full,
+        owner_count          = :owner_count,
+
+        onRent               = :onRent,
+        claimRent            = :claimRent,
+        rent_addresses_json  = :rent_addresses_json,
+
+        /* SPOUSE PANEL */
+        spouse_first_name        = :spouse_first_name,
+        spouse_middle_name       = :spouse_middle_name,
+        spouse_last_name         = :spouse_last_name,
+        spouse_dob               = :spouse_dob,
+        spouse_in_canada_flag    = :spouse_in_canada_flag,
+        spouse_income_outside_cad = :spouse_income_outside_cad,
+
+        spouse_sin               = :spouse_sin,
+        spouse_address_same      = :spouse_address_same,
+        spouse_street            = :spouse_street,
+        spouse_unit              = :spouse_unit,
+        spouse_city              = :spouse_city,
+        spouse_province          = :spouse_province,
+        spouse_postal            = :spouse_postal,
+        spouse_country           = :spouse_country,
+        spouse_phone             = :spouse_phone,
+        spouse_email             = :spouse_email,
+        spouse_income_cad        = :spouse_income_cad,
+
+        /* SPOUSE TAX */
+        sp_first_time        = :sp_first_time,
+        sp_paragon_prior     = :sp_paragon_prior,
+        sp_return_years      = :sp_return_years,
+        sp_entry_date        = :sp_entry_date,
+        sp_birth_country     = :sp_birth_country,
+        sp_inc_y1            = :sp_inc_y1,
+        sp_inc_y2            = :sp_inc_y2,
+        sp_inc_y3            = :sp_inc_y3,
+        sp_moved_province    = :sp_moved_province,
+        sp_moved_date        = :sp_moved_date,
+        sp_prov_from         = :sp_prov_from,
+        sp_prov_to           = :sp_prov_to,
+
+        /* CHILDREN JSON */
+        children_json        = :children_json,
+
+        /* OTHER INCOME */
+        gig_income           = :gig_income,
+        gig_expenses_summary = :gig_expenses_summary,
+        gig_hst              = :gig_hst,
+        hst_number           = :hst_number,
+        hst_access           = :hst_access,
+        hst_start            = :hst_start,
+        hst_end              = :hst_end,
+
+        sp_gig_income           = :sp_gig_income,
+        sp_gig_expenses_summary = :sp_gig_expenses_summary,
+        sp_gig_hst              = :sp_gig_hst,
+        sp_hst_number           = :sp_hst_number,
+        sp_hst_access           = :sp_hst_access,
+        sp_hst_start            = :sp_hst_start,
+        sp_hst_end              = :sp_hst_end,
+
+        /* RENTAL PROPS JSON */
+        rental_props_json    = :rental_props_json,
+
+        /* UPLOADS JSON */
+        app_uploads_json     = :app_uploads_json,
+        spouse_uploads_json  = :spouse_uploads_json,
+
+        updated_at = NOW()
+      WHERE id = :id
+    ";
+
+    $update = $db->prepare($updateSql);
+
+    $update->execute([
+        // PERSONAL
+        ':first_name'      => $first_name,
+        ':middle_name'     => $middle_name,
+        ':last_name'       => $last_name,
+        ':dob'             => $dob,                 // not encrypted (DATE column)
+        ':gender'          => $gender,
+        ':street'          => $street,
+        ':unit'            => $unit,
+        ':city'            => $city,
+        ':province'        => $province,
+        ':postal'          => $postal,
+        ':country'         => $country,
+        ':phone_plain'     => $phone_plain,
+        ':sin'             => $sin_encrypted,       // *** save encrypted SIN
+        ':email_display'   => $email_disp,
+
+        // WELCOME / MARITAL
+        ':marital_status'   => $marital_status,
+        ':status_date'      => $status_date,
+        ':status_date_sdw'  => $status_date_sdw,
+        ':spouse_in_canada' => $spouse_in_canada,
+        ':spouseFile'       => $spouseFile,
+        ':children_flag'    => $children_flag,
+
+        // TAX
+        ':first_time'        => $first_time,
+        ':paragon_prior'     => $paragon_prior,
+        ':return_years'      => $return_years,
+        ':entry_date'        => $entry_date,
+        ':birth_country'     => $birth_country,
+        ':inc_y1'            => $inc_y1,
+        ':inc_y2'            => $inc_y2,
+        ':inc_y3'            => $inc_y3,
+        ':moved_province'    => $moved_province,
+        ':moved_date'        => $moved_date,
+        ':prov_from'         => $prov_from,
+        ':prov_to'           => $prov_to,
+        ':moving_expenses_claim' => $moving_expenses_claim,
+        ':moving_prev_address'   => $moving_prev_address,
+        ':moving_distance'       => $moving_distance,
+        ':first_home_buyer'      => $first_home_buyer,
+        ':first_home_purchase'   => $first_home_purchase,
+        ':claim_full'            => $claim_full,
+        ':owner_count'           => $owner_count,
+        ':onRent'                => $onRent,
+        ':claimRent'             => $claimRent,
+        ':rent_addresses_json'   => $rent_addresses_json,
+
+        // SPOUSE PANEL
+        ':spouse_first_name'         => $spouse_first_name,
+        ':spouse_middle_name'        => $spouse_middle_name,
+        ':spouse_last_name'          => $spouse_last_name,
+        ':spouse_dob'                => $spouse_dob, // DATE
+        ':spouse_in_canada_flag'     => $spouse_in_canada_flag,
+        ':spouse_income_outside_cad' => $spouse_income_outside_cad,
+        ':spouse_sin'                => $spouse_sin_encrypted,   // *** save encrypted spouse SIN
+        ':spouse_address_same'       => $spouse_address_same,
+        ':spouse_street'             => $spouse_street,
+        ':spouse_unit'               => $spouse_unit,
+        ':spouse_city'               => $spouse_city,
+        ':spouse_province'           => $spouse_province,
+        ':spouse_postal'             => $spouse_postal,
+        ':spouse_country'            => $spouse_country,
+        ':spouse_phone'              => $spouse_phone,
+        ':spouse_email'              => $spouse_email,
+        ':spouse_income_cad'         => $spouse_income_cad,
+
+        // SPOUSE TAX
+        ':sp_first_time'    => $sp_first_time,
+        ':sp_paragon_prior' => $sp_paragon_prior,
+        ':sp_return_years'  => $sp_return_years,
+        ':sp_entry_date'    => $sp_entry_date,
+        ':sp_birth_country' => $sp_birth_country,
+        ':sp_inc_y1'        => $sp_inc_y1,
+        ':sp_inc_y2'        => $sp_inc_y2,
+        ':sp_inc_y3'        => $sp_inc_y3,
+        ':sp_moved_province'=> $sp_moved_province,
+        ':sp_moved_date'    => $sp_moved_date,
+        ':sp_prov_from'     => $sp_prov_from,
+        ':sp_prov_to'       => $sp_prov_to,
+
+        // CHILDREN
+        ':children_json'    => $children_json,
+
+        // OTHER INCOME
+        ':gig_income'           => $gig_income,
+        ':gig_expenses_summary' => $gig_expenses_summary,
+        ':gig_hst'              => $gig_hst,
+        ':hst_number'           => $hst_number,
+        ':hst_access'           => $hst_access,
+        ':hst_start'            => $hst_start,
+        ':hst_end'              => $hst_end,
+        ':sp_gig_income'           => $sp_gig_income,
+        ':sp_gig_expenses_summary' => $sp_gig_expenses_summary,
+        ':sp_gig_hst'              => $sp_gig_hst,
+        ':sp_hst_number'           => $sp_hst_number,
+        ':sp_hst_access'           => $sp_hst_access,
+        ':sp_hst_start'            => $sp_hst_start,
+        ':sp_hst_end'              => $sp_hst_end,
+
+        // RENTAL PROPS + UPLOADS
+        ':rental_props_json'   => $rental_props_json,
+        ':app_uploads_json'    => $app_uploads_json,
+        ':spouse_uploads_json' => $spouse_uploads_json,
+
+        ':id' => $taxId
+    ]);
+
+    // After successful save, show confirm panel on next load
+    $_SESSION['show_confirm_panel'] = true;
+
+    header('Location: ' . $_SERVER['REQUEST_URI']);
+    exit();
+}
+
+// ---------------------------------------------------------
+//  RE-LOAD AFTER SAVE (or first load)
+// ---------------------------------------------------------
+$stmtTax->execute([$loginEmail]);
+$rowTax = $stmtTax->fetch(PDO::FETCH_ASSOC);
+
+// compatibility variables for your existing HTML
+$rowUser      = $rowTax;  // personal panel uses $rowUser
+$rowSpouse    = $rowTax;  // spouse panel used $rowSpouse
+$rowSpouseTax = $rowTax;  // spouse-tax panel used $rowSpouseTax
+
+// ---------- DECRYPT SIN VALUES FOR DISPLAY ----------
+// *** NEW: we only decrypt into $rowUser / $rowSpouse that the HTML uses.
+// The DB row ($rowTax) keeps the encrypted values.
+
+if (!empty($rowUser['sin'])) {
+    $rowUser['sin'] = encrypt_decrypt('decrypt', $rowUser['sin']);          // ***
+}
+if (!empty($rowSpouse['spouse_sin'])) {
+    $rowSpouse['spouse_sin'] = encrypt_decrypt('decrypt', $rowSpouse['spouse_sin']); // ***
+}
+
+// JSON seeds for modals/tables
+$childrenListJSON   = $rowTax['children_json']        ?: '[]';
+$rentListJSON       = $rowTax['rent_addresses_json']  ?: '[]';
+$rentalPropsJSON    = $rowTax['rental_props_json']    ?: '[]';
+$appUploadsJSON     = $rowTax['app_uploads_json']     ?: '{}';
+$spouseUploadsJSON  = $rowTax['spouse_uploads_json']  ?: '{}';
+
+// small helper: ensure plain strings (no PHP NULL)
+if ($childrenListJSON === null)  $childrenListJSON  = '[]';
+if ($rentListJSON === null)      $rentListJSON      = '[]';
+if ($rentalPropsJSON === null)   $rentalPropsJSON   = '[]';
+if ($appUploadsJSON === null)    $appUploadsJSON    = '{}';
+if ($spouseUploadsJSON === null) $spouseUploadsJSON = '{}';
+
+function encrypt_decrypt($action, $string) {
+    $output = false;
+    $encrypt_method = "AES-256-CBC";
+    $secret_key = '$7PHKqGt$yRlPjyt89rds4ioSDsglpk/'; // your existing
+    $secret_iv  = '$QG8$hj7TRE2allPHPlBbrthUtoiu23bKJYi/';
+
+    $key = hash('sha256', $secret_key);
+    $iv  = substr(hash('sha256', $secret_iv), 0, 16);
+
+    if ($action == 'encrypt') {
+        $output = openssl_encrypt($string, $encrypt_method, $key, 0, $iv);
+        $output = base64_encode($output);
+    } elseif ($action == 'decrypt') {
+        $output = openssl_decrypt(base64_decode($string), $encrypt_method, $key, 0, $iv);
+    }
+    return $output;
+}
+
+// log (optional)
+error_log("personal_tax loaded for: " . $loginEmail);
+?>

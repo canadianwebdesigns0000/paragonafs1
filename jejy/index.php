@@ -1,64 +1,1178 @@
 <?php
 session_start();
-// error_reporting(0);
 include '../auth/config.php';
 
-// SESSION CHECK SET OR NOT
-if (!isset($_SESSION['email'])) {
-    header('location:../auth');
-    exit();
-} else {
-    // Query To Get User Data
-    $userData = $db->prepare('SELECT * FROM tax_information WHERE email=?');
-    $userData->execute(array($_SESSION['email']));
-    $rowUser = $userData->fetch(PDO::FETCH_ASSOC);
-      
-    if (!$rowUser) {
-        // SQL query to insert values into the tax_information table
-        $query        = 'INSERT INTO `tax_information` SET is_file_submit=?, file_submit_date=?, first_name=?, last_name=?, gender=?, apartment_unit_number=?, ship_address=?, locality=?, state=?, postcode=?, country=?, birth_date=?, sin_number=?, phone=?, email=?, another_province=?, move_date=?, move_from=?, move_to=?, first_fillingtax=?, canada_entry=?, birth_country=?, year1=?, year1_income=?, year2=?, year2_income=?, year3=?, year3_income=?, file_paragon=?, years_tax_return=?, marital_status=?, spouse_first_name=?, spouse_last_name=?, spouse_date_birth=?, date_marriage=?, spouse_annual_income=?, residing_canada=?, spouse_annual_income_outside=?, have_child=?, marital_change=?, spouse_sin=?, spouse_phone=?, spouse_email=?, spouse_file_tax=?, spouse_first_tax=?, spouse_canada_entry=?, spouse_birth_country=?, spouse_year1=?, spouse_year1_income=?, spouse_year2=?, spouse_year2_income=?, spouse_year3=?, spouse_year3_income=?, spouse_file_paragon=?, spouse_years_tax_return=?, child_first_name=?, first_time_buyer=?, purchase_first_home=?, direct_deposits=?, id_proof=?, college_receipt=?, t_slips=?, rent_address=?, tax_summary=?, income_delivery=?, summary_expenses=?, delivery_hst=?, hst_number=?, hst_access_code=?, hst_start_date=?, hst_end_date=?, additional_docs=?, message_us=?';
-        $parameters = array("No", '', $_SESSION['first_name'], $_SESSION['last_name'], '', '', '', '', '', '', '', '', '', $_SESSION['phone'], $_SESSION['email'], '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '');
-        $statement = $db->prepare($query);
-        $statement->execute($parameters);
 
-        header('location:./');
-        exit();
-    } else {
-        // Check if session email matches $rowUser['email']
-        if ($_SESSION['email'] != $rowUser['email']) {
-            // Redirect or handle the case where emails do not match
-            header('location:../auth');
-            exit();
+// ---------- confirm panel flag ----------
+$showConfirmPanel = !empty($_SESSION['show_confirm_panel']);
+if ($showConfirmPanel) {
+    // one-time use
+    unset($_SESSION['show_confirm_panel']);
+}
+
+
+// ---------------------------------------------------------
+//  Helpers
+// ---------------------------------------------------------
+function field($name, $default = null) {
+    if (!isset($_POST[$name])) return $default;
+    $v = $_POST[$name];
+
+    // If it’s an array, don’t try to trim it
+    if (is_array($v)) return $default;
+
+    return trim($v);
+}
+
+function parseDateField($name) {
+    if (empty($_POST[$name])) return null;
+
+    // original raw value from the form (e.g. "19 | Nov | 2003")
+    $raw = trim($_POST[$name]);
+
+    // normalize: turn pipes into spaces and compress multiple spaces
+    // "19 | Nov | 2003" -> "19 Nov 2003"
+    $norm = preg_replace('/\s+/', ' ', str_replace('|', ' ', $raw));
+
+    // Try a few formats safely
+    $formats = ['Y-m-d', 'd-m-Y', 'd/m/Y', 'd M Y', 'd M, Y'];
+
+    // 1) try normalized string
+    foreach ($formats as $fmt) {
+        $dt = DateTime::createFromFormat($fmt, $norm);
+        if ($dt instanceof DateTime) {
+            return $dt->format('Y-m-d');  // store as YYYY-MM-DD
         }
     }
 
+    // 2) last resort: strtotime on normalized value
+    $ts = strtotime($norm);
+    if ($ts !== false) {
+        return date('Y-m-d', $ts);
+    }
+
+    // if cannot be parsed, store NULL instead of garbage
+    return null;
 }
 
-// Function to Encrypt Decrypt String
+
+/**
+ * For DECIMAL columns.
+ * - empty string / missing  => NULL
+ * - "1,234.56"              => "1234.56"
+ */
+function decimalField($name) {
+    $raw = field($name);
+
+    // 1) Not present or empty => NULL
+    if ($raw === '' || $raw === null) {
+        return null;
+    }
+
+    // 2) Normalize: remove commas and spaces (e.g. "1,234.56")
+    $raw = str_replace([',', ' '], '', $raw);
+
+    // 3) Strip anything that isn't digit / dot / minus
+    $raw = preg_replace('/[^0-9.\-]/', '', $raw);
+
+    // 4) If still not numeric, treat as NULL
+    if ($raw === '' || !is_numeric($raw)) {
+        return null;
+    }
+
+    // 5) Return as string, PDO/MySQL will handle it
+    return $raw;
+}
+
+
+/**
+ * For INT columns like owner_count.
+ */
+function intField($name) {
+    $raw = field($name);
+    if ($raw === '' || $raw === null) {
+        return null;
+    }
+    return (int)$raw;
+}
+
+/**
+ * For JSON columns (children_json, rent_addresses_json, rental_props_json).
+ * If the field is missing or empty string, we return a default valid JSON string.
+ */
+function jsonField($name, $default = '[]') {
+    if (!isset($_POST[$name])) {
+        return $default;
+    }
+    $v = trim($_POST[$name]);
+    if ($v === '') {
+        return $default;
+    }
+    return $v; // assume JS sent valid JSON
+}
+
+function handleMultiUpload($fieldName, $subdir, $userFolderBase, &$errors = []) {
+    if (empty($_FILES[$fieldName]) || !is_array($_FILES[$fieldName]['name'])) {
+        return [];
+    }
+
+    $results = [];
+
+    // base directory for this group
+    $targetBase = rtrim($userFolderBase, '/').'/'.$subdir;
+    if (!is_dir($targetBase)) {
+        mkdir($targetBase, 0775, true);
+    }
+
+    $names      = $_FILES[$fieldName]['name'];
+    $tmp        = $_FILES[$fieldName]['tmp_name'];
+    $errorsCode = $_FILES[$fieldName]['error'];
+    $sizes      = $_FILES[$fieldName]['size'];
+
+    // ---------------- password meta arrays ----------------
+    $pwProtKey = $fieldName . '_pw_protected';
+    $pwKey     = $fieldName . '_pw';
+
+    $pwProtectedList = (isset($_POST[$pwProtKey]) && is_array($_POST[$pwProtKey]))
+        ? array_values($_POST[$pwProtKey])
+        : [];
+
+    $pwList = (isset($_POST[$pwKey]) && is_array($_POST[$pwKey]))
+        ? array_values($_POST[$pwKey])
+        : [];
+    // ------------------------------------------------------
+
+    foreach ($names as $i => $origName) {
+        if ($errorsCode[$i] === UPLOAD_ERR_NO_FILE || $origName === '') {
+            continue; // user didn't select a file in this slot
+        }
+
+        if ($errorsCode[$i] !== UPLOAD_ERR_OK) {
+            $errors[] = "Error uploading file '$origName' (code {$errorsCode[$i]})";
+            continue;
+        }
+
+        // Simple size guard (e.g. 10 MB)
+        if ($sizes[$i] > 10 * 1024 * 1024) {
+            $errors[] = "File '$origName' is too large (max 10MB).";
+            continue;
+        }
+
+        $safeOrig = preg_replace('/[^A-Za-z0-9._-]/', '_', $origName);
+        $newName  = uniqid().'-'.$safeOrig;
+        $target   = $targetBase.'/'.$newName;
+
+        if (!move_uploaded_file($tmp[$i], $target)) {
+            $errors[] = "Failed to move uploaded file '$origName'.";
+            continue;
+        }
+
+        // attach password info
+        $protRaw = $pwProtectedList[$i] ?? '';   // 'yes' | 'no' | ''
+        $pwRaw   = $pwList[$i] ?? '';           // user-typed password or ''
+
+        $isProtected = ($protRaw === 'yes');
+
+        // encrypt only if password is provided + marked protected
+        $pwStored = null;
+        if ($isProtected && $pwRaw !== '') {
+            $pwStored = encrypt_decrypt('encrypt', $pwRaw);
+        }
+
+        $results[] = [
+            'original'       => $origName,
+            'stored'         => $target,
+            'size'           => $sizes[$i],
+            'pw_protected'   => $isProtected ? 'yes' : ($protRaw === 'no' ? 'no' : ''),
+            'pw_encrypted'   => $pwStored,
+        ];
+    }
+
+    return $results;
+}
+
+
+// ---------------------------------------------------------
+//  SESSION CHECK
+// ---------------------------------------------------------
+if (!isset($_SESSION['email'])) {
+    header('location:../auth');
+    exit();
+}
+
+$loginEmail = $_SESSION['email'];
+
+
+// ---------------------------------------------------------
+//  FETCH BASE USER (from your existing users table)
+// ---------------------------------------------------------
+$userRow = null;
+try {
+    $stmtUser = $db->prepare('SELECT * FROM users WHERE email = ? LIMIT 1');
+    $stmtUser->execute([$loginEmail]);
+    $userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
+} catch (Throwable $e) {
+    $userRow = null;
+}
+
+
+// ---------------------------------------------------------
+//  FETCH or CREATE personal_tax ROW (by user_id)
+// ---------------------------------------------------------
+$stmtTax = $db->prepare('SELECT * FROM personal_tax WHERE user_id = ? LIMIT 1');
+$stmtTax->execute([$userRow['id'] ?? 0]);
+$rowTax = $stmtTax->fetch(PDO::FETCH_ASSOC);
+
+if (!$rowTax) {
+    // First time here → create minimal row seeded from users table/session
+    $insert = $db->prepare("
+        INSERT INTO personal_tax (
+          user_id, email,
+          first_name, last_name,
+          phone,
+          created_at, updated_at
+        ) VALUES (
+          :user_id, :email,
+          :first_name, :last_name,
+          :phone,
+          NOW(), NOW()
+        )
+    ");
+
+    // seed values (copy from users; may already be encrypted or plain)
+    $seedPhone = $userRow['phone'] ?? ($_SESSION['phone'] ?? '');
+    $seedEmail = $userRow['email'] ?? $loginEmail;
+
+    $insert->execute([
+        ':user_id'    => $userRow['id']         ?? null,
+        ':email'      => $seedEmail,
+        ':first_name' => $userRow['first_name'] ?? ($_SESSION['first_name'] ?? ''),
+        ':last_name'  => $userRow['last_name']  ?? ($_SESSION['last_name']  ?? ''),
+        ':phone'      => $seedPhone,
+    ]);
+
+    // Re-load row
+    $stmtTax->execute([$userRow['id'] ?? 0]);
+    $rowTax = $stmtTax->fetch(PDO::FETCH_ASSOC);
+}
+
+$taxId = $rowTax['id'];
+
+
+// ---------------------------------------------------------
+//  HANDLE POST (SAVE FORM)
+// ---------------------------------------------------------
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    error_log('FULL POST: ' . print_r($_POST, true));
+
+    // ---------- PERSONAL ----------
+    $first_name   = field('first_name');
+    $middle_name  = field('middle_name');
+    $last_name    = field('last_name');
+    $dob          = parseDateField('dob');  // YYYY-MM-DD from form
+    $gender       = field('gender');
+
+    $street       = field('street');
+    $unit         = field('unit');
+    $city         = field('city');
+    $province     = field('province');
+    $postal       = field('postal');
+    $country      = field('country');
+
+    $phone_raw    = field('phone');  // contact phone from form
+    $email_raw    = field('email');  // contact email from form
+    $sin          = field('sin');
+
+    // ---------- WELCOME / MARITAL ----------
+    $marital_status   = field('marital_status');
+    $status_date      = parseDateField('status_date');      // married/common-law
+    $status_date_sdw  = parseDateField('status_date_sdw');  // separated/divorced/widowed
+
+    // Keep only the relevant date depending on marital status
+if ($marital_status === 'Married' || $marital_status === 'Common Law') {
+    // Married / CL: keep status_date, clear SDW date
+    $status_date_sdw = null;
+} elseif (in_array($marital_status, ['Separated','Divorced','Widowed'], true)) {
+    // Separated / Divorced / Widowed: keep SDW date, clear marriage date
+    $status_date = null;
+} else {
+    // Single or empty → no dates
+    $status_date = null;
+    $status_date_sdw = null;
+}
+
+
+    $spouse_in_canada = field('spouse_in_canada');          // Yes / No
+    $spouseFile       = field('spouseFile');                // yes / no
+    $children_flag    = field('children');                  // yes / no
+
+    // ---------- TAX PANEL ----------
+    $first_time       = field('first_time');
+    $paragon_prior    = field('paragon_prior');
+    $return_years     = field('return_years');
+
+    $entry_date       = parseDateField('entry_date');       // hidden YYYY-MM-DD
+    $birth_country    = field('birth_country');
+
+    // DECIMAL
+    $inc_y1           = decimalField('inc_y1');
+    $inc_y2           = decimalField('inc_y2');
+    $inc_y3           = decimalField('inc_y3');
+
+    $moved_province   = field('moved_province');
+    $moved_date       = parseDateField('moved_date');       // hidden YYYY-MM-DD
+    $prov_from        = field('prov_from');
+    $prov_to          = field('prov_to');
+
+    $moving_expenses_claim = field('moving_expenses_claim');
+    $moving_prev_address   = field('moving_prev_address');
+    $moving_distance       = field('moving_distance');
+
+    $first_home_buyer    = field('first_home_buyer');
+    $first_home_purchase = parseDateField('first_home_purchase');
+    $claim_full          = field('claim_full');
+    $owner_count         = intField('owner_count');         // INT helper
+
+    $onRent            = field('onRent');
+    $claimRent         = field('claimRent');
+
+    // JSON from your JS (rent addresses)
+// ---------- RENT ADDRESSES (JSON) ----------
+$rent_addresses_json = '[]';
+
+if (!empty($_POST['rent']) && is_array($_POST['rent'])) {
+    $rentRows = [];
+
+    // Map numeric months -> short names
+    $monthNames = [
+        '01' => 'Jan', '02' => 'Feb', '03' => 'Mar', '04' => 'Apr',
+        '05' => 'May', '06' => 'Jun', '07' => 'Jul', '08' => 'Aug',
+        '09' => 'Sep', '10' => 'Oct', '11' => 'Nov', '12' => 'Dec',
+    ];
+
+    foreach ($_POST['rent'] as $row) {
+        if (!is_array($row)) continue;
+
+        $addr = trim($row['address']     ?? '');
+        $fM   = trim($row['from_month']  ?? '');
+        $fY   = trim($row['from_year']   ?? '');
+        $tM   = trim($row['to_month']    ?? '');
+        $tY   = trim($row['to_year']     ?? '');
+        $total = trim($row['total']      ?? '');
+
+        // skip completely empty rows
+        if ($addr === '' && $fM === '' && $fY === '' && $tM === '' && $tY === '' && $total === '') {
+            continue;
+        }
+
+        // Build display strings like "Jan 2025"
+        $from_display = '';
+        if ($fM !== '' || $fY !== '') {
+            $from_display = trim(($monthNames[$fM] ?? $fM) . ' ' . $fY);
+        }
+
+        $to_display = '';
+        if ($tM !== '' || $tY !== '') {
+            $to_display = trim(($monthNames[$tM] ?? $tM) . ' ' . $tY);
+        }
+
+        $rentRows[] = [
+            'address'      => $addr,
+            'from_display' => $from_display,
+            'to_display'   => $to_display,
+            'total_rent'   => $total,
+        ];
+    }
+
+    if (!empty($rentRows)) {
+        $rent_addresses_json = json_encode($rentRows, JSON_UNESCAPED_SLASHES);
+    }
+} else {
+    // fallback – if one day you actually send rent_addresses_json from JS
+    $rent_addresses_json = jsonField('rent_addresses_json', '[]');
+}
+
+error_log('FINAL rent_addresses_json going into DB: ' . $rent_addresses_json);
+
+
+    // ---------- SPOUSE PANEL ----------
+    $spouse_first_name        = field('spouse_first_name');
+    $spouse_middle_name       = field('spouse_middle_name');
+    $spouse_last_name         = field('spouse_last_name');
+    $spouse_dob               = parseDateField('spouse_dob'); // YYYY-MM-DD
+
+    // Encrypt DOBs
+    $dob_encrypted        = $dob        ? encrypt_decrypt('encrypt', $dob)        : null;
+    $spouse_dob_encrypted = $spouse_dob ? encrypt_decrypt('encrypt', $spouse_dob) : null;
+
+    // mirror top-level question
+    $spouse_in_canada_flag    = $spouse_in_canada;
+
+    // DECIMAL
+    $spouse_income_outside_cad = decimalField('spouse_income_outside_cad');
+    $spouse_income_cad         = decimalField('spouse_income_cad');
+
+    error_log('RAW spouse_income_cad: ' . ($_POST['spouse_income_cad'] ?? 'MISSING'));
+    error_log('FINAL spouse_income_cad: ' . var_export($spouse_income_cad, true));
+
+    $spouse_sin           = field('spouse_sin');
+    $spouse_address_same  = field('spouse_address_same');  // Yes/No
+
+    $spouse_street        = field('spouse_street');
+    $spouse_unit          = field('spouse_unit');
+    $spouse_city          = field('spouse_city');
+    $spouse_province      = field('spouse_province');
+    $spouse_postal        = field('spouse_postal');
+    $spouse_country       = field('spouse_country');
+
+    $spouse_phone         = field('spouse_phone');
+    $spouse_email         = field('spouse_email');
+
+    // ---------- SPOUSE TAX PANEL ----------
+    $sp_first_time    = field('sp_first_time');
+    $sp_paragon_prior = field('sp_paragon_prior');
+    $sp_return_years  = field('sp_return_years');
+
+    $sp_entry_date    = parseDateField('sp_entry_date');
+    $sp_birth_country = field('sp_birth_country');
+
+    // DECIMAL
+    $sp_inc_y1        = decimalField('sp_inc_y1');
+    $sp_inc_y2        = decimalField('sp_inc_y2');
+    $sp_inc_y3        = decimalField('sp_inc_y3');
+
+    $sp_moved_province = field('sp_moved_province');
+    $sp_moved_date     = parseDateField('sp_moved_date');
+    $sp_prov_from      = field('sp_prov_from');
+    $sp_prov_to        = field('sp_prov_to');
+
+    // ---------- CHILDREN (JSON) ----------
+    error_log('RAW children_json POST: ' . (isset($_POST['children_json']) ? $_POST['children_json'] : 'MISSING'));
+
+    $children_json = '[]';
+
+    if (!empty($_POST['child_rows']) && is_array($_POST['child_rows'])) {
+        $list = [];
+
+        foreach ($_POST['child_rows'] as $row) {
+            $first = isset($row['first_name']) ? trim($row['first_name']) : '';
+            $last  = isset($row['last_name'])  ? trim($row['last_name'])  : '';
+            $dobC  = isset($row['dob'])        ? trim($row['dob'])        : '';
+            $inCan = isset($row['in_canada'])  ? trim($row['in_canada'])  : '';
+
+            if ($first === '' && $last === '' && $dobC === '') {
+                continue;
+            }
+
+            $list[] = [
+                'first_name'  => $first,
+                'last_name'   => $last,
+                'dob'         => $dobC,
+                'dob_display' => $dobC,
+                'in_canada'   => $inCan !== '' ? $inCan : 'Yes',
+            ];
+        }
+
+        if (!empty($list)) {
+            $children_json = json_encode($list, JSON_UNESCAPED_SLASHES);
+        }
+    } else {
+        $children_json = jsonField('children_json', '[]');
+    }
+
+    error_log('children_json going into DB: ' . $children_json);
+
+    // ---------- OTHER INCOME ----------
+    $gig_income           = field('gig_income');
+    $gig_expenses_summary = field('gig_expenses_summary');
+    $gig_hst              = field('gig_hst');
+    $hst_number           = field('hst_number');
+    $hst_access           = field('hst_access');
+    $hst_start            = parseDateField('hst_start');
+    $hst_end              = parseDateField('hst_end');
+
+    $sp_gig_income           = field('sp_gig_income');
+    $sp_gig_expenses_summary = field('sp_gig_expenses_summary');
+    $sp_gig_hst              = field('sp_gig_hst');
+    $sp_hst_number           = field('sp_hst_number');
+    $sp_hst_access           = field('sp_hst_access');
+    $sp_hst_start            = parseDateField('sp_hst_start');
+    $sp_hst_end              = parseDateField('sp_hst_end');
+
+    // ---------- RENTAL PROPERTIES (JSON) ----------
+    $rental_props_json = '[]';
+
+    if (!empty($_POST['rental_props']) && is_array($_POST['rental_props'])) {
+
+        $props = [];
+
+        foreach ($_POST['rental_props'] as $idx => $row) {
+            if (!is_array($row)) continue;
+
+            $owner       = isset($row['owner'])        ? trim($row['owner'])        : '';
+            $address     = isset($row['address'])      ? trim($row['address'])      : '';
+            $startDisp   = isset($row['start_display'])? trim($row['start_display']): '';
+            $endDisp     = isset($row['end_display'])  ? trim($row['end_display'])  : '';
+            $partner     = isset($row['partner'])      ? trim($row['partner'])      : '';
+            $ownerPct    = isset($row['owner_pct'])    ? trim($row['owner_pct'])    : '';
+            $ownUsePct   = isset($row['ownuse_pct'])   ? trim($row['ownuse_pct'])   : '';
+            $grossIncome = isset($row['gross'])        ? trim($row['gross'])        : '';
+
+            $exp = isset($row['expenses']) && is_array($row['expenses'])
+                ? $row['expenses']
+                : [];
+
+            $props[] = [
+                'owner'          => $owner,
+                'address'        => $address,
+                'start_display'  => $startDisp,
+                'end_display'    => $endDisp,
+                'partner'        => $partner,
+                'owner_pct'      => $ownerPct,
+                'own_use_pct'    => $ownUsePct,
+                'gross_income'   => $grossIncome,
+                'exp_mortgage'   => trim($exp['mortgage']     ?? ''),
+                'exp_insurance'  => trim($exp['insurance']    ?? ''),
+                'exp_repairs'    => trim($exp['repairs']      ?? ''),
+                'exp_utilities'  => trim($exp['utilities']    ?? ''),
+                'exp_internet'   => trim($exp['internet']     ?? ''),
+                'exp_propertytax'=> trim($exp['property_tax'] ?? ''),
+                'exp_other'      => trim($exp['other']        ?? ''),
+            ];
+        }
+
+        if (!empty($props)) {
+            $rental_props_json = json_encode($props, JSON_UNESCAPED_SLASHES);
+        }
+
+    } else {
+        $rental_props_json = jsonField('rental_props_json', '[]');
+    }
+
+    error_log('DEBUG rental_props (array): ' . (isset($_POST['rental_props'])
+        ? print_r($_POST['rental_props'], true)
+        : 'MISSING'));
+    error_log('FINAL rental_props_json going into DB: ' . $rental_props_json);
+
+
+        /* -----------------------------
+     *  BRANCH CLEANUP LOGIC
+     *  (make DB empty when branch is off)
+     * ----------------------------- */
+
+    // If FIRST-TIME = yes → keep first-time details, clear prior-customer stuff
+    if ($first_time === 'yes') {
+        $paragon_prior = null;
+        $return_years  = null;
+    }
+    // If FIRST-TIME = no → keep prior-customer stuff, clear entry/world-income details
+    if ($first_time === 'no') {
+        $entry_date    = null;
+        $birth_country = null;
+        $inc_y1 = $inc_y2 = $inc_y3 = null;
+    }
+
+    // If entry date is empty, world income should also be empty
+    if (empty($entry_date)) {
+        $inc_y1 = $inc_y2 = $inc_y3 = null;
+    }
+
+    // MOVED PROVINCE: if answer is NOT "yes", wipe all move fields
+    if ($moved_province !== 'yes') {
+        $moved_date            = null;
+        $prov_from             = null;
+        $prov_to               = null;
+        $moving_expenses_claim = null;
+        $moving_prev_address   = null;
+        $moving_distance       = null;
+    }
+
+    // MOVING EXPENSES: if not claiming, wipe its details
+    if ($moving_expenses_claim !== 'yes') {
+        $moving_prev_address = null;
+        $moving_distance     = null;
+    }
+
+    // FIRST HOME BUYER: if not first-time buyer, wipe everything in that block
+if ($first_home_buyer !== 'yes') {
+    $first_home_purchase = null;
+}
+
+    // SOLE OWNER: only keep owner_count when they said "no"
+    if ($claim_full !== 'no') {
+        $owner_count = null;
+    }
+
+    // RENT: if not living on rent, wipe claim + addresses JSON
+    if ($onRent !== 'yes') {
+        $claimRent          = null;
+        $rent_addresses_json = '[]';
+    }
+
+    // ---------- FILE UPLOADS ----------
+    $userUploadFolder = __DIR__ . '/../uploads/tax/user_' . $taxId;
+
+    $uploadErrors = [];
+
+    // Applicant uploads
+    $appUploads = [
+        'id_proof'   => [],
+        'tslips'     => [],
+        't2202'      => [],
+        'invest'     => [],
+        't2200'      => [],
+        'exp_summary'=> [],
+        'otherdocs'  => [],
+        'gig'        => [],
+    ];
+
+    $gigFiles = handleMultiUpload('gig_tax_summary', 'app_gig_tax', $userUploadFolder, $uploadErrors);
+    if ($gigFiles) {
+        $appUploads['gig'] = $gigFiles;
+    }
+
+    $idProofFiles = handleMultiUpload('app_id_proof', 'app_id_proof', $userUploadFolder, $uploadErrors);
+    if ($idProofFiles) {
+        $appUploads['id_proof'] = $idProofFiles;
+    }
+
+    $tslipsFiles = handleMultiUpload('app_tslips', 'app_tslips', $userUploadFolder, $uploadErrors);
+    if ($tslipsFiles) {
+        $appUploads['tslips'] = $tslipsFiles;
+    }
+
+    $t2202Files = handleMultiUpload('app_t2202_receipt', 'app_t2202', $userUploadFolder, $uploadErrors);
+    if ($t2202Files) {
+        $appUploads['t2202'] = $t2202Files;
+    }
+
+    $investFiles = handleMultiUpload('app_invest', 'app_invest', $userUploadFolder, $uploadErrors);
+    if ($investFiles) {
+        $appUploads['invest'] = $investFiles;
+    }
+
+    $t2200Files = handleMultiUpload('app_t2200_work', 'app_t2200_work', $userUploadFolder, $uploadErrors);
+    if ($t2200Files) {
+        $appUploads['t2200'] = $t2200Files;
+    }
+
+    $expSummaryFiles = handleMultiUpload('app_exp_summary', 'app_exp_summary', $userUploadFolder, $uploadErrors);
+    if ($expSummaryFiles) {
+        $appUploads['exp_summary'] = $expSummaryFiles;
+    }
+
+    $otherDocsFiles = handleMultiUpload('app_otherdocs', 'app_otherdocs', $userUploadFolder, $uploadErrors);
+    if ($otherDocsFiles) {
+        $appUploads['otherdocs'] = $otherDocsFiles;
+    }
+
+    // Spouse uploads
+    $spouseUploads = [
+        'id_proof'  => [],
+        'tslips'    => [],
+        't2202'     => [],
+        'invest'    => [],
+        'otherdocs' => [],
+        'gig'       => [],
+    ];
+
+    $spGigFiles = handleMultiUpload('sp_gig_tax_summary', 'sp_gig_tax', $userUploadFolder, $uploadErrors);
+    if ($spGigFiles) {
+        $spouseUploads['gig'] = $spGigFiles;
+    }
+
+    $spIdProofFiles = handleMultiUpload('sp_id_proof', 'sp_id_proof', $userUploadFolder, $uploadErrors);
+    if ($spIdProofFiles) {
+        $spouseUploads['id_proof'] = $spIdProofFiles;
+    }
+
+    $spT2202Files = handleMultiUpload('sp_t2202', 'sp_t2202', $userUploadFolder, $uploadErrors);
+    if ($spT2202Files) {
+        $spouseUploads['t2202'] = $spT2202Files;
+    }
+
+    $spTslipsFiles = handleMultiUpload('sp_tslips', 'sp_tslips', $userUploadFolder, $uploadErrors);
+    if ($spTslipsFiles) {
+        $spouseUploads['tslips'] = $spTslipsFiles;
+    }
+
+    $spInvestFiles = handleMultiUpload('sp_invest', 'sp_invest', $userUploadFolder, $uploadErrors);
+    if ($spInvestFiles) {
+        $spouseUploads['invest'] = $spInvestFiles;
+    }
+
+    $spOtherDocsFiles = handleMultiUpload('sp_otherdocs', 'sp_otherdocs', $userUploadFolder, $uploadErrors);
+    if ($spOtherDocsFiles) {
+        $spouseUploads['otherdocs'] = $spOtherDocsFiles;
+    }
+
+    $app_uploads_json    = json_encode($appUploads, JSON_UNESCAPED_SLASHES);
+    $spouse_uploads_json = json_encode($spouseUploads, JSON_UNESCAPED_SLASHES);
+
+    // -------------------------------------------------
+    //  ENCRYPT SENSITIVE FIELDS
+    // -------------------------------------------------
+    $sin_encrypted        = $sin        ? encrypt_decrypt('encrypt', $sin)        : null;
+    $spouse_sin_encrypted = $spouse_sin ? encrypt_decrypt('encrypt', $spouse_sin) : null;
+
+    $phone_encrypted      = $phone_raw  ? encrypt_decrypt('encrypt', $phone_raw)  : null;
+    $email_encrypted      = $email_raw  ? encrypt_decrypt('encrypt', $email_raw)  : null;
+
+    $spouse_phone_encrypted = $spouse_phone ? encrypt_decrypt('encrypt', $spouse_phone) : null;
+    $spouse_email_encrypted = $spouse_email ? encrypt_decrypt('encrypt', $spouse_email) : null;
+
+    // Applicant HST
+    $hst_number_encrypted = $hst_number ? encrypt_decrypt('encrypt', $hst_number) : null;
+    $hst_access_encrypted = $hst_access ? encrypt_decrypt('encrypt', $hst_access) : null;
+    $hst_start_encrypted  = $hst_start  ? encrypt_decrypt('encrypt', $hst_start)  : null;
+    $hst_end_encrypted    = $hst_end    ? encrypt_decrypt('encrypt', $hst_end)    : null;
+
+    // Spouse HST
+    $sp_hst_number_encrypted = $sp_hst_number ? encrypt_decrypt('encrypt', $sp_hst_number) : null;
+    $sp_hst_access_encrypted = $sp_hst_access ? encrypt_decrypt('encrypt', $sp_hst_access) : null;
+    $sp_hst_start_encrypted  = $sp_hst_start  ? encrypt_decrypt('encrypt', $sp_hst_start)  : null;
+    $sp_hst_end_encrypted    = $sp_hst_end    ? encrypt_decrypt('encrypt', $sp_hst_end)    : null;
+
+
+    // -------------------------------------------------
+    //  UPDATE personal_tax
+    // -------------------------------------------------
+    $updateSql = "
+      UPDATE personal_tax SET
+        /* PERSONAL */
+        first_name      = :first_name,
+        middle_name     = :middle_name,
+        last_name       = :last_name,
+        dob             = :dob,
+        gender          = :gender,
+        street          = :street,
+        unit            = :unit,
+        city            = :city,
+        province        = :province,
+        postal          = :postal,
+        country         = :country,
+        phone           = :phone,
+        sin             = :sin,
+        email           = :email,
+
+        /* WELCOME / MARITAL */
+        marital_status       = :marital_status,
+        status_date          = :status_date,
+        status_date_sdw      = :status_date_sdw,
+        spouse_in_canada     = :spouse_in_canada,
+        spouseFile           = :spouseFile,
+        children_flag        = :children_flag,
+
+        /* TAX PANEL */
+        first_time           = :first_time,
+        paragon_prior        = :paragon_prior,
+        return_years         = :return_years,
+
+        entry_date           = :entry_date,
+        birth_country        = :birth_country,
+        inc_y1               = :inc_y1,
+        inc_y2               = :inc_y2,
+        inc_y3               = :inc_y3,
+
+        moved_province       = :moved_province,
+        moved_date           = :moved_date,
+        prov_from            = :prov_from,
+        prov_to              = :prov_to,
+        moving_expenses_claim = :moving_expenses_claim,
+        moving_prev_address  = :moving_prev_address,
+        moving_distance      = :moving_distance,
+
+        first_home_buyer     = :first_home_buyer,
+        first_home_purchase  = :first_home_purchase,
+        claim_full           = :claim_full,
+        owner_count          = :owner_count,
+
+        onRent               = :onRent,
+        claimRent            = :claimRent,
+        rent_addresses_json  = :rent_addresses_json,
+
+        /* SPOUSE PANEL */
+        spouse_first_name        = :spouse_first_name,
+        spouse_middle_name       = :spouse_middle_name,
+        spouse_last_name         = :spouse_last_name,
+        spouse_dob               = :spouse_dob,
+        spouse_in_canada_flag    = :spouse_in_canada_flag,
+        spouse_income_outside_cad = :spouse_income_outside_cad,
+
+        spouse_sin               = :spouse_sin,
+        spouse_address_same      = :spouse_address_same,
+        spouse_street            = :spouse_street,
+        spouse_unit              = :spouse_unit,
+        spouse_city              = :spouse_city,
+        spouse_province          = :spouse_province,
+        spouse_postal            = :spouse_postal,
+        spouse_country           = :spouse_country,
+        spouse_phone             = :spouse_phone,
+        spouse_email             = :spouse_email,
+        spouse_income_cad        = :spouse_income_cad,
+
+        /* SPOUSE TAX */
+        sp_first_time        = :sp_first_time,
+        sp_paragon_prior     = :sp_paragon_prior,
+        sp_return_years      = :sp_return_years,
+        sp_entry_date        = :sp_entry_date,
+        sp_birth_country     = :sp_birth_country,
+        sp_inc_y1            = :sp_inc_y1,
+        sp_inc_y2            = :sp_inc_y2,
+        sp_inc_y3            = :sp_inc_y3,
+        sp_moved_province    = :sp_moved_province,
+        sp_moved_date        = :sp_moved_date,
+        sp_prov_from         = :sp_prov_from,
+        sp_prov_to           = :sp_prov_to,
+
+        /* CHILDREN JSON */
+        children_json        = :children_json,
+
+        /* OTHER INCOME */
+        gig_income           = :gig_income,
+        gig_expenses_summary = :gig_expenses_summary,
+        gig_hst              = :gig_hst,
+        hst_number           = :hst_number,
+        hst_access           = :hst_access,
+        hst_start            = :hst_start,
+        hst_end              = :hst_end,
+
+        sp_gig_income           = :sp_gig_income,
+        sp_gig_expenses_summary = :sp_gig_expenses_summary,
+        sp_gig_hst              = :sp_gig_hst,
+        sp_hst_number           = :sp_hst_number,
+        sp_hst_access           = :sp_hst_access,
+        sp_hst_start            = :sp_hst_start,
+        sp_hst_end              = :sp_hst_end,
+
+        /* RENTAL PROPS JSON */
+        rental_props_json    = :rental_props_json,
+
+        /* UPLOADS JSON */
+        app_uploads_json     = :app_uploads_json,
+        spouse_uploads_json  = :spouse_uploads_json,
+
+        updated_at = NOW()
+      WHERE id = :id
+    ";
+
+    $update = $db->prepare($updateSql);
+
+    $update->execute([
+        // PERSONAL
+        ':first_name'      => $first_name,
+        ':middle_name'     => $middle_name,
+        ':last_name'       => $last_name,
+        ':dob'             => $dob_encrypted,
+        ':gender'          => $gender,
+        ':street'          => $street,
+        ':unit'            => $unit,
+        ':city'            => $city,
+        ':province'        => $province,
+        ':postal'          => $postal,
+        ':country'         => $country,
+        ':phone'           => $phone_encrypted,
+        ':sin'             => $sin_encrypted,
+        ':email'           => $email_encrypted,
+
+        // WELCOME / MARITAL
+        ':marital_status'   => $marital_status,
+        ':status_date'      => $status_date,
+        ':status_date_sdw'  => $status_date_sdw,
+        ':spouse_in_canada' => $spouse_in_canada,
+        ':spouseFile'       => $spouseFile,
+        ':children_flag'    => $children_flag,
+
+        // TAX
+        ':first_time'        => $first_time,
+        ':paragon_prior'     => $paragon_prior,
+        ':return_years'      => $return_years,
+        ':entry_date'        => $entry_date,
+        ':birth_country'     => $birth_country,
+        ':inc_y1'            => $inc_y1,
+        ':inc_y2'            => $inc_y2,
+        ':inc_y3'            => $inc_y3,
+        ':moved_province'    => $moved_province,
+        ':moved_date'        => $moved_date,
+        ':prov_from'         => $prov_from,
+        ':prov_to'           => $prov_to,
+        ':moving_expenses_claim' => $moving_expenses_claim,
+        ':moving_prev_address'   => $moving_prev_address,
+        ':moving_distance'       => $moving_distance,
+        ':first_home_buyer'      => $first_home_buyer,
+        ':first_home_purchase'   => $first_home_purchase,
+        ':claim_full'            => $claim_full,
+        ':owner_count'           => $owner_count,
+        ':onRent'                => $onRent,
+        ':claimRent'             => $claimRent,
+        ':rent_addresses_json'   => $rent_addresses_json,
+
+        // SPOUSE PANEL
+        ':spouse_first_name'         => $spouse_first_name,
+        ':spouse_middle_name'        => $spouse_middle_name,
+        ':spouse_last_name'          => $spouse_last_name,
+        ':spouse_dob'                => $spouse_dob_encrypted,
+        ':spouse_in_canada_flag'     => $spouse_in_canada_flag,
+        ':spouse_income_outside_cad' => $spouse_income_outside_cad,
+        ':spouse_sin'                => $spouse_sin_encrypted,
+        ':spouse_address_same'       => $spouse_address_same,
+        ':spouse_street'             => $spouse_street,
+        ':spouse_unit'               => $spouse_unit,
+        ':spouse_city'               => $spouse_city,
+        ':spouse_province'           => $spouse_province,
+        ':spouse_postal'             => $spouse_postal,
+        ':spouse_country'            => $spouse_country,
+        ':spouse_phone'              => $spouse_phone_encrypted,
+        ':spouse_email'              => $spouse_email_encrypted,
+        ':spouse_income_cad'         => $spouse_income_cad,
+
+        // SPOUSE TAX
+        ':sp_first_time'    => $sp_first_time,
+        ':sp_paragon_prior' => $sp_paragon_prior,
+        ':sp_return_years'  => $sp_return_years,
+        ':sp_entry_date'    => $sp_entry_date,
+        ':sp_birth_country' => $sp_birth_country,
+        ':sp_inc_y1'        => $sp_inc_y1,
+        ':sp_inc_y2'        => $sp_inc_y2,
+        ':sp_inc_y3'        => $sp_inc_y3,
+        ':sp_moved_province'=> $sp_moved_province,
+        ':sp_moved_date'    => $sp_moved_date,
+        ':sp_prov_from'     => $sp_prov_from,
+        ':sp_prov_to'       => $sp_prov_to,
+
+        // CHILDREN
+        ':children_json'    => $children_json,
+
+        // OTHER INCOME
+        ':gig_income'           => $gig_income,
+        ':gig_expenses_summary' => $gig_expenses_summary,
+        ':gig_hst'              => $gig_hst,
+        ':hst_number'           => $hst_number_encrypted,
+        ':hst_access'           => $hst_access_encrypted,
+        ':hst_start'            => $hst_start_encrypted,
+        ':hst_end'              => $hst_end_encrypted,
+        ':sp_gig_income'           => $sp_gig_income,
+        ':sp_gig_expenses_summary' => $sp_gig_expenses_summary,
+        ':sp_gig_hst'              => $sp_gig_hst,
+        ':sp_hst_number'           => $sp_hst_number_encrypted,
+        ':sp_hst_access'           => $sp_hst_access_encrypted,
+        ':sp_hst_start'            => $sp_hst_start_encrypted,
+        ':sp_hst_end'              => $sp_hst_end_encrypted,
+
+        // RENTAL PROPS + UPLOADS
+        ':rental_props_json'   => $rental_props_json,
+        ':app_uploads_json'    => $app_uploads_json,
+        ':spouse_uploads_json' => $spouse_uploads_json,
+
+        ':id' => $taxId
+    ]);
+
+    $_SESSION['show_confirm_panel'] = true;
+
+    header('Location: ' . $_SERVER['REQUEST_URI']);
+    exit();
+}
+
+
+// ---------------------------------------------------------
+//  RE-LOAD AFTER SAVE (or first load)
+// ---------------------------------------------------------
+$stmtTax->execute([$userRow['id'] ?? 0]);
+$rowTax = $stmtTax->fetch(PDO::FETCH_ASSOC);
+
+
+// ---------- DECRYPT SENSITIVE FIELDS FOR DISPLAY ----------
+
+// SIN (applicant)
+if (!empty($rowTax['sin'])) {
+    $dec = encrypt_decrypt('decrypt', $rowTax['sin']);
+    if ($dec !== false && $dec !== '' && $dec !== null) {
+        $rowTax['sin'] = $dec;
+    }
+}
+
+// SIN (spouse)
+if (!empty($rowTax['spouse_sin'])) {
+    $dec = encrypt_decrypt('decrypt', $rowTax['spouse_sin']);
+    if ($dec !== false && $dec !== '' && $dec !== null) {
+        $rowTax['spouse_sin'] = $dec;
+    }
+}
+
+// DOB (applicant)
+if (!empty($rowTax['dob'])) {
+    $enc = $rowTax['dob'];
+    if (strpos($enc, 'ENC:') === 0) {
+        $enc = substr($enc, 4);
+    }
+    $dec = encrypt_decrypt('decrypt', $enc);
+    if ($dec !== false && $dec !== '' && $dec !== null) {
+        $rowTax['dob'] = $dec;
+    }
+}
+
+// DOB (spouse)
+if (!empty($rowTax['spouse_dob'])) {
+    $enc = $rowTax['spouse_dob'];
+    if (strpos($enc, 'ENC:') === 0) {
+        $enc = substr($enc, 4);
+    }
+    $dec = encrypt_decrypt('decrypt', $enc);
+    if ($dec !== false && $dec !== '' && $dec !== null) {
+        $rowTax['spouse_dob'] = $dec;
+    }
+}
+
+// Applicant contact
+if (!empty($rowTax['phone'])) {
+    $dec = encrypt_decrypt('decrypt', $rowTax['phone']);
+    if ($dec !== false && $dec !== '' && $dec !== null) {
+        $rowTax['phone'] = $dec;
+    }
+}
+
+if (!empty($rowTax['email'])) {
+    $dec = encrypt_decrypt('decrypt', $rowTax['email']);
+    if ($dec !== false && $dec !== '' && $dec !== null) {
+        $rowTax['email'] = $dec;
+    }
+}
+
+// Spouse contact
+if (!empty($rowTax['spouse_phone'])) {
+    $dec = encrypt_decrypt('decrypt', $rowTax['spouse_phone']);
+    if ($dec !== false && $dec !== '' && $dec !== null) {
+        $rowTax['spouse_phone'] = $dec;
+    }
+}
+if (!empty($rowTax['spouse_email'])) {
+    $dec = encrypt_decrypt('decrypt', $rowTax['spouse_email']);
+    if ($dec !== false && $dec !== '' && $dec !== null) {
+        $rowTax['spouse_email'] = $dec;
+    }
+}
+
+// Applicant HST
+if (!empty($rowTax['hst_number'])) {
+    $dec = encrypt_decrypt('decrypt', $rowTax['hst_number']);
+    if ($dec !== false && $dec !== '' && $dec !== null) {
+        $rowTax['hst_number'] = $dec;
+    }
+}
+if (!empty($rowTax['hst_access'])) {
+    $dec = encrypt_decrypt('decrypt', $rowTax['hst_access']);
+    if ($dec !== false && $dec !== '' && $dec !== null) {
+        $rowTax['hst_access'] = $dec;
+    }
+}
+if (!empty($rowTax['hst_start'])) {
+    $dec = encrypt_decrypt('decrypt', $rowTax['hst_start']);
+    if ($dec !== false && $dec !== '' && $dec !== null) {
+        $rowTax['hst_start'] = $dec;
+    }
+}
+if (!empty($rowTax['hst_end'])) {
+    $dec = encrypt_decrypt('decrypt', $rowTax['hst_end']);
+    if ($dec !== false && $dec !== '' && $dec !== null) {
+        $rowTax['hst_end'] = $dec;
+    }
+}
+
+// Spouse HST
+if (!empty($rowTax['sp_hst_number'])) {
+    $dec = encrypt_decrypt('decrypt', $rowTax['sp_hst_number']);
+    if ($dec !== false && $dec !== '' && $dec !== null) {
+        $rowTax['sp_hst_number'] = $dec;
+    }
+}
+if (!empty($rowTax['sp_hst_access'])) {
+    $dec = encrypt_decrypt('decrypt', $rowTax['sp_hst_access']);
+    if ($dec !== false && $dec !== '' && $dec !== null) {
+        $rowTax['sp_hst_access'] = $dec;
+    }
+}
+if (!empty($rowTax['sp_hst_start'])) {
+    $dec = encrypt_decrypt('decrypt', $rowTax['sp_hst_start']);
+    if ($dec !== false && $dec !== '' && $dec !== null) {
+        $rowTax['sp_hst_start'] = $dec;
+    }
+}
+if (!empty($rowTax['sp_hst_end'])) {
+    $dec = encrypt_decrypt('decrypt', $rowTax['sp_hst_end']);
+    if ($dec !== false && $dec !== '' && $dec !== null) {
+        $rowTax['sp_hst_end'] = $dec;
+    }
+}
+
+// compatibility variables for your existing HTML
+$rowUser      = $rowTax;  // personal panel uses $rowUser
+$rowSpouse    = $rowTax;  // spouse panel used $rowSpouse
+$rowSpouseTax = $rowTax;  // spouse-tax panel used $rowSpouseTax
+
+// Helper: turn "2025-11-23" -> "23 | Nov | 2025"
+function formatDisplayDateUI($iso) {
+    if (empty($iso)) return '';
+    $dt = DateTime::createFromFormat('Y-m-d', $iso);
+    if (!$dt) return $iso; // fallback if something weird is stored
+    return $dt->format('d | M | Y');
+}
+
+/* <<< ADD THIS BLOCK HERE >>> */
+$firstTime      = $rowTax['first_time']            ?? '';
+$paragonPrior   = $rowTax['paragon_prior']         ?? '';
+$movedProvince  = $rowTax['moved_province']        ?? '';
+$moveClaim      = $rowTax['moving_expenses_claim'] ?? '';
+$fthb           = $rowTax['first_home_buyer']      ?? '';
+$onRentVal      = $rowTax['onRent']                ?? '';
+$claimRentVal   = $rowTax['claimRent']             ?? '';
+/* <<< END BLOCK >>> */
+
+
+// Short aliases for welcome panel
+$marital            = $rowUser['marital_status']   ?? '';
+$statusDateUI       = formatDisplayDateUI($rowUser['status_date']      ?? '');
+$statusDateSdwUI    = formatDisplayDateUI($rowUser['status_date_sdw']  ?? '');
+$spInCanada         = $rowUser['spouse_in_canada'] ?? '';
+$spouseFileVal      = $rowUser['spouseFile']       ?? '';
+$childrenFlag       = $rowUser['children_flag']    ?? '';
+
+
+// JSON seeds for modals/tables
+$childrenListJSON   = $rowTax['children_json']        ?: '[]';
+$rentListJSON       = $rowTax['rent_addresses_json']  ?: '[]';
+$rentalPropsJSON    = $rowTax['rental_props_json']    ?: '[]';
+$appUploadsJSON     = $rowTax['app_uploads_json']     ?: '{}';
+$spouseUploadsJSON  = $rowTax['spouse_uploads_json']  ?: '{}';
+
+// ensure plain strings (no PHP NULL)
+if ($childrenListJSON === null)  $childrenListJSON  = '[]';
+if ($rentListJSON === null)      $rentListJSON      = '[]';
+if ($rentalPropsJSON === null)   $rentalPropsJSON   = '[]';
+if ($appUploadsJSON === null)    $appUploadsJSON    = '{}';
+if ($spouseUploadsJSON === null) $spouseUploadsJSON = '{}';
+
 function encrypt_decrypt($action, $string) {
     $output = false;
     $encrypt_method = "AES-256-CBC";
-    // Update your secret key before use
     $secret_key = '$7PHKqGt$yRlPjyt89rds4ioSDsglpk/';
-    // Update your secret iv before use
-    $secret_iv = '$QG8$hj7TRE2allPHPlBbrthUtoiu23bKJYi/';
-    // hash
+    $secret_iv  = '$QG8$hj7TRE2allPHPlBbrthUtoiu23bKJYi/';
+
     $key = hash('sha256', $secret_key);
-    
-    // iv - encrypt method AES-256-CBC expects 16 bytes - else you will get a warning
-    $iv = substr(hash('sha256', $secret_iv), 0, 16);
-    if ( $action == 'encrypt' ) {
+    $iv  = substr(hash('sha256', $secret_iv), 0, 16);
+
+    if ($action == 'encrypt') {
         $output = openssl_encrypt($string, $encrypt_method, $key, 0, $iv);
         $output = base64_encode($output);
-    } else if( $action == 'decrypt' ) {
+    } elseif ($action == 'decrypt') {
         $output = openssl_decrypt(base64_decode($string), $encrypt_method, $key, 0, $iv);
     }
     return $output;
 }
 
-// Write the message to the server's error log
-error_log("Client Logged In: " . encrypt_decrypt("decrypt", $_SESSION['email']));
-
+error_log("personal_tax loaded for: " . $loginEmail);
 ?>
+
 
 
 <!DOCTYPE html>
@@ -909,7 +2023,7 @@ error_log("Client Logged In: " . encrypt_decrypt("decrypt", $_SESSION['email']))
 .qs-wrap { max-width: 980px; margin: 0 auto; }
 .qs-lead { font-size: 16px; color: #475569; margin: 6px 0 24px; max-width: 70ch; }
 .qs-title {
-  font-size: 36px;
+  font-size: 32px;
   font-weight: 800; letter-spacing: -0.02em; margin: 8px 0 4px; text-align: left;
 }
 .qs-label { display: block; margin: 24px 0 4px; font-size: clamp(18px, 2vw, 24px); font-weight: 800; }
@@ -1052,6 +2166,10 @@ error_log("Client Logged In: " . encrypt_decrypt("decrypt", $_SESSION['email']))
     box-sizing:border-box; /* include borders in width */
     text-align:center;
   }
+
+  .qs-title {
+  font-size: 28px;
+}
 }
                     
                     
@@ -7280,6 +8398,32 @@ textarea.fi-input:focus {
   margin-top: 46px !important;
 }
 
+.tax-main-form {
+  background-color: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+
+#moving_prev_address {
+  font-family: inherit !important;  /* or 'Montserrat', sans-serif; whatever you use */
+}
+
+/* Hide Google's error icon and keep the field usable */
+#moving_prev_address.gm-err-autocomplete {
+  background-image: none !important;
+  cursor: text;
+}
+
+#moving_prev_address.gm-err-autocomplete[disabled] {
+  opacity: 1;
+}
+
+#moving_prev_address.gm-err-autocomplete[disabled] {
+  pointer-events: auto;
+}
+
 
 </style>
 
@@ -7444,57 +8588,97 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
   </section>
 </div>
 
+<form id="myForm" class="tax-main-form"
+      action=""
+      method="post"
+      enctype="multipart/form-data"
+      novalidate
+>
+
+
+  <!-- hidden JSON fields for dynamic stuff -->
+  <input type="hidden" name="children_json"       id="children_json">
+  <input type="hidden" name="rent_addresses_json" id="rent_addresses_json">
+  <input type="hidden" name="rental_props_json"   id="rental_props_json">
+  <input type="hidden" name="app_uploads_json"    id="app_uploads_json">
+  <input type="hidden" name="spouse_uploads_json" id="spouse_uploads_json">
 
 
 <!-- SECOND PAGE -->
 <!-- WELCOME PANEL -->
 <div id="welcome-panel" class="tax-next" style="display:none;">
   <section class="tax-card" role="region" aria-labelledby="qs-title">
-    <div class="qs-wrap" >
-
+    <div class="qs-wrap">
 
       <h2 id="qs-title" class="qs-title">
         <?php echo $greetName; ?>, SANITY CHECK before we begin, we need to ask you a few questions.
       </h2>
 
-<!-- Global error banner (hidden by default) -->
-<div id="qsError" class="qs-error-banner" role="alert" aria-live="polite" aria-atomic="true">
-  <h3>A selection is required.</h3>
-  <p>To proceed, please fill in or correct the required field(s).</p>
-</div>
+      <!-- Global error banner (hidden by default) -->
+      <div id="qsError" class="qs-error-banner" role="alert" aria-live="polite" aria-atomic="true">
+        <h3>A selection is required.</h3>
+        <p>To proceed, please fill in or correct the required field(s).</p>
+      </div>
+
       <!-- MARITAL STATUS -->
       <div class="qs-block">
         <label class="qs-label">What is your Marital Status?</label>
 
-        <!-- Dropdown UI (kept) -->
+        <!-- Dropdown UI -->
         <div class="xsel-wrap">
-          <select id="marital_status_select" name="marital_status"
-                  class="xsel-native" aria-label="Marital Status"
+          <select id="marital_status_select"
+                  name="marital_status"
+                  class="xsel-native"
+                  aria-label="Marital Status"
                   data-placeholder="Select status">
-            <option value="" disabled selected>Select status</option>
-            <option value="Single">Single</option>
-            <option value="Married">Married</option>
-            <option value="Common Law">Common Law</option>
-            <option value="Separated">Separated</option>
-            <option value="Divorced">Divorced</option>
-            <option value="Widowed">Widowed</option>
+            <option value="" disabled <?= $marital === '' ? 'selected' : '' ?>>Select status</option>
+            <option value="Single"     <?= $marital === 'Single'     ? 'selected' : '' ?>>Single</option>
+            <option value="Married"    <?= $marital === 'Married'    ? 'selected' : '' ?>>Married</option>
+            <option value="Common Law" <?= $marital === 'Common Law' ? 'selected' : '' ?>>Common Law</option>
+            <option value="Separated"  <?= $marital === 'Separated'  ? 'selected' : '' ?>>Separated</option>
+            <option value="Divorced"   <?= $marital === 'Divorced'   ? 'selected' : '' ?>>Divorced</option>
+            <option value="Widowed"    <?= $marital === 'Widowed'    ? 'selected' : '' ?>>Widowed</option>
           </select>
         </div>
 
-        <!-- Keep your radios in DOM (IDs unchanged) -->
+        <!-- Radios kept for your JS logic -->
         <div class="qs-choicegrid">
-          <label><input type="radio" name="marital_status" value="Single"     id="ms_single"><span>Single</span></label>
-          <label><input type="radio" name="marital_status" value="Married"    id="ms_married"><span>Married</span></label>
-          <label><input type="radio" name="marital_status" value="Common Law" id="ms_commonlaw"><span>Common Law</span></label>
-          <label><input type="radio" name="marital_status" value="Separated"  id="ms_separated"><span>Separated</span></label>
-          <label><input type="radio" name="marital_status" value="Divorced"   id="ms_divorced"><span>Divorced</span></label>
-          <label><input type="radio" name="marital_status" value="Widowed"    id="ms_widowed"><span>Widowed</span></label>
+          <label>
+            <input type="radio" name="marital_status" value="Single" id="ms_single"
+                   <?= $marital === 'Single' ? 'checked' : '' ?>>
+            <span>Single</span>
+          </label>
+          <label>
+            <input type="radio" name="marital_status" value="Married" id="ms_married"
+                   <?= $marital === 'Married' ? 'checked' : '' ?>>
+            <span>Married</span>
+          </label>
+          <label>
+            <input type="radio" name="marital_status" value="Common Law" id="ms_commonlaw"
+                   <?= $marital === 'Common Law' ? 'checked' : '' ?>>
+            <span>Common Law</span>
+          </label>
+          <label>
+            <input type="radio" name="marital_status" value="Separated" id="ms_separated"
+                   <?= $marital === 'Separated' ? 'checked' : '' ?>>
+            <span>Separated</span>
+          </label>
+          <label>
+            <input type="radio" name="marital_status" value="Divorced" id="ms_divorced"
+                   <?= $marital === 'Divorced' ? 'checked' : '' ?>>
+            <span>Divorced</span>
+          </label>
+          <label>
+            <input type="radio" name="marital_status" value="Widowed" id="ms_widowed"
+                   <?= $marital === 'Widowed' ? 'checked' : '' ?>>
+            <span>Widowed</span>
+          </label>
         </div>
       </div>
 
-      <!-- Common-Law modal (kept) -->
+      <!-- Common-Law modal (unchanged) -->
       <div class="cl-modal" id="commonlawModal" role="dialog" aria-modal="true"
-          aria-labelledby="clTitle" aria-describedby="clBody" hidden>
+           aria-labelledby="clTitle" aria-describedby="clBody" hidden>
         <div class="cl-backdrop" data-close></div>
         <div class="cl-dialog" role="document">
           <h3 id="clTitle">Date of common-law status</h3>
@@ -7509,32 +8693,41 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
         </div>
       </div>
 
-      <!-- Married/Common Law: Date of Marriage + Canada + Spouse File + Children -->
+      <!-- Married/Common Law: Date of Marriage -->
       <div class="qs-block" id="status-date-block" style="display:none;margin-top: 46px;">
         <label class="qs-label" id="status-date-label" style="margin-bottom: 24px;">Date of Marriage</label>
         <div class="fi-grid">
           <div class="fi-group fi-float">
-            <input id="status_date" name="status_date" class="fi-input dob-input" placeholder=" ">
+            <input id="status_date"
+                   name="status_date"
+                   class="fi-input dob-input"
+                   placeholder=" "
+                   value="<?= htmlspecialchars($statusDateUI) ?>">
             <label class="fi-float-label" for="status_date">DD | MMM | YYYY</label>
           </div>
         </div>
 
-  <p class="qs-help qs-help-alert" id="status-commonlaw-help" style="display:none; margin-top:12px;">
-    <strong>What is common-law?</strong> You’re usually considered common-law when you have lived together in a conjugal relationship for 12 continuous months (or meet your province’s rule).  
-    <br>
-    <strong>Example:</strong> If you moved in together on <strong>August 15, 2022</strong>, then your common-law status date would be <strong>August 15, 2023</strong>.
-  </p>
-
+        <p class="qs-help qs-help-alert" id="status-commonlaw-help"
+           style="display:none; margin-top:12px;">
+          <strong>What is common-law?</strong> You’re usually considered common-law when you have
+          lived together in a conjugal relationship for 12 continuous months (or meet your
+          province’s rule).
+          <br>
+          <strong>Example:</strong> If you moved in together on <strong>August 15, 2022</strong>,
+          then your common-law status date would be <strong>August 15, 2023</strong>.
+        </p>
       </div>
 
       <!-- Spouse residing in Canada -->
       <div class="qs-block" id="spouse-in-canada-block">
         <h2 class="qs-title small" style="margin-bottom:12px;">Is your spouse residing in Canada?</h2>
         <div class="yn-group" style="margin: 24px 0 0 0;">
-          <input type="radio" id="spouse_in_canada_yes" name="spouse_in_canada" value="Yes">
+          <input type="radio" id="spouse_in_canada_yes" name="spouse_in_canada" value="Yes"
+                 <?= $spInCanada === 'Yes' ? 'checked' : '' ?>>
           <label for="spouse_in_canada_yes" class="yn-btn">Yes</label>
 
-          <input type="radio" id="spouse_in_canada_no" name="spouse_in_canada" value="No">
+          <input type="radio" id="spouse_in_canada_no" name="spouse_in_canada" value="No"
+                 <?= $spInCanada === 'No' ? 'checked' : '' ?>>
           <label for="spouse_in_canada_no" class="yn-btn">No</label>
         </div>
       </div>
@@ -7543,43 +8736,48 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
       <div class="qs-block" id="spouse-file-block" style="display:none;">
         <label class="qs-title small">Does your spouse want to file taxes? <span class="qs-note">*</span></label>
         <div class="yn-group" style="margin-bottom: 0;">
-          <input type="radio" id="spouse_yes" name="spouseFile" value="yes">
+          <input type="radio" id="spouse_yes" name="spouseFile" value="yes"
+                 <?= $spouseFileVal === 'yes' ? 'checked' : '' ?>>
           <label for="spouse_yes" class="yn-btn">Yes</label>
 
-          <input type="radio" id="spouse_no" name="spouseFile" value="no">
+          <input type="radio" id="spouse_no" name="spouseFile" value="no"
+                 <?= $spouseFileVal === 'no' ? 'checked' : '' ?>>
           <label for="spouse_no" class="yn-btn">No</label>
         </div>
       </div>
 
-     
-
-      <!-- Separated/Divorced/Widowed: separate block with UNIQUE IDs -->
-      <div class="qs-block" id="status-date-sdw-block"  style="display:none;margin-top: 46px;">
+      <!-- Separated/Divorced/Widowed date -->
+      <div class="qs-block" id="status-date-sdw-block" style="display:none;margin-top: 46px;">
         <label class="qs-label" id="status-date-sdw-label">Date</label>
         <div class="fi-grid" style="margin-top: 24px;">
           <div class="fi-group fi-float">
-            <input id="status_date_sdw" name="status_date" class="fi-input dob-input" placeholder=" ">
+            <input id="status_date_sdw"
+                   name="status_date_sdw"
+                   class="fi-input dob-input"
+                   placeholder=" "
+                   value="<?= htmlspecialchars($statusDateSdwUI) ?>">
             <label class="fi-float-label" for="status_date_sdw">DD | MMM | YYYY</label>
           </div>
         </div>
       </div>
 
- <div class="qs-block" id="children-block" style="display:none;">
-<label class="qs-title small">Do you have children?</label>
-<div class="yn-group">
-  <input type="radio" id="children_yes" name="children" value="yes">
-  <label for="children_yes" class="yn-btn">Yes</label>
+      <!-- Children -->
+      <div class="qs-block" id="children-block" style="display:none;">
+        <label class="qs-title small">Do you have children?</label>
+        <div class="yn-group">
+          <input type="radio" id="children_yes" name="children" value="yes"
+                 <?= $childrenFlag === 'yes' ? 'checked' : '' ?>>
+          <label for="children_yes" class="yn-btn">Yes</label>
 
-  <input type="radio" id="children_no" name="children" value="no">
-  <label for="children_no" class="yn-btn">No</label>
-</div>
-
+          <input type="radio" id="children_no" name="children" value="no"
+                 <?= $childrenFlag === 'no' ? 'checked' : '' ?>>
+          <label for="children_no" class="yn-btn">No</label>
+        </div>
       </div>
-
 
       <!-- sync field (unchanged) -->
       <input type="hidden" id="spouseFile_value" name="spouseFile_value" value="no">
-      
+
       <div class="tax-cta tax-cta-row">
         <button type="button" class="tax-btn-secondary" id="qs-back">Back</button>
         <button type="button" class="continue-btn" id="qs-continue">Let&#39;s Start</button>
@@ -7588,7 +8786,8 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     </div>
   </section>
 </div>
- 
+
+
     
 <!-- 3RD PAGE -->      
 <!-- MASTER FORM PANEL (replace your #personal-info-panel wrapper with this) -->
@@ -7607,7 +8806,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     </a>
 
     <!-- The rest get marked current/done by the script -->
-    <a class="pi-step" data-step="personal" aria-disabled="true" tabindex="-1">Personal information</a>
+    <a class="pi-step" data-step="personal" aria-disabled="true" tabindex="-1">Personal Information</a>
     <a class="pi-step" data-step="tax" aria-disabled="true" tabindex="-1">Tax Filing Information</a>
     <a class="pi-step" data-step="spouse" aria-disabled="true" tabindex="-1">Spouse Information</a>
     <a class="pi-step" data-step="spouse-tax" aria-disabled="true" tabindex="-1">Spouse Tax Filing Information</a>
@@ -7648,494 +8847,561 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     <!-- STAGE: where pages swap -->
     <div class="pi-stage">
 
-      <!-- PAGE 1: PERSONAL  -->
-      <div class="pi-main" data-panel="personal">
-        
-      <div class="qs-block">
-  		<label class="qs-title small" style="margin-top: -46px !important;">What’s your name?</label>
-  		<div class="qs-help">Enter your name as it appears on your SIN number document.</div>
-		</div>
-        
+     <!-- PAGE 1: PERSONAL  -->
+<div class="pi-main" data-panel="personal">
+  
+  <div class="qs-block">
+    <label class="qs-title small" style="margin-top: 5px !important;">What’s your name?</label>
+    <div class="qs-help">Enter your name as it appears on your SIN number document.</div>
+  </div>
 
-        <div class="fi-grid">
-          <div class="fi-group fi-float">
-            <input id="first_name" name="first_name" class="fi-input" autocomplete="given-name"
-                   value="<?= htmlspecialchars($rowUser['first_name'] ?? '') ?>" placeholder=" ">
-            <label class="fi-float-label" for="first_name">First name</label>
-          </div>
+  <div class="fi-grid">
+    <div class="fi-group fi-float">
+      <input id="first_name" name="first_name" class="fi-input" autocomplete="given-name"
+             value="<?= htmlspecialchars($rowUser['first_name'] ?? '') ?>" placeholder=" ">
+      <label class="fi-float-label" for="first_name">First name</label>
+    </div>
 
-          <div class="fi-group fi-float">
-            <input id="middle_name" name="middle_name" class="fi-input" autocomplete="additional-name"
-                   value="<?= htmlspecialchars($rowUser['middle_name'] ?? '') ?>" placeholder=" ">
-            <label class="fi-float-label" for="middle_name">Middle name (Optional)</label>
-          </div>
+    <div class="fi-group fi-float">
+      <input id="middle_name" name="middle_name" class="fi-input" autocomplete="additional-name"
+             value="<?= htmlspecialchars($rowUser['middle_name'] ?? '') ?>" placeholder=" ">
+      <label class="fi-float-label" for="middle_name">Middle name (Optional)</label>
+    </div>
 
-          <div class="fi-group fi-float ">
-            <input id="last_name" name="last_name" class="fi-input" autocomplete="family-name"
-                   value="<?= htmlspecialchars($rowUser['last_name'] ?? '') ?>" placeholder=" ">
-            <label class="fi-float-label" for="last_name">Last name</label>
-          </div>
-        </div>
+    <div class="fi-group fi-float ">
+      <input id="last_name" name="last_name" class="fi-input" autocomplete="family-name"
+             value="<?= htmlspecialchars($rowUser['last_name'] ?? '') ?>" placeholder=" ">
+      <label class="fi-float-label" for="last_name">Last name</label>
+    </div>
+  </div>
 
-        <h2 class="qs-title small" style="margin-bottom:24px;">What’s your date of birth?</h2>
-<div class="fi-grid">
-      <div class="fi-group fi-float">
-  <input id="dob" name="dob" class="fi-input dob-input" autocomplete="bday"
-         value="<?= htmlspecialchars($rowUser['dob'] ?? '') ?>" placeholder=" ">
-  <label class="fi-float-label" for="dob">DD | MMM | YYYY</label>
+  <h2 class="qs-title small" style="margin-bottom:24px;">What’s your date of birth?</h2>
+  <div class="fi-grid">
+    <div class="fi-group fi-float">
+      <input id="dob" name="dob" class="fi-input dob-input" autocomplete="bday"
+             value="<?= htmlspecialchars(formatDisplayDateUI($rowUser['dob'] ?? '')) ?>" placeholder=" ">
+      <label class="fi-float-label" for="dob">DD | MMM | YYYY</label>
+    </div>
+  </div>
+
+  <div class="qs-block">
+    <label class="qs-title small">What’s your Social Insurance Number?</label>
+    <div class="qs-help">Enter 9 digits, no spaces or dashes.</div>
+  </div>
+
+  <div class="fi-grid">
+    <div class="fi-group fi-float ">
+      <input id="sin" name="sin" class="fi-input" inputmode="numeric" pattern="\d{9}" maxlength="9"
+             value="<?= htmlspecialchars($rowUser['sin'] ?? '') ?>" placeholder=" ">
+      <label class="fi-float-label" for="sin">SIN (9 digits)</label>
+    </div>
+    <div class="fi-hint"></div>
+  </div>
+
+  <h2 class="qs-title small" style="margin-bottom:24px;">What’s your gender?</h2>
+  <div class="yn-group" style="margin-bottom:24px;">
+    <input type="radio" id="gender_male"   name="gender" value="Male"
+           <?= (($rowUser['gender'] ?? '') === 'Male') ? 'checked' : '' ?>>
+    <label for="gender_male" class="yn-btn">Male</label>
+
+    <input type="radio" id="gender_female" name="gender" value="Female"
+           <?= (($rowUser['gender'] ?? '') === 'Female') ? 'checked' : '' ?>>
+    <label for="gender_female" class="yn-btn">Female</label>
+  </div>
+
+  <h2 class="qs-title small" style="margin-bottom:24px;">Address</h2>
+  <div class="fi-grid">
+    <div class="fi-group fi-float">
+      <input id="street" name="street" class="fi-input" list="street-suggest"
+             value="<?= htmlspecialchars($rowUser['street'] ?? '') ?>" placeholder=" ">
+      <label class="fi-float-label" for="street">Street</label>
+      <datalist id="street-suggest">
+        <option value="123 Main St">
+        <option value="456 King St W">
+        <option value="789 Queen St E">
+      </datalist>
+    </div>
+
+    <div class="fi-group fi-float">
+      <input id="unit" name="unit" class="fi-input"
+             value="<?= htmlspecialchars($rowUser['unit'] ?? '') ?>" placeholder=" ">
+      <label class="fi-float-label" for="unit">Apartment, Unit, Suite, or floor #</label>
+    </div>
+
+    <div class="fi-group fi-float">
+      <input id="city" name="city" class="fi-input"
+             value="<?= htmlspecialchars($rowUser['city'] ?? '') ?>" placeholder=" ">
+      <label class="fi-float-label" for="city">City</label>
+    </div>
+
+    <div class="fi-group fi-float">
+      <input id="province" name="province" class="fi-input"
+             value="<?= htmlspecialchars($rowUser['province'] ?? '') ?>" placeholder=" ">
+      <label class="fi-float-label" for="province">State/Province</label>
+    </div>
+
+    <div class="fi-group fi-float">
+      <input id="postal" name="postal" class="fi-input"
+             value="<?= htmlspecialchars($rowUser['postal'] ?? '') ?>" placeholder=" ">
+      <label class="fi-float-label" for="postal">Postal Code</label>
+    </div>
+
+    <div class="fi-group fi-float">
+      <input id="country" name="country" class="fi-input" list="country-list"
+             value="<?= htmlspecialchars($rowUser['country'] ?? 'Canada') ?>" placeholder=" ">
+      <label class="fi-float-label" for="country">Country</label>
+      <datalist id="country-list"></datalist>
+    </div>
+  </div>
+
+  <h2 class="qs-title small" style="margin-bottom:24px;">Contact info</h2>
+  <div class="fi-grid">
+    <div class="fi-group fi-float">
+      <input id="phone" name="phone" class="fi-input" inputmode="tel"
+             value="<?= htmlspecialchars($rowUser['phone'] ?? '') ?>" placeholder=" ">
+      <label class="fi-float-label" for="phone">Phone number</label>
+    </div>
+
+    <div class="fi-group fi-float">
+      <input id="email" name="email" class="fi-input" type="email" autocomplete="email"
+             value="<?= htmlspecialchars($rowUser['email'] ?? '') ?>" placeholder=" ">
+      <label class="fi-float-label" for="email">Email</label>
+    </div>
+  </div>
+
+  <!-- Back / Continue -->
+  <div class="tax-cta tax-cta-row" style="margin-top:36px;">
+    <button type="button" class="tax-btn-secondary" data-goto="welcome">Back</button>
+    <button type="button" class="continue-btn" data-goto="next">Continue</button>
+  </div>
 </div>
-</div>
-		
-        <div class="qs-block">
-  			<label class="qs-title small">What’s your Social Insurance Number?</label>
-  			<div class="qs-help">Enter 9 digits, no spaces or dashes.</div>
-		</div>
-<div class="fi-grid">
-        <div class="fi-group fi-float ">
-          <input id="sin" name="sin" class="fi-input" inputmode="numeric" pattern="\d{9}" maxlength="9"
-                 value="<?= htmlspecialchars($rowUser['sin'] ?? '') ?>" placeholder=" ">
-          <label class="fi-float-label" for="sin">SIN (9 digits)</label>
-        </div>
-        <div class="fi-hint"></div>
-</div>
-        <h2 class="qs-title small" style="margin-bottom:24px;">What’s your gender?</h2>
-        <div class="yn-group" style="margin-bottom:24px;">
-          <input type="radio" id="gender_male"   name="gender" value="Male">
-          <label for="gender_male" class="yn-btn">Male</label>
 
-          <input type="radio" id="gender_female" name="gender" value="Female">
-          <label for="gender_female" class="yn-btn">Female</label>
-        </div>
-
-        <h2 class="qs-title small" style="margin-bottom:24px;">Address</h2>
-        <div class="fi-grid">
-          <div class="fi-group fi-float">
-            <input id="street" name="street" class="fi-input" list="street-suggest"
-                   value="<?= htmlspecialchars($rowUser['street'] ?? '') ?>" placeholder=" ">
-            <label class="fi-float-label" for="street">Street</label>
-            <datalist id="street-suggest">
-              <option value="123 Main St">
-              <option value="456 King St W">
-              <option value="789 Queen St E">
-            </datalist>
-          </div>
-
-          <div class="fi-group fi-float">
-            <input id="unit" name="unit" class="fi-input"
-                   value="<?= htmlspecialchars($rowUser['unit'] ?? '') ?>" placeholder=" ">
-            <label class="fi-float-label" for="unit">Apartment, Unit, Suite, or floor #</label>
-          </div>
-
-          <div class="fi-group fi-float">
-            <input id="city" name="city" class="fi-input"
-                   value="<?= htmlspecialchars($rowUser['city'] ?? '') ?>" placeholder=" ">
-            <label class="fi-float-label" for="city">City</label>
-          </div>
-
-          <div class="fi-group fi-float">
-            <input id="province" name="province" class="fi-input"
-                   value="<?= htmlspecialchars($rowUser['province'] ?? '') ?>" placeholder=" ">
-            <label class="fi-float-label" for="province">State/Province</label>
-          </div>
-
-          <div class="fi-group fi-float">
-            <input id="postal" name="postal" class="fi-input"
-                   value="<?= htmlspecialchars($rowUser['postal'] ?? '') ?>" placeholder=" ">
-            <label class="fi-float-label" for="postal">Postal Code</label>
-          </div>
-
-          <div class="fi-group fi-float">
-  			<input id="country" name="country" class="fi-input" list="country-list"
-         value="<?= htmlspecialchars($rowUser['country'] ?? 'Canada') ?>" placeholder=" ">
-  				<label class="fi-float-label" for="country">Country</label>
-  			<datalist id="country-list"></datalist>
-          </div>
-        </div>
-
-        <h2 class="qs-title small" style="margin-bottom:24px;">Contact info</h2>
-        <div class="fi-grid">
-          <div class="fi-group fi-float">
-            <input id="phone" name="phone" class="fi-input" inputmode="tel"
-                   value="<?= htmlspecialchars($rowUser['phone_plain'] ?? '') ?>" placeholder=" ">
-            <label class="fi-float-label" for="phone">Phone number</label>
-          </div>
-
-          <div class="fi-group fi-float">
-            <input id="email" name="email" class="fi-input" type="email" autocomplete="email"
-                   value="<?= htmlspecialchars($rowUser['phone_plain'] ?? '') ?>" placeholder=" ">
-            <label class="fi-float-label" for="email">Email</label>
-          </div>
-        </div>
-
-        <!-- Back / Continue -->
-        <div class="tax-cta tax-cta-row" style="margin-top:36px;">
-         <button type="button" class="tax-btn-secondary" data-goto="welcome">Back</button>
-         <button type="button" class="continue-btn" data-goto="next">Continue</button>
-        </div>
-      </div>
 
                   
       <!-- PAGE 2: TAX FILING (your same UI moved here) -->
+<!-- PAGE 2: TAX FILING -->
 <div class="pi-main" data-panel="tax" hidden>
-                        
-<div class="qs-block">
-  <label class="qs-label">Is this the first time you are filing tax? <span class="qs-note">*</span></label>
-  <div class="yn-group">
-    <input type="radio" id="first_yes" name="first_time" value="yes">
-    <label for="first_yes" class="yn-btn">Yes</label>
 
-    <input type="radio" id="first_no" name="first_time" value="no">
-    <label for="first_no" class="yn-btn">No</label>
-  </div>
-</div>
-
-<!-- BRANCH A: Prior customer / years (shown when FIRST-TIME = NO) -->
-<div id="prior-customer-section" class="qs-block is-hidden" aria-hidden="true">
-  <label class="qs-label">Did you file earlier with Paragon Tax Services? <span class="qs-note">*</span></label>
-  <div class="yn-group" style="margin-bottom:24px;">
-    <input type="radio" id="paragon_yes" name="paragon_prior" value="yes">
-    <label for="paragon_yes" class="yn-btn">Yes</label>
-
-    <input type="radio" id="paragon_no" name="paragon_prior" value="no">
-    <label for="paragon_no" class="yn-btn">No</label>
-  </div>
-<div class="fi-grid">
-  <div class="fi-group fi-float" style="margin-top:10px;">
-    <input id="return_years" name="return_years" class="fi-input" placeholder=" ">
-    <label class="fi-float-label" for="return_years">Which years do you want to file tax returns? <span class="qs-note">*</span></label>
-    <div class="qs-help">(Enter years separated by commas, e.g., 2024, 2023, 2022)</div>
-  </div>
-</div>
-</div>
-
-
-
-<!-- BRANCH B: First-time details (shown when FIRST-TIME = YES) -->
-<div id="firsttime-details" class="is-hidden" aria-hidden="true">
-  <!-- Entry & Birth -->
-  <div class="fi-grid" style="margin-bottom: 46px">
-<div class="fi-group fi-float">
-  <input id="entry_date_display"
-         class="fi-input dob-input"
-         placeholder=" "
-         data-bind="#entry_date"
-         data-dob-mode="ymd">      <!-- Year-Month-Day -->
-  <label class="fi-float-label" for="entry_date_display">Date of Entry</label>
-
-  <!-- Hidden stores YYYY-MM-DD -->
-  <input type="hidden" id="entry_date" name="entry_date">
-</div>
-
-
-
-
-<div class="fi-group fi-float">
-  <input id="birth_country" name="birth_country" class="fi-input" placeholder=" " list="country-list">
-  <label class="fi-float-label" for="birth_country">
-    Country of Previous Residency <span class="qs-note">*</span>
-  </label>
-
-  <!-- help text -->
- 
-</div>
-
-</div>
-
-                      
-                        
-  <!-- World Income -->
-<!-- World Income (hidden until entry date is set) -->
-<div id="wi-wrapper" class="is-hidden" style="margin-bottom: 46px;" aria-hidden="true">
+  <!-- FIRST TIME FILING -->
   <div class="qs-block">
-    <label class="qs-label">What was your world income in last 3 years before coming to Canada?</label>
+    <label class="qs-label" style="margin-top: 5px;">
+      Is this the first time you are filing tax? <span class="qs-note">*</span>
+    </label>
+    <div class="yn-group">
+      <input type="radio" id="first_yes" name="first_time" value="yes"
+             <?= ($firstTime === 'yes') ? 'checked' : '' ?>>
+      <label for="first_yes" class="yn-btn">Yes</label>
+
+      <input type="radio" id="first_no" name="first_time" value="no"
+             <?= ($firstTime === 'no') ? 'checked' : '' ?>>
+      <label for="first_no" class="yn-btn">No</label>
+    </div>
   </div>
 
-  <section class="wi-grid" aria-label="World Income Periods and Amounts">
-    <!-- LEFT: Periods -->
-    <div class="wi-col wi-col--period">
-      <div class="wi-title">Period</div>
-      <div class="wi-row" id="period_y1">—</div>
-      <div class="wi-row" id="period_y2">—</div>
-      <div class="wi-row" id="period_y3">—</div>
+  <!-- BRANCH A: Prior customer / years (FIRST-TIME = NO) -->
+  <div id="prior-customer-section"
+       class="qs-block <?= ($firstTime === 'no') ? '' : 'is-hidden' ?>"
+       aria-hidden="<?= ($firstTime === 'no') ? 'false' : 'true' ?>">
+    <label class="qs-label">
+      Did you file earlier with Paragon Tax Services? <span class="qs-note">*</span>
+    </label>
+    <div class="yn-group" style="margin-bottom:24px;">
+      <input type="radio" id="paragon_yes" name="paragon_prior" value="yes"
+             <?= ($paragonPrior === 'yes') ? 'checked' : '' ?>>
+      <label for="paragon_yes" class="yn-btn">Yes</label>
+
+      <input type="radio" id="paragon_no" name="paragon_prior" value="no"
+             <?= ($paragonPrior === 'no') ? 'checked' : '' ?>>
+      <label for="paragon_no" class="yn-btn">No</label>
     </div>
 
-    <!-- RIGHT: Income inputs -->
-    <div class="wi-col wi-col--income">
-      <div class="wi-title">World Income (CAD)</div>
-
-      <div class="wi-row">
-        <div class="fi-group fi-float wi-inline">
-          <input id="inc_y1" name="inc_y1" class="fi-input" 
-                 inputmode="decimal" autocomplete="off"
-                 pattern="^[0-9]+([.,][0-9]{1,2})?$" aria-describedby="period_y1">
-          <label class="fi-float-label" for="inc_y1">Year 1 Income</label>
-        </div>
-      </div>
-
-      <div class="wi-row">
-        <div class="fi-group fi-float wi-inline">
-          <input id="inc_y2" name="inc_y2" class="fi-input" 
-                 inputmode="decimal" autocomplete="off"
-                 pattern="^[0-9]+([.,][0-9]{1,2})?$" aria-describedby="period_y2">
-          <label class="fi-float-label" for="inc_y2">Year 2 Income</label>
-        </div>
-      </div>
-
-      <div class="wi-row">
-        <div class="fi-group fi-float wi-inline">
-          <input id="inc_y3" name="inc_y3" class="fi-input" 
-                 inputmode="decimal" autocomplete="off"
-                 pattern="^[0-9]+([.,][0-9]{1,2})?$" aria-describedby="period_y3">
-          <label class="fi-float-label" for="inc_y3">Year 3 Income</label>
-        </div>
+    <div class="fi-grid">
+      <div class="fi-group fi-float" style="margin-top:10px;">
+        <input id="return_years" name="return_years" class="fi-input" placeholder=" "
+               value="<?= htmlspecialchars($rowTax['return_years'] ?? '') ?>">
+        <label class="fi-float-label" for="return_years">
+          Which years do you want to file tax returns? <span class="qs-note">*</span>
+        </label>
+        <div class="qs-help">(Enter years separated by commas, e.g., 2024, 2023, 2022)</div>
       </div>
     </div>
-  </section>
-</div>
-               
-</div>
+  </div>
 
-                        
+  <!-- BRANCH B: First-time details (FIRST-TIME = YES) -->
+  <div id="firsttime-details"
+       class="<?= ($firstTime === 'yes') ? '' : 'is-hidden' ?>"
+       aria-hidden="<?= ($firstTime === 'yes') ? 'false' : 'true' ?>">
+
+    <!-- Entry & Birth -->
+    <div class="fi-grid" style="margin-bottom: 46px">
+      <div class="fi-group fi-float">
+        <input id="entry_date_display"
+               class="fi-input dob-input"
+               placeholder=" "
+               data-bind="#entry_date"
+               data-dob-mode="ymd"
+               value="<?= htmlspecialchars(formatDisplayDateUI($rowTax['entry_date'] ?? '')) ?>">
+        <label class="fi-float-label" for="entry_date_display">Date of Entry</label>
+
+        <!-- Hidden YYYY-MM-DD -->
+        <input type="hidden" id="entry_date" name="entry_date"
+               value="<?= htmlspecialchars($rowTax['entry_date'] ?? '') ?>">
+      </div>
+
+      <div class="fi-group fi-float">
+        <input
+          id="birth_country"
+          name="birth_country"
+          class="fi-input"
+          placeholder=" "
+          list="country-list"
+          value="<?= htmlspecialchars($rowTax['birth_country'] ?? '') ?>">
+        <label class="fi-float-label" for="birth_country">
+          Country of Previous Residency <span class="qs-note">*</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- World Income -->
+    <div id="wi-wrapper"
+         class="<?= (!empty($rowTax['entry_date']) ? '' : 'is-hidden') ?>"
+         style="margin-bottom: 46px;"
+         aria-hidden="<?= (!empty($rowTax['entry_date']) ? 'false' : 'true') ?>">
+      <div class="qs-block">
+        <label class="qs-label">
+          What was your world income in last 3 years before coming to Canada?
+        </label>
+      </div>
+
+      <section class="wi-grid" aria-label="World Income Periods and Amounts">
+        <!-- LEFT: Periods -->
+        <div class="wi-col wi-col--period">
+          <div class="wi-title">Period</div>
+          <div class="wi-row" id="period_y1">—</div>
+          <div class="wi-row" id="period_y2">—</div>
+          <div class="wi-row" id="period_y3">—</div>
+        </div>
+
+        <!-- RIGHT: Income inputs -->
+        <div class="wi-col wi-col--income">
+          <div class="wi-title">World Income (CAD)</div>
+
+          <div class="wi-row">
+            <div class="fi-group fi-float wi-inline">
+              <input id="inc_y1" name="inc_y1" class="fi-input"
+                     inputmode="decimal" autocomplete="off"
+                     pattern="^[0-9]+([.,][0-9]{1,2})?$"
+                     aria-describedby="period_y1"
+                     value="<?= htmlspecialchars($rowTax['inc_y1'] ?? '') ?>">
+              <label class="fi-float-label" for="inc_y1">Year 1 Income</label>
+            </div>
+          </div>
+
+          <div class="wi-row">
+            <div class="fi-group fi-float wi-inline">
+              <input id="inc_y2" name="inc_y2" class="fi-input"
+                     inputmode="decimal" autocomplete="off"
+                     pattern="^[0-9]+([.,][0-9]{1,2})?$"
+                     aria-describedby="period_y2"
+                     value="<?= htmlspecialchars($rowTax['inc_y2'] ?? '') ?>">
+              <label class="fi-float-label" for="inc_y2">Year 2 Income</label>
+            </div>
+          </div>
+
+          <div class="wi-row">
+            <div class="fi-group fi-float wi-inline">
+              <input id="inc_y3" name="inc_y3" class="fi-input"
+                     inputmode="decimal" autocomplete="off"
+                     pattern="^[0-9]+([.,][0-9]{1,2})?$"
+                     aria-describedby="period_y3"
+                     value="<?= htmlspecialchars($rowTax['inc_y3'] ?? '') ?>">
+              <label class="fi-float-label" for="inc_y3">Year 3 Income</label>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div> <!-- /wi-wrapper -->
+  </div> <!-- /firsttime-details -->
+
   <!-- Move to another province -->
-<div class="qs-block"  style="margin-top:-2px !important;">
-  <label class="qs-label">Did you move to another province? <span class="qs-note">*</span></label>
-  <div class="yn-group">
-    <input type="radio" id="mprov_yes" name="moved_province" value="yes">
-    <label for="mprov_yes" class="yn-btn">Yes</label>
+  <div class="qs-block" style="margin-top:-2px !important;">
+    <label class="qs-label">Did you move to another province? <span class="qs-note">*</span></label>
+    <div class="yn-group">
+      <input type="radio" id="mprov_yes" name="moved_province" value="yes"
+             <?= ($movedProvince === 'yes') ? 'checked' : '' ?>>
+      <label for="mprov_yes" class="yn-btn">Yes</label>
 
-    <input type="radio" id="mprov_no" name="moved_province" value="no">
-    <label for="mprov_no" class="yn-btn">No</label>
-  </div>
-</div>
-
-<!-- When did you move? (toggled ) -->
-
-<div id="moved-section" class="qs-block is-hidden" aria-hidden="true">
-  <label class="qs-label" style="margin-bottom: 24px;">When did you move? <span class="qs-note">*</span></label>
-
-<div class="fi-grid">
-<div class="fi-group fi-float">
-  <input
-    id="moved_date_display"
-    name="moved_date_display"
-    class="fi-input dob-input"
-    placeholder=" "
-    value="<?= htmlspecialchars($rowUser['moved_date_display'] ?? '') ?>"
-    data-bind="#moved_date_iso"
-    data-dob-mode="ymd"       
-    required>
-
-  <label class="fi-float-label" for="moved_date_display">Date moved</label>
-
-  <!-- now stores YYYY-MM-DD -->
-  <input type="hidden"
-         id="moved_date_iso"
-         name="moved_date"
-         value="<?= htmlspecialchars($rowUser['moved_date'] ?? '') ?>">
-</div>
-</div>
-
-<div class="fi-grid" style="margin: 30px 0 46px;">
-  <div class="fi-group fi-float">
-    <select id="prov_from" name="prov_from" class="fi-input" required>
-      <option value="">Select State/Province</option>
-      <option>Alberta</option><option>British Columbia</option><option>Manitoba</option>
-      <option>New Brunswick</option><option>Newfoundland and Labrador</option>
-      <option>Nova Scotia</option><option>Ontario</option><option>Prince Edward Island</option>
-      <option>Quebec</option><option>Saskatchewan</option><option>Northwest Territories</option>
-      <option>Nunavut</option><option>Yukon</option>
-    </select>
-    <label class="fi-float-label" for="prov_from">Province moved From? <span class="qs-note">*</span></label>
-  </div>
-
-  <div class="fi-group fi-float">
-    <select id="prov_to" name="prov_to" class="fi-input" required>
-      <option value="">Select State/Province</option>
-      <option>Alberta</option><option>British Columbia</option><option>Manitoba</option>
-      <option>New Brunswick</option><option>Newfoundland and Labrador</option>
-      <option>Nova Scotia</option><option>Ontario</option><option>Prince Edward Island</option>
-      <option>Quebec</option><option>Saskatchewan</option><option>Northwest Territories</option>
-      <option>Nunavut</option><option>Yukon</option>
-    </select>
-    <label class="fi-float-label" for="prov_to">Province moved To? <span class="qs-note">*</span></label>
-  </div>
- </div>   
-
- <!-- Moving Expenses -->
-<div class="qs-block">
- <label class="qs-label">Do you want to claim moving expenses? <span class="qs-note">*</span></label>
- <div class="yn-group">
-    <input type="radio" id="movexp_yes" name="moving_expenses_claim" value="yes">
-    <label for="movexp_yes" class="yn-btn">Yes</label>
-
-    <input type="radio" id="movexp_no" name="moving_expenses_claim" value="no">
-    <label for="movexp_no" class="yn-btn">No</label>
-  </div>
-</div> 
-<!-- If yes: details -->
-  <div id="movexp-details" class="qs-block fi-grid is-hidden" style="margin-bottom:46px;" aria-hidden="true">
-    <!-- Previous address (text box) -->
-    <div class="fi-group fi-float">
-      <input
-        id="moving_prev_address"
-        name="moving_prev_address"
-        class="fi-input"
-        placeholder=" "
-        value="<?= htmlspecialchars($rowUser['moving_prev_address'] ?? '') ?>"
-        <?= (isset($rowUser['moving_expenses_claim']) && $rowUser['moving_expenses_claim'] === 'yes') ? 'required' : '' ?>>
-      <label class="fi-float-label" for="moving_prev_address">Previous address</label>
-    </div>
-
-    <!-- Distance between previous and current address (text box) -->
-    <div class="fi-group fi-float">
-      <input
-        id="moving_distance"
-        name="moving_distance"
-        class="fi-input"
-        placeholder=" "
-        value="<?= htmlspecialchars($rowUser['moving_distance'] ?? '') ?>"
-        <?= (isset($rowUser['moving_expenses_claim']) && $rowUser['moving_expenses_claim'] === 'yes') ? 'required' : '' ?>>
-      <label class="fi-float-label" for="moving_distance">Distance between previous and current address</label>
+      <input type="radio" id="mprov_no" name="moved_province" value="no"
+             <?= ($movedProvince === 'no') ? 'checked' : '' ?>>
+      <label for="mprov_no" class="yn-btn">No</label>
     </div>
   </div>
-                    
- </div>                       
 
-                     
-   
-                      
-                      
-<!-- CONTROLLER -->
-                        
+  <!-- When did you move? -->
+  <div id="moved-section"
+       class="qs-block <?= ($movedProvince === 'yes') ? '' : 'is-hidden' ?>"
+       aria-hidden="<?= ($movedProvince === 'yes') ? 'false' : 'true' ?>">
+    <label class="qs-label" style="margin-bottom: 24px;">
+      When did you move? <span class="qs-note">*</span>
+    </label>
 
-<!-- Controller -->
-<div class="qs-block">
-  <label class="qs-label">Are you first time home buyer? <span class="qs-note">*</span></label>
-  <div class="yn-group">
-    <input type="radio" id="fthb_yes" name="first_home_buyer" value="yes">
-    <label for="fthb_yes" class="yn-btn">Yes</label>
+    <div class="fi-grid">
+      <div class="fi-group fi-float">
+        <input
+          id="moved_date_display"
+          name="moved_date_display"
+          class="fi-input dob-input"
+          placeholder=" "
+          data-bind="#moved_date_iso"
+          data-dob-mode="ymd"
+          value="<?= htmlspecialchars(formatDisplayDateUI($rowTax['moved_date'] ?? '')) ?>">
+        <label class="fi-float-label" for="moved_date_display">Date moved</label>
 
-    <input type="radio" id="fthb_no" name="first_home_buyer" value="no">
-    <label for="fthb_no" class="yn-btn">No</label>
+        <input type="hidden"
+               id="moved_date_iso"
+               name="moved_date"
+               value="<?= htmlspecialchars($rowTax['moved_date'] ?? '') ?>">
+      </div>
+    </div>
+
+    <div class="fi-grid" style="margin: 30px 0 46px;">
+      <div class="fi-group fi-float">
+        <select id="prov_from" name="prov_from" class="fi-input">
+          <option value="">Select State/Province</option>
+          <?php
+          $provFrom = $rowTax['prov_from'] ?? '';
+          $provTo   = $rowTax['prov_to']   ?? '';
+          $provs = [
+            'Alberta','British Columbia','Manitoba','New Brunswick',
+            'Newfoundland and Labrador','Nova Scotia','Ontario',
+            'Prince Edward Island','Quebec','Saskatchewan',
+            'Northwest Territories','Nunavut','Yukon'
+          ];
+          foreach ($provs as $p):
+          ?>
+            <option value="<?= htmlspecialchars($p) ?>"
+              <?= ($provFrom === $p ? 'selected' : '') ?>><?= htmlspecialchars($p) ?></option>
+          <?php endforeach; ?>
+        </select>
+        <label class="fi-float-label" for="prov_from">
+          Province moved From? <span class="qs-note">*</span>
+        </label>
+      </div>
+
+      <div class="fi-group fi-float">
+        <select id="prov_to" name="prov_to" class="fi-input">
+          <option value="">Select State/Province</option>
+          <?php foreach ($provs as $p): ?>
+            <option value="<?= htmlspecialchars($p) ?>"
+              <?= ($provTo === $p ? 'selected' : '') ?>><?= htmlspecialchars($p) ?></option>
+          <?php endforeach; ?>
+        </select>
+        <label class="fi-float-label" for="prov_to">
+          Province moved To? <span class="qs-note">*</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Moving Expenses -->
+    <div class="qs-block">
+      <label class="qs-label">
+        Do you want to claim moving expenses? <span class="qs-note">*</span>
+      </label>
+      <div class="yn-group">
+        <input type="radio" id="movexp_yes" name="moving_expenses_claim" value="yes"
+               <?= ($moveClaim === 'yes') ? 'checked' : '' ?>>
+        <label for="movexp_yes" class="yn-btn">Yes</label>
+
+        <input type="radio" id="movexp_no" name="moving_expenses_claim" value="no"
+               <?= ($moveClaim === 'no') ? 'checked' : '' ?>>
+        <label for="movexp_no" class="yn-btn">No</label>
+      </div>
+    </div>
+
+    <!-- If yes: details -->
+    <div id="movexp-details"
+         class="qs-block fi-grid <?= ($moveClaim === 'yes') ? '' : 'is-hidden' ?>"
+         style="margin-bottom:46px;"
+         aria-hidden="<?= ($moveClaim === 'yes') ? 'false' : 'true' ?>">
+
+      <div class="fi-group fi-float">
+        <input
+          type="text"
+          id="moving_prev_address"
+          name="moving_prev_address"
+          class="fi-input"
+          placeholder=" "
+          autocomplete="off"
+          value="<?= htmlspecialchars($rowTax['moving_prev_address'] ?? '') ?>">
+        <label class="fi-float-label" for="moving_prev_address">Previous address</label>
+      </div>
+
+      <div class="fi-group fi-float">
+        <input
+          id="moving_distance"
+          name="moving_distance"
+          class="fi-input"
+          placeholder=" "
+          value="<?= htmlspecialchars($rowTax['moving_distance'] ?? '') ?>">
+        <label class="fi-float-label" for="moving_distance">
+          Distance between previous and current address
+        </label>
+      </div>
+    </div>
+  </div> <!-- /moved-section -->
+
+  <!-- FIRST HOME BUYER -->
+  <div class="qs-block">
+    <label class="qs-label">Are you first time home buyer? <span class="qs-note">*</span></label>
+    <div class="yn-group">
+      <input type="radio" id="fthb_yes" name="first_home_buyer" value="yes"
+             <?= ($fthb === 'yes') ? 'checked' : '' ?>>
+      <label for="fthb_yes" class="yn-btn">Yes</label>
+
+      <input type="radio" id="fthb_no" name="first_home_buyer" value="no"
+             <?= ($fthb === 'no') ? 'checked' : '' ?>>
+      <label for="fthb_no" class="yn-btn">No</label>
+    </div>
   </div>
-</div>
 
-<!-- Details (shown only when first_home_buyer = yes) -->
- <div class="qs-block">      
+  <!-- FTHB details -->
+  <div class="qs-block">
+    <div id="fthb-details"
+         class="<?= ($fthb === 'yes') ? '' : 'is-hidden' ?>"
+         aria-hidden="<?= ($fthb === 'yes') ? 'false' : 'true' ?>">
+      <label class="qs-label" style="margin-bottom: 24px;">
+        When did you purchase your first home? <span class="qs-note">*</span>
+      </label>
+      <div class="fi-grid">
+        <div class="fi-group fi-float" style="margin-bottom:46px;">
+          <input id="first_home_purchase_display" name="first_home_purchase_display"
+                 class="fi-input dob-input" placeholder=" "
+                 data-bind="#first_home_purchase"
+                 data-dob-mode="ymd"
+                 value="<?= htmlspecialchars(formatDisplayDateUI($rowTax['first_home_purchase'] ?? '')) ?>">
+          <label class="fi-float-label" for="first_home_purchase_display">
+            Date of Purchase
+          </label>
+        </div>
 
-<div class="qs-block">                        
-<div id="fthb-details" class="is-hidden" aria-hidden="true">
-                          <label class="qs-label" style="margin-bottom: 24px;"> When did you purchase your first home? <span class="qs-note">*</span></label>
-<div class="fi-grid">
-  <div class="fi-group fi-float" style="margin-bottom:46px;">
-    <input id="first_home_purchase_display" name="first_home_purchase_display"
-           class="fi-input dob-input" placeholder=" "
-           value="<?= htmlspecialchars($rowUser['first_home_purchase_display'] ?? '') ?>"
-           data-bind="#first_home_purchase">
-    <label class="fi-float-label" for="first_home_purchase_display">
-                      Date of Purchase      </label>
-  </div>
-                      
-  <input type="hidden" id="first_home_purchase" name="first_home_purchase"
-         value="<?= htmlspecialchars($rowUser['first_home_purchase'] ?? '') ?>">
-</div>
-</div>
-  </div>                      
-                        
-<!-- Sole owner? (replaces "Do you want to claim the full amount?") -->
-<!-- Sole owner -->
-<div class="qs-block" style="margin-top:6px;">
-  <label class="qs-label">Are you the sole owner of the home? <span class="qs-note">*</span></label>
-  <div class="yn-group" style="margin-bottom: 0;">
-    <input type="radio" id="claim_full_yes" name="claim_full" value="yes"
-      <?= (isset($rowUser['claim_full']) && $rowUser['claim_full']==='yes') ? 'checked' : '' ?>>
-    <label for="claim_full_yes" class="yn-btn">Yes</label>
-
-    <input type="radio" id="claim_full_no" name="claim_full" value="no"
-      <?= (isset($rowUser['claim_full']) && $rowUser['claim_full']==='no') ? 'checked' : '' ?>>
-    <label for="claim_full_no" class="yn-btn">No</label>
-  </div>
-</div>
-
-<!-- extra field shown only when NOT sole owner -->
-<div class="fi-grid" id="owners-grid" style="margin-top: 46px;">
-  <div id="owners-wrap"
-       class="fi-group fi-float <?= (isset($rowUser['claim_full']) && $rowUser['claim_full']==='no') ? '' : 'is-hidden' ?>"
-       aria-hidden="<?= (isset($rowUser['claim_full']) && $rowUser['claim_full']==='no') ? 'false' : 'true' ?>">
-    <input type="number"
-           id="owner_count"
-           name="owner_count"
-           class="fi-input"
-           placeholder=" "
-           min="2" step="1"
-           value="<?= htmlspecialchars($rowUser['owner_count'] ?? '') ?>"
-           <?= (isset($rowUser['claim_full']) && $rowUser['claim_full']==='no') ? 'required' : '' ?>>
-    <label class="fi-float-label" for="owner_count"># of owners including you</label>
-  </div>
-</div>
-
-<!-- Living on Rent -->
-<div class="qs-block" id="rent-block">
-  <label class="qs-label" style="margin-top: 0;">Are you living on Rent?</label>
-  <div class="yn-group" id="onRentGroup">
-    <input type="radio" id="onrent_yes" name="onRent" value="yes">
-    <label for="onrent_yes" class="yn-btn">Yes</label>
-
-    <input type="radio" id="onrent_no" name="onRent" value="no">
-    <label for="onrent_no" class="yn-btn">No</label>
-  </div>
-</div>
-
-
-<!-- NEW: Claim rent benefit (only visible when onRent = Yes) -->
-<div class="qs-block" id="claim-rent-block" style="display:none;">
-  <label class="qs-label">Do you want to claim rent benefit?</label>
-  <div class="yn-group" id="claimRentGroup">
-    <input type="radio" id="claimrent_yes" name="claimRent" value="yes">
-    <label for="claimrent_yes" class="yn-btn">Yes</label>
-
-    <input type="radio" id="claimrent_no" name="claimRent" value="no">
-    <label for="claimrent_no" class="yn-btn">No</label>
+        <input type="hidden" id="first_home_purchase" name="first_home_purchase"
+               value="<?= htmlspecialchars($rowTax['first_home_purchase'] ?? '') ?>">
+      </div>
+    </div>
   </div>
 
-</div>
+  <!-- Sole owner? -->
+  <div class="qs-block" style="margin-top:6px;">
+    <label class="qs-label">Are you the sole owner of the home? <span class="qs-note">*</span></label>
+    <div class="yn-group" style="margin-bottom: 0;">
+      <input type="radio" id="claim_full_yes" name="claim_full" value="yes"
+        <?= (($rowTax['claim_full'] ?? '') === 'yes') ? 'checked' : '' ?>>
+      <label for="claim_full_yes" class="yn-btn">Yes</label>
 
-<!-- RENT ADDRESSES (inline editor, not a modal) -->
-<div id="rent-addresses" style="display:none;">
+      <input type="radio" id="claim_full_no" name="claim_full" value="no"
+        <?= (($rowTax['claim_full'] ?? '') === 'no') ? 'checked' : '' ?>>
+      <label for="claim_full_no" class="yn-btn">No</label>
+    </div>
+  </div>
+
+  <!-- extra field shown only when NOT sole owner -->
+  <?php $claimFull = $rowTax['claim_full'] ?? ''; ?>
+  <div class="fi-grid" id="owners-grid" style="margin-top: 46px;">
+    <div id="owners-wrap"
+         class="fi-group fi-float <?= ($claimFull === 'no') ? '' : 'is-hidden' ?>"
+         aria-hidden="<?= ($claimFull === 'no') ? 'false' : 'true' ?>">
+      <input type="number"
+             id="owner_count"
+             name="owner_count"
+             class="fi-input"
+             placeholder=" "
+             min="2" step="1"
+             value="<?= htmlspecialchars($rowTax['owner_count'] ?? '') ?>">
+      <label class="fi-float-label" for="owner_count"># of owners including you</label>
+    </div>
+  </div>
+
+  <!-- Living on Rent -->
+  <div class="qs-block" id="rent-block">
+    <label class="qs-label" style="margin-top: 0;">Are you living on Rent?</label>
+    <div class="yn-group" id="onRentGroup">
+      <input type="radio" id="onrent_yes" name="onRent" value="yes"
+             <?= ($onRentVal === 'yes') ? 'checked' : '' ?>>
+      <label for="onrent_yes" class="yn-btn">Yes</label>
+
+      <input type="radio" id="onrent_no" name="onRent" value="no"
+             <?= ($onRentVal === 'no') ? 'checked' : '' ?>>
+      <label for="onrent_no" class="yn-btn">No</label>
+    </div>
+  </div>
+
+  <!-- Claim rent benefit -->
+  <div class="qs-block" id="claim-rent-block"
+       style="<?= ($onRentVal === 'yes') ? '' : 'display:none;' ?>">
+    <label class="qs-label">Do you want to claim rent benefit?</label>
+    <div class="yn-group" id="claimRentGroup">
+      <input type="radio" id="claimrent_yes" name="claimRent" value="yes"
+             <?= ($claimRentVal === 'yes') ? 'checked' : '' ?>>
+      <label for="claimrent_yes" class="yn-btn">Yes</label>
+
+      <input type="radio" id="claimrent_no" name="claimRent" value="no"
+             <?= ($claimRentVal === 'no') ? 'checked' : '' ?>>
+      <label for="claimrent_no" class="yn-btn">No</label>
+    </div>
+  </div>
+
+  
+<!-- ===================== RENT ADDRESSES ===================== -->
+<div id="rent-addresses" style="<?= ($onRentVal === 'yes') ? '' : 'display:none;' ?>">
   <div class="qs-block">
     <label class="qs-label">Rent Addresses</label>
-    <div class="qs-help">Add each rental address you paid for, with dates and total paid.</div>
+    <div class="qs-help">
+      Add each rental address you paid for, with dates and total paid.
+    </div>
   </div>
 
-  <!-- Add button (top-right when empty) -->
-  <div id="rent-add-wrap-top" style="margin:10px 0 16px; display:flex; justify-content:flex-end;">
+  <!-- Top "Add Address" button -->
+  <div id="rent-add-wrap-top"
+       style="margin:10px 0 16px; display:flex; justify-content:flex-end;">
     <button type="button" id="rent-add-btn" class="tax-btn">Add Address</button>
   </div>
 
   <div class="qs-block">
     <table class="fi-table rent-table" style="width:100%; border-collapse:collapse;">
       <thead>
-        <tr>
-          <th style="text-align:left; padding:8px;">Rent Address</th>
-          <th style="text-align:left; padding:8px;">From</th>
-          <th style="text-align:left; padding:8px;">To</th>
-          <th style="text-align:left; padding:8px;">Total Rent Paid</th>
-          <th style="text-align:center; padding:8px;">Actions</th>
-        </tr>
+      <tr>
+        <th style="text-align:left; padding:8px;">Rent Address</th>
+        <th style="text-align:left; padding:8px;">From</th>
+        <th style="text-align:left; padding:8px;">To</th>
+        <th style="text-align:left; padding:8px;">Total Rent Paid</th>
+        <th style="text-align:center; padding:8px;">Actions</th>
+      </tr>
       </thead>
       <tbody id="rent-tbody">
-        <tr id="rent-empty-row"><td colspan="5" style="padding:10px; opacity:.7;">No addresses added yet.</td></tr>
+        <!-- Placeholder when there are no rows -->
+        <tr id="rent-empty-row">
+          <td colspan="5" style="padding:10px; opacity:.7; text-align:center;">
+            No addresses added yet.
+          </td>
+        </tr>
       </tbody>
     </table>
   </div>
 
-  <!-- Add button (bottom-right when there are rows) -->
-  <div id="rent-add-wrap-bottom" style="margin:16px 0 0; display:none; justify-content:flex-end;">
+  <!-- Bottom "Add Address" button (only when there are rows) -->
+  <div id="rent-add-wrap-bottom"
+       style="margin:16px 0 0; display:none; justify-content:flex-end;">
     <button type="button" id="rent-add-btn-bottom" class="tax-btn">Add Address</button>
   </div>
 
-  <!-- Hidden inputs for form POST -->
+  <!-- Hidden inputs that PHP already expects: rent[key][...] -->
   <div id="rent-hidden-inputs"></div>
+
+  <!-- JSON that goes to DB -->
+  <input type="hidden"
+         id="rent_addresses_json"
+         name="rent_addresses_json"
+         value="<?= htmlspecialchars($rentListJSON ?? '[]') ?>">
 
   <!-- Address suggestions -->
   <datalist id="rent-addr-suggest">
@@ -8144,31 +9410,336 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     <?php endforeach; endif; ?>
   </datalist>
 
-  <!-- Seed previously saved rows (optional) -->
+  <!-- Seed from DB (same JSON as rent_addresses_json) -->
   <script type="application/json" id="rent-seed">
     <?= isset($rentListJSON) ? $rentListJSON : '[]' ?>
   </script>
 </div>
-   
-                        
-</div>
 
-<!-- Back / Continue -->
-<div class="tax-cta tax-cta-row" style="margin-top:28px;">
-         <button type="button" class="tax-btn-secondary" data-goto="prev">Back</button>
-         <button type="button" class="continue-btn" data-goto="next">Continue</button>
-</div>
+<!-- ===================== RENT ADDRESSES SCRIPT ===================== -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form        = document.getElementById('myForm');
 
-</div>
+  // Rent section bits
+  const tbody       = document.getElementById('rent-tbody');
+  const emptyRow    = document.getElementById('rent-empty-row');
+  const addTopWrap  = document.getElementById('rent-add-wrap-top');
+  const addBotWrap  = document.getElementById('rent-add-wrap-bottom');
+  const addBtnTop   = document.getElementById('rent-add-btn');
+  const addBtnBot   = document.getElementById('rent-add-btn-bottom');
+  const hiddenWrap  = document.getElementById('rent-hidden-inputs');
+  const jsonField   = document.getElementById('rent_addresses_json');
+  const seedNode    = document.getElementById('rent-seed');
+
+  if (!tbody || !hiddenWrap || !jsonField) return;
+
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const pad2   = n => String(n).padStart(2,'0');
+  let seq      = 0;   // unique key per row
+
+  /* ---------- helpers ---------- */
+  function esc(s){
+    return (s ?? '').replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;'
+    }[c]));
+  }
+
+  function refreshEmptyState(){
+    const hasRows = tbody.querySelectorAll('tr.data-row').length > 0 ||
+                    tbody.querySelector('tr.editing') !== null;
+
+    // remove any existing empty rows
+    tbody.querySelectorAll('#rent-empty-row, .rent-empty-row').forEach(el => el.remove());
+
+    if (!hasRows){
+      const tr = document.createElement('tr');
+      tr.id = 'rent-empty-row';
+      tr.className = 'rent-empty-row';
+      tr.innerHTML = '<td colspan="5" style="padding:10px; opacity:.7; text-align:center;">No addresses added yet.</td>';
+      tbody.appendChild(tr);
+      if (addTopWrap) addTopWrap.style.display = 'flex';
+      if (addBotWrap) addBotWrap.style.display = 'none';
+    } else {
+      if (addTopWrap) addTopWrap.style.display = 'none';
+      if (addBotWrap) addBotWrap.style.display = 'flex';
+    }
+  }
+
+  // create / update hidden rent[key][...] block
+  function saveHidden(key, data){
+    hiddenWrap.querySelector(`.rent-hidden[data-key="${key}"]`)?.remove();
+    const block = document.createElement('div');
+    block.className = 'rent-hidden';
+    block.dataset.key = key;
+    block.innerHTML = `
+      <input type="hidden" name="rent[${key}][address]"     value="${esc(data.address)}">
+      <input type="hidden" name="rent[${key}][from_month]"  value="${esc(data.fm)}">
+      <input type="hidden" name="rent[${key}][from_year]"   value="${esc(data.fy)}">
+      <input type="hidden" name="rent[${key}][to_month]"    value="${esc(data.tm)}">
+      <input type="hidden" name="rent[${key}][to_year]"     value="${esc(data.ty)}">
+      <input type="hidden" name="rent[${key}][total]"       value="${esc(data.total)}">
+    `;
+    hiddenWrap.appendChild(block);
+  }
+
+  /* ---------- view row ---------- */
+  function renderViewRow(key, data){
+    refreshEmptyState();
+
+    const tr = document.createElement('tr');
+    tr.className = 'data-row';
+    tr.dataset.key = key;
+
+    const fromLabel = (data.fm && data.fy) ? `${MONTHS[+data.fm-1]} ${data.fy}` : '';
+    const toLabel   = (data.tm && data.ty) ? `${MONTHS[+data.tm-1]} ${data.ty}` : '';
+
+    tr.innerHTML = `
+      <td style="padding:8px;">${esc(data.address)}</td>
+      <td style="padding:8px;">${esc(fromLabel)}</td>
+      <td style="padding:8px;">${esc(toLabel)}</td>
+      <td style="padding:8px;">
+        <input type="text"
+               class="fi-input rent-total"
+               data-key="${key}"
+               inputmode="decimal"
+               value="${esc(data.total)}">
+      </td>
+      <td style="padding:8px; text-align:center;">
+        <a href="#" class="link-btn rent-edit">Edit</a>
+        <a href="#" class="link-btn rent-del danger">Delete</a>
+      </td>
+    `;
+    tbody.appendChild(tr);
+    saveHidden(key, data);
+    refreshEmptyState();
+  }
+
+  /* ---------- selects for edit row ---------- */
+  function monthSelect(val){
+    let h = '<select class="fi-input rent-mm" aria-label="Month">';
+    for (let i=1;i<=12;i++){
+      const v = pad2(i);
+      h += `<option value="${v}" ${v===val?'selected':''}>${MONTHS[i-1]}</option>`;
+    }
+    return h + '</select>';
+  }
+
+  function yearSelect(val){
+    const cy = new Date().getFullYear(), start = cy-15, end = cy+1;
+    let h = '<select class="fi-input rent-yy" aria-label="Year"><option value="" disabled '+(val?'':'selected')+'>Year</option>';
+    for (let y=start;y<=end;y++){
+      h += `<option value="${y}" ${String(y)===String(val)?'selected':''}>${y}</option>`;
+    }
+    return h + '</select>';
+  }
+
+  /* ---------- edit row ---------- */
+  function renderEditRow(key, data = {}){
+    refreshEmptyState();
+
+    const tr = document.createElement('tr');
+    tr.className = 'data-row editing';
+    tr.dataset.key = key;
+
+    tr.innerHTML = `
+      <td style="padding:8px;">
+        <input type="text"
+               class="fi-input rent-addr rent-addr-input"
+               list="rent-addr-suggest"
+               placeholder="Rent Address"
+               value="${esc(data.address || '')}">
+      </td>
+      <td style="padding:8px;">${monthSelect(data.fm || '01')} ${yearSelect(data.fy || '')}</td>
+      <td style="padding:8px;">${monthSelect(data.tm || '01')} ${yearSelect(data.ty || '')}</td>
+      <td style="padding:8px;">
+        <input type="text"
+               class="fi-input rent-total"
+               placeholder="0.00"
+               inputmode="decimal"
+               value="${esc(data.total || '')}">
+      </td>
+      <td style="padding:8px; text-align:center;">
+        <a href="#" class="link-btn rent-save">Save</a>
+        <a href="#" class="link-btn rent-cancel">Cancel</a>
+      </td>
+    `;
+    tbody.appendChild(tr);
+    refreshEmptyState();
+
+    // hook Google Places if you have it
+    if (window.bindAllRentAutocompletes) {
+      window.bindAllRentAutocompletes();
+    }
+
+    // Save
+    tr.querySelector('.rent-save').addEventListener('click', function (e) {
+      e.preventDefault();
+      const addr = tr.querySelector('.rent-addr').value.trim();
+      const fm   = tr.querySelectorAll('.rent-mm')[0].value;
+      const fy   = tr.querySelectorAll('.rent-yy')[0].value;
+      const tm   = tr.querySelectorAll('.rent-mm')[1].value;
+      const ty   = tr.querySelectorAll('.rent-yy')[1].value;
+      const tot  = tr.querySelector('.rent-total').value.trim();
+
+      if (!addr || !fm || !fy || !tm || !ty || !tot) {
+        alert('Please complete all fields.');
+        return;
+      }
+
+      tr.remove();
+      renderViewRow(key, { address: addr, fm, fy, tm, ty, total: tot });
+    });
+
+    // Cancel
+    tr.querySelector('.rent-cancel').addEventListener('click', function (e) {
+      e.preventDefault();
+      const saved = hiddenWrap.querySelector(`.rent-hidden[data-key="${key}"]`);
+      tr.remove();
+      if (saved){
+        renderViewRow(key, {
+          address: saved.querySelector(`[name="rent[${key}][address]"]`)?.value || '',
+          fm:      saved.querySelector(`[name="rent[${key}][from_month]"]`)?.value || '',
+          fy:      saved.querySelector(`[name="rent[${key}][from_year]"]`)?.value || '',
+          tm:      saved.querySelector(`[name="rent[${key}][to_month]"]`)?.value || '',
+          ty:      saved.querySelector(`[name="rent[${key}][to_year]"]`)?.value || '',
+          total:   saved.querySelector(`[name="rent[${key}][total]"]`)?.value || ''
+        });
+      }
+      refreshEmptyState();
+    });
+  }
+
+  /* ---------- Add Address buttons ---------- */
+  function addNewRow(){
+    renderEditRow(++seq, {});
+  }
+  addBtnTop?.addEventListener('click', function(e){ e.preventDefault(); addNewRow(); });
+  addBtnBot?.addEventListener('click', function(e){ e.preventDefault(); addNewRow(); });
+
+  /* ---------- Edit / Delete actions ---------- */
+  tbody.addEventListener('click', function (e) {
+    const editBtn = e.target.closest('.rent-edit');
+    const delBtn  = e.target.closest('.rent-del');
+    if (!editBtn && !delBtn) return;
+    e.preventDefault();
+
+    const tr  = e.target.closest('tr.data-row');
+    if (!tr) return;
+    const key = tr.dataset.key;
+
+    if (editBtn) {
+      const saved = hiddenWrap.querySelector(`.rent-hidden[data-key="${key}"]`);
+      if (!saved) return;
+      const data = {
+        address: saved.querySelector(`[name="rent[${key}][address]"]`)?.value || '',
+        fm:      saved.querySelector(`[name="rent[${key}][from_month]"]`)?.value || '',
+        fy:      saved.querySelector(`[name="rent[${key}][from_year]"]`)?.value || '',
+        tm:      saved.querySelector(`[name="rent[${key}][to_month]"]`)?.value || '',
+        ty:      saved.querySelector(`[name="rent[${key}][to_year]"]`)?.value || '',
+        total:   saved.querySelector(`[name="rent[${key}][total]"]`)?.value || ''
+      };
+      tr.remove();
+      renderEditRow(key, data);
+    } else if (delBtn) {
+      tr.remove();
+      hiddenWrap.querySelector(`.rent-hidden[data-key="${key}"]`)?.remove();
+      refreshEmptyState();
+    }
+  });
+
+  /* ---------- Seed from DB JSON (rent_addresses_json) ---------- */
+  (function seedFromDB(){
+    let seed = [];
+    try {
+      seed = seedNode ? JSON.parse(seedNode.textContent || '[]') : [];
+    } catch (e) {
+      console.warn('Bad rent-seed JSON', e);
+      seed = [];
+    }
+
+    function monthAbbrToNum(abbr){
+      const i = MONTHS.indexOf((abbr || '').substr(0,3));
+      return i === -1 ? '01' : pad2(i+1);
+    }
+
+    seed.forEach(function (item) {
+      const key = ++seq;
+      const fromParts = (item.from_display || '').trim().split(/\s+/);
+      const toParts   = (item.to_display   || '').trim().split(/\s+/);
+
+      const fm = monthAbbrToNum(fromParts[0] || '');
+      const fy = fromParts[1] || '';
+      const tm = monthAbbrToNum(toParts[0] || '');
+      const ty = toParts[1] || '';
+
+      renderViewRow(key, {
+        address: item.address || '',
+        fm, fy, tm, ty,
+        total: item.total_rent || ''
+      });
+    });
+
+    refreshEmptyState();
+  })();
+
+  /* ---------- Build rent_addresses_json on submit ---------- */
+  if (form && jsonField){
+    form.addEventListener('submit', function () {
+      const out = [];
+      hiddenWrap.querySelectorAll('.rent-hidden').forEach(function (block) {
+        const key   = block.dataset.key;
+        const addr  = block.querySelector(`[name="rent[${key}][address]"]`)?.value || '';
+        const fm    = block.querySelector(`[name="rent[${key}][from_month]"]`)?.value || '';
+        const fy    = block.querySelector(`[name="rent[${key}][from_year]"]`)?.value || '';
+        const tm    = block.querySelector(`[name="rent[${key}][to_month]"]`)?.value || '';
+        const ty    = block.querySelector(`[name="rent[${key}][to_year]"]`)?.value || '';
+        const total = block.querySelector(`[name="rent[${key}][total]"]`)?.value || '';
+
+        if (!addr && !fm && !fy && !tm && !ty && !total) return;
+
+        const fmIdx = parseInt(fm, 10) || 0;
+        const tmIdx = parseInt(tm, 10) || 0;
+        const from_display = (fmIdx && fy) ? `${MONTHS[fmIdx-1]} ${fy}` : '';
+        const to_display   = (tmIdx && ty) ? `${MONTHS[tmIdx-1]} ${ty}` : '';
+
+        out.push({
+          address: addr,
+          from_display,
+          to_display,
+          total_rent: total
+        });
+      });
+
+      jsonField.value = JSON.stringify(out);
+      // console.log('rent_addresses_json =>', jsonField.value);
+    });
+  }
+
+  refreshEmptyState();
+});
+</script>
+
+
+
+
+  <!-- Back / Continue -->
+  <div class="tax-cta tax-cta-row" style="margin-top:28px;">
+    <button type="button" class="tax-btn-secondary" data-goto="prev">Back</button>
+    <button type="button" class="continue-btn" data-goto="next">Continue</button>
+  </div>
+
+</div> <!-- /pi-main tax -->
+
                         
-                        
-                                          
+
+                                                  
 <!--PAGE 3 - SPOUSE PANEL -->
 <div class="pi-main" data-panel="spouse">
   
 <!-- Spouse: Name -->
 <div class="qs-block">
-  <label class="qs-title small" style="margin-top:-46px !important;">What’s your spouse’s name?</label>
+  <label class="qs-title small" style="margin-top: 5px !important;">What’s your spouse’s name?</label>
   <div class="qs-help">Enter your spouse’s name as it appears on official documents.</div>
 </div>
 
@@ -8348,7 +9919,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
                         
 </div>
                         
-<!-- SPOUSE TAX PANEL-->
+<!-- PAGE 4 SPOUSE TAX PANEL-->
 <div class="pi-main" data-panel="spouse-tax">
 
   <?php
@@ -8360,7 +9931,7 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
 
   <!-- CONTROLLER: First time filing (spouse) -->
 <div class="qs-block" style="margin-top: -2px !important;">
-  <label class="qs-label">Is this the first time your spouse is filing tax? <span class="qs-note">*</span></label>
+  <label class="qs-label" style="margin-top: 5px;">Is this the first time your spouse is filing tax? <span class="qs-note">*</span></label>
   <div class="yn-group" id="sp-first-ctrl">
     <input type="radio" id="sp_first_yes" name="sp_first_time" value="yes"
            <?= ($spFirst === 'yes') ? 'checked' : '' ?>>
@@ -8432,14 +10003,20 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
                value="<?= htmlspecialchars($spEntryISO) ?>">
       </div>
 
-      <div class="fi-group fi-float">
-        <input id="birth_country" name="birth_country" class="fi-input" list="country-list" placeholder=" "
-               value="<?= htmlspecialchars($spBirthCtry) ?>">
-        <label class="fi-float-label" for="birth_country">
-          Country of Previous Residency <span class="qs-note">*</span>
-        </label>
-      
-      </div>
+<div class="fi-group fi-float">
+  <input
+    id="sp_birth_country"
+    name="sp_birth_country"
+    class="fi-input"
+    list="country-list"
+    placeholder=" "
+    value="<?= htmlspecialchars($spBirthCtry ?? '') ?>"
+  >
+  <label class="fi-float-label" for="sp_birth_country">
+    Country of Previous Residency <span class="qs-note">*</span>
+  </label>
+</div>
+
     </div>
 
     <!-- World Income (spouse) -->
@@ -8580,21 +10157,21 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
 
                         
                         
-<!-- CHILDREN PANEL -->
-                        
+<!-- PAGE 5 CHILDREN PANEL -->
 <div class="pi-main" data-panel="children">
- <div class="qs-block">
-        <label class="qs-title small" style="margin-top: -46px !important;">Add your children below</label>
-        <div class="qs-help">You can edit or remove entries anytime.</div>
-</div>
+  <div class="qs-block">
+    <label class="qs-title small" style="margin-top: 5px !important;">Add your children below</label>
+    <div class="qs-help">You can edit or remove entries anytime.</div>
+  </div>
+
   <!-- Actions -->
-<div id="add-child-wrap-top" style="margin:10px 0 16px; display:flex; justify-content:flex-end;">
-  <button type="button" id="btn-add-child" class="tax-btn">Add Child</button>
-</div>
+  <div id="add-child-wrap-top" style="margin:10px 0 16px; display:flex; justify-content:flex-end;">
+    <button type="button" id="btn-add-child" class="tax-btn">Add Child</button>
+  </div>
 
   <!-- Children Table -->
   <div class="qs-block">
-	<table class="fi-table children-table" style="width:100%; border-collapse:collapse;">
+    <table class="fi-table children-table" style="width:100%; border-collapse:collapse;">
       <thead>
         <tr>
           <th style="text-align:left; padding:8px;">Child First Name</th>
@@ -8605,19 +10182,23 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
         </tr>
       </thead>
       <tbody id="children-tbody">
-        <tr id="children-empty-row"><td colspan="5" style="padding:10px; opacity:.7; text-align: center;">No children added yet.</td></tr>
+        <tr id="children-empty-row">
+          <td colspan="5" style="padding:10px; opacity:.7; text-align: center;">No children added yet.</td>
+        </tr>
       </tbody>
     </table>
   </div>
 
-  <!-- Hidden inputs for form POST -->
+  
+
+  <div id="add-child-wrap-bottom" style="margin:16px 0 0; display:none; justify-content:flex-end;"></div>
   <div id="children-hidden-inputs"></div>
-<div id="add-child-wrap-bottom" style="margin:16px 0 0; display:none; justify-content:flex-end;"></div>
+  <input type="hidden" id="children_json" name="children_json">
 
   <!-- CTA -->
   <div class="tax-cta tax-cta-row" style="margin-top:28px;">
-         <button type="button" class="tax-btn-secondary" data-goto="prev">Back</button>
-         <button type="button" class="continue-btn" data-goto="next">Continue</button>
+    <button type="button" class="tax-btn-secondary" data-goto="prev">Back</button>
+    <button type="button" class="continue-btn" data-goto="next">Continue</button>
   </div>
 </div>
 
@@ -8654,12 +10235,11 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
           </div>
 
           <div class="fi-group fi-float">
-            <input id="child_dob_display" class="fi-input dob-input calendarized" placeholder=" " data-bind="#child_dob" required>
+            <input id="child_dob_display" class="fi-input dob-input calendarized" placeholder=" "
+                   data-bind="#child_dob" required>
             <label class="fi-float-label" for="child_dob_display">Date of Birth</label>
             <!-- calendar icon button (if you already have it elsewhere, keep one only) -->
-            <button type="button" class="dob-calendar-btn" aria-label="Open date picker">
-             
-            </button>
+            <button type="button" class="dob-calendar-btn" aria-label="Open date picker"></button>
           </div>
           <input type="hidden" id="child_dob">
 
@@ -8684,15 +10264,16 @@ $greetName = isset($rowUser['first_name']) && $rowUser['first_name'] !== ''
     </div>
   </div>
 </div>
+
             
                         
                         
-<!-- OTHER INCOME PANEL -->
+<!-- PAGE 6 OTHER INCOME PANEL -->
 <div class="pi-main" data-panel="other-income">
 
 <!-- Gig / Delivery income -->
 <div class="qs-block" style="margin-top: -2px !important">
-  <label class="qs-label">Do you have income from Uber/Skip/Lyft/Doordash etc.? <span class="qs-note">*</span></label>
+  <label class="qs-label" style="margin-top: 5px;">Do you have income from Uber/Skip/Lyft/Doordash etc.? <span class="qs-note">*</span></label>
   <div class="yn-group" style="margin-bottom: 0;">
     <input type="radio" id="gig_income_yes" name="gig_income" value="yes">
     <label for="gig_income_yes" class="yn-btn">Yes</label>
@@ -8888,6 +10469,7 @@ document.addEventListener('DOMContentLoaded', function () {
 <!-- Hidden inputs for your form POST -->
 <div id="props-hidden-inputs"></div>
 
+
 <!-- Add button (bottom mount) -->
 <div id="add-prop-wrap-bottom" style="margin:16px 0 0; display:none; justify-content:flex-end;"></div>
 
@@ -9057,29 +10639,42 @@ document.addEventListener('DOMContentLoaded', function () {
 
                         
                         
-<!-- UPLOAD PANEL -->
+<!-- PAGE 7 UPLOAD PANEL -->
 <!-- UPLOAD – APPLICANT (was tab content) -->
 <div class="pi-main" data-panel="upload-self">
   <section aria-labelledby="upload-self-title">
     <h2 class="visually-hidden" id="upload-self-title">Applicant Uploads</h2>
 
     <!-- Self Employed Uploads (kept hidden by your existing toggles) -->
-    <div id="upload-gig-section" style="display:none;">
-      <div class="qs-block">
-        <label class="qs-label">Add Your Self-employed Income <span class="qs-note">*</span></label>
-        <div class="dropzone" id="gig-drop">
-          <input id="gig_tax_summary" name="gig_tax_summary[]" type="file" multiple style="display:none">
-          <div class="dropzone-ui">
-            <span>Drag files here or</span>
-            <button type="button" class="tax-btn dz-browse" id="gig-browse">Browse</button>
-          </div>
-        </div>
-        <div id="gig-files" class="dropzone-list"></div>
+<!-- SELF-EMPLOYED (applicant) -->
+<div id="upload-gig-section" style="display:none;">
+  <div class="qs-block" style="margin-bottom: 5px;">
+    <label class="qs-label" style="margin-top: 5px;">
+      Add Your Self-employed Income <span class="qs-note">*</span>
+    </label>
+
+    <div class="dropzone"
+         data-input="#gig_tax_summary"
+         data-list="#gig-files"
+         data-required="true">
+      <input id="gig_tax_summary"
+             name="gig_tax_summary[]"
+             type="file"
+             multiple
+             style="display:none">
+      <div class="dropzone-ui">
+        Drag files here or <button type="button" class="tax-btn dz-browse">Browse</button>
       </div>
     </div>
 
+    <div id="gig-files" class="dropzone-list"></div>
+  </div>
+</div>
+
+
+
     <div class="qs-block">
-      <h3 class="qs-label">ID Proof <span class="qs-note">*</span></h3>
+      <h3 class="qs-label" style="margin-top: 5px;">ID Proof <span class="qs-note">*</span></h3>
       <p class="qs-help">In order to verify your identity, Please provide your ID proof. Examples: Driver license, passport.</p>
       <div class="dropzone" data-input="#app_id_proof" data-list="#app_id_list" data-required="true">
         <input id="app_id_proof" name="app_id_proof[]" type="file" multiple style="display:none">
@@ -9162,22 +10757,34 @@ document.addEventListener('DOMContentLoaded', function () {
 
 <!-- Spouse – Self Employed Uploads (visible only if sp_gig_income = yes) -->
 <div id="sp-upload-gig-section" style="display:none;">
-  <div class="qs-block">
-    <label class="qs-label">Spouse – Add Self-employed Income <span class="qs-note">*</span></label>
-    <div class="dropzone" id="sp-gig-drop">
-      <input id="sp_gig_tax_summary" name="sp_gig_tax_summary[]" type="file" multiple style="display:none" data-required="true">
+  <div class="qs-block" style="margin-bottom: 5px;">
+    <label class="qs-label" style="margin-top: 5px;">
+      Spouse – Add Self-employed Income <span class="qs-note">*</span>
+    </label>
+
+    <div class="dropzone"
+         data-input="#sp_gig_tax_summary"
+         data-list="#sp-gig-files"
+         data-required="true">
+      <input id="sp_gig_tax_summary"
+             name="sp_gig_tax_summary[]"
+             type="file"
+             multiple
+             style="display:none">
       <div class="dropzone-ui">
-        <span>Drag files here or</span>
-        <button type="button" class="tax-btn dz-browse" id="sp-gig-browse">Browse</button>
+        Drag files here or <button type="button" class="tax-btn dz-browse">Browse</button>
       </div>
     </div>
+
     <div id="sp-gig-files" class="dropzone-list"></div>
   </div>
 </div>
 
 
+
+
     <div class="qs-block">
-      <h3 class="qs-label">ID Proof <span class="qs-note">*</span></h3>
+      <h3 class="qs-label" style="margin-top: 5px;">ID Proof <span class="qs-note">*</span></h3>
       <p class="qs-help">Spouse ID (driver license, passport, etc.).</p>
       <div class="dropzone" data-input="#sp_id_proof" data-list="#sp_id_list" data-required="true">
         <input id="sp_id_proof" name="sp_id_proof[]" type="file" multiple style="display:none">
@@ -9664,6 +11271,8 @@ document.addEventListener('DOMContentLoaded', function () {
     </dl>
   </div>
 
+  <input type="hidden" id="rental_props_json" name="rental_props_json">
+
   <!-- Rentals -->
 <dl class="rev-dl">
   <dt>Rental properties</dt>
@@ -9828,10 +11437,15 @@ document.addEventListener('DOMContentLoaded', function () {
           </div>
 
       <!-- CTA -->
-      <div class="tax-cta tax-cta-row" style="margin-top:22px;">
-        <button type="button" class="tax-btn-secondary" data-goto="prev">Back</button>
-        <button type="button" class="continue-btn" data-goto="next">Continue</button>
-      </div>
+ <div class="tax-cta tax-cta-row" style="margin-top:22px;">
+  <button type="button" class="tax-btn-secondary" data-goto="prev">Back</button>
+
+  <!-- FINAL SUBMIT BUTTON -->
+  <button type="submit" class="continue-btn" id="final-submit">
+    Continue
+  </button>
+</div>
+
     </div>
   </section>
 </div>
@@ -9915,6 +11529,7 @@ document.addEventListener('DOMContentLoaded', function () {
   </section>
 </div>
 
+</form>
     
 <!-- FOOTER -->      
       
@@ -9967,6 +11582,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   </div>
 </div>
+
+<script>
+  window.initialPanel = <?php echo $showConfirmPanel ? "'confirm'" : "null"; ?>;
+</script>
 
 
 <script>
@@ -10152,8 +11771,11 @@ const ORDER = [
   'confirm'
 ];
 
-  let CURRENT = null;
+// This is set by PHP: window.initialPanel = 'confirm' or null
+const initialPanel = window.initialPanel || null;
 
+// Default CURRENT = initialPanel (if given) or 'personal'
+let CURRENT = initialPanel || 'personal';
   function getVal(name){
     const el = document.querySelector(`input[name="${name}"]:checked`);
     return el ? el.value : null;
@@ -10446,13 +12068,26 @@ function showPanel(id){
   });
 
   // ====== Initial render
+  // ====== Initial render
   refreshWelcomeBlocks();
   refreshOtherIncomePanel();
-  if (formPanel && formPanel.style.display !== 'none') {
-    showPanel('personal');
+
+  if (initialPanel === 'confirm') {
+    // Coming back right after final submit → show confirmation screen
+    if (introCard)   introCard.style.display   = 'none';
+    if (welcomePanel) welcomePanel.style.display = 'none';
+    if (formPanel)    formPanel.style.display    = 'block';
+
+    showPanel('confirm');
   } else {
-    updateProgress('personal');
+    // Normal behavior (first visit, or mid-flow)
+    if (formPanel && formPanel.style.display !== 'none') {
+      showPanel('personal');
+    } else {
+      updateProgress('personal');
+    }
   }
+
 
   // ====== Export for Review to use
   window.App = {
@@ -12076,22 +13711,34 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
   <!-- CHILD SECTION SCRIPT — drop-in replacement -->
-<script>
-(function onReady(fn){ document.readyState!=='loading' ? fn() : document.addEventListener('DOMContentLoaded', fn); })(function(){
 
-  // ---------------- Data store (seed) ----------------
+<script>
+(function onReady(fn){
+  document.readyState !== 'loading'
+    ? fn()
+    : document.addEventListener('DOMContentLoaded', fn);
+})(function(){
+
+  const panel = document.querySelector('.pi-main[data-panel="children"]');
+  if (!panel) return;
+
+  // ----------------- seed -----------------
   let CHILDREN = [];
   try {
     const seedTag = document.getElementById('children-seed');
     if (seedTag) CHILDREN = JSON.parse(seedTag.textContent || '[]') || [];
-  } catch(e){ CHILDREN = []; }
+  } catch(e){
+    console.warn('children-seed JSON error', e);
+    CHILDREN = [];
+  }
 
-  // ---------------- Element refs ----------------
+  // ----------------- element refs -----------------
   const tbody      = document.getElementById('children-tbody');
   const emptyTr    = document.getElementById('children-empty-row');
   const hiddenWrap = document.getElementById('children-hidden-inputs');
+  const jsonField  = document.getElementById('children_json');
 
-  const addBtn = document.getElementById('btn-add-child');
+  const addBtn  = document.getElementById('btn-add-child');
   const wrapTop = document.getElementById('add-child-wrap-top');
   const wrapBot = document.getElementById('add-child-wrap-bottom');
 
@@ -12102,129 +13749,160 @@ document.addEventListener('DOMContentLoaded', function () {
   const idEl      = document.getElementById('child_id');
   const fNameEl   = document.getElementById('child_first_name');
   const lNameEl   = document.getElementById('child_last_name');
-  const dobDispEl = document.getElementById('child_dob_display'); // visible
-  const dobIsoEl  = document.getElementById('child_dob');         // hidden ISO
+  const dobDispEl = document.getElementById('child_dob_display');
+  const dobIsoEl  = document.getElementById('child_dob');
   const inYesEl   = document.getElementById('child_in_canada_yes');
   const inNoEl    = document.getElementById('child_in_canada_no');
   const btnSave   = document.getElementById('child-save');
   const btnCancel = document.getElementById('child-cancel');
 
-  // Confirm delete
+  // Confirm delete (optional)
   const confirmModal  = document.getElementById('confirm-modal');
   const confirmText   = document.getElementById('confirm-text');
   const confirmYes    = document.getElementById('confirm-yes');
   const confirmCancel = document.getElementById('confirm-cancel');
 
-  // Add click
-  addBtn?.addEventListener('click', () => openChildModal());
+  const nextBtn = panel.querySelector('.continue-btn[data-goto="next"]');
 
-  // ---------------- Helpers ----------------
+  // ----------------- helpers -----------------
   const open  = el => { if (el) el.style.display = 'block'; };
   const close = el => { if (el) el.style.display = 'none';  };
   const uid   = () => 'c_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+  const pad2  = n => String(n).padStart(2,'0');
 
-  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const MON    = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
-  const pad2   = n => String(n).padStart(2,'0');
+  const MONTHS = {
+    jan:1, january:1,
+    feb:2, february:2,
+    mar:3, march:3,
+    apr:4, april:4,
+    may:5,
+    jun:6, june:6,
+    jul:7, july:7,
+    aug:8, august:8,
+    sep:9, sept:9, september:9,
+    oct:10, october:10,
+    nov:11, november:11,
+    dec:12, december:12
+  };
+  const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  // ISO -> "MMM | DD | YYYY"
+  function isValidDate(y,m,d){
+    const dt = new Date(y, m-1, d);
+    return dt.getFullYear()===y && (dt.getMonth()+1)===m && dt.getDate()===d;
+  }
+
+  // parse "06 | Feb | 2017" / "6 Feb 2017" / "6-feb-2017" etc.
+  function parseDisplayDOB(v){
+    if (!v) return null;
+    const parts = v.trim().split(/[\s|\/\-]+/).filter(Boolean);
+    if (parts.length !== 3) return null;
+
+    const d    = parseInt(parts[0], 10);
+    const mStr = String(parts[1]).toLowerCase();
+    const y    = parseInt(parts[2], 10);
+
+    const m = MONTHS[mStr];
+    if (!m || !d || !y) return null;
+    if (!isValidDate(y, m, d)) return null;
+
+    return { d, m, y };
+  }
+
+  function partsToDisplay(p){
+    return pad2(p.d) + ' | ' + MONTH_LABELS[p.m-1] + ' | ' + p.y;
+  }
+  function partsToISO(p){
+    return p.y + '-' + pad2(p.m) + '-' + pad2(p.d);
+  }
+
+  // ISO -> display
   function isoToDisplay(iso){
     if (!iso) return '';
-    const m3 = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
-    if (!m3) return '';
-    const y  = +m3[1], mi = +m3[2]-1, d = +m3[3];
-    if (mi<0 || mi>11) return '';
-    return `${MONTHS[mi]} | ${pad2(d)} | ${y}`;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
+    if (!m) return '';
+    const y = +m[1], mo = +m[2], d = +m[3];
+    if (!isValidDate(y, mo, d)) return '';
+    return partsToDisplay({d, m:mo, y});
   }
-
-  // Accept multiple display formats and return {display:'MMM | DD | YYYY', iso:'YYYY-MM-DD'}
-  function normalizeDisplayAndISO(v){
-    if (!v) return { display:'', iso:'' };
-    const clean = v.replace(/\|/g,' ').replace(/\s+/g,' ').trim();
-
-    // 1) MMM DD YYYY
-    let m = /^([A-Za-z]{3,})\s+(\d{1,2})\s+(\d{4})$/.exec(clean);
-    if (m){
-      const mi = MON[m[1].slice(0,3).toLowerCase()];
-      if (mi!=null){
-        const d = Math.max(1, Math.min(31, +m[2]));
-        const y = +m[3];
-        const iso = `${y}-${pad2(mi+1)}-${pad2(d)}`;
-        return { display: `${MONTHS[mi]} | ${pad2(d)} | ${y}`, iso };
-      }
-    }
-
-    // 2) DD MMM YYYY
-    m = /^(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})$/.exec(clean);
-    if (m){
-      const d  = Math.max(1, Math.min(31, +m[1]));
-      const mi = MON[m[2].slice(0,3).toLowerCase()];
-      const y  = +m[3];
-      if (mi!=null){
-        const iso = `${y}-${pad2(mi+1)}-${pad2(d)}`;
-        return { display: `${MONTHS[mi]} | ${pad2(d)} | ${y}`, iso };
-      }
-    }
-
-    // 3) MM DD YYYY (numeric month)
-    m = /^(\d{1,2})\s+(\d{1,2})\s+(\d{4})$/.exec(clean);
-    if (m){
-      const mi = Math.max(1, Math.min(12, +m[1])) - 1;
-      const d  = Math.max(1, Math.min(31, +m[2]));
-      const y  = +m[3];
-      const iso = `${y}-${pad2(mi+1)}-${pad2(d)}`;
-      return { display: `${MONTHS[mi]} | ${pad2(d)} | ${y}`, iso };
-    }
-
-    return { display:'', iso:'' };
-  }
-
-  // wire visible DOB <-> hidden ISO, snapping display to MMM | DD | YYYY
-  function bindDob(displayEl, isoEl){
-    if (!displayEl) return;
-    function sync(){
-      const {display, iso} = normalizeDisplayAndISO(displayEl.value);
-      if (isoEl) isoEl.value = iso || '';
-    }
-    function snap(){
-      const {display, iso} = normalizeDisplayAndISO(displayEl.value);
-      if (display) displayEl.value = display;
-      if (isoEl) isoEl.value = iso || '';
-    }
-    ['input','change'].forEach(ev => displayEl.addEventListener(ev, sync));
-    displayEl.addEventListener('blur', snap);
-    snap();
-  }
-  bindDob(dobDispEl, dobIsoEl);
 
   function escapeHtml(s){
-    return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    return (s||'').replace(/[&<>"']/g, function(m){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+    });
   }
 
-  // ---------------- Hidden inputs for POST ----------------
+  // ----------------- error helpers -----------------
+  function clearInline(scope){
+    (scope || panel).querySelectorAll('.is-invalid').forEach(n=>n.classList.remove('is-invalid'));
+    (scope || panel).querySelectorAll('.fi-error-text').forEach(n=>n.remove());
+  }
+  function markError(anchor, msg){
+    if (!anchor) return null;
+    const host = anchor.closest('.fi-group, .yn-group, .qs-block') || anchor.parentElement || anchor;
+    host.classList.add('is-invalid');
+    if (!host.querySelector('.fi-error-text')){
+      const m = document.createElement('div');
+      m.className = 'fi-error-text';
+      m.textContent = msg || 'This field is required.';
+      host.appendChild(m);
+    }
+    return host;
+  }
+
+  function ensureBanner(){
+    let b = panel.querySelector('#childrenError');
+    if (!b){
+      b = document.createElement('div');
+      b.id = 'childrenError';
+      b.className = 'qs-error-banner';
+      b.setAttribute('role','alert');
+      b.setAttribute('aria-live','polite');
+      b.innerHTML = '<h3>A selection is required.</h3><p>To proceed, please fill in or correct the required field(s).</p>';
+      panel.insertBefore(b, panel.firstElementChild);
+    }
+    return b;
+  }
+  function showBanner(){ ensureBanner().classList.add('show'); }
+  function hideBanner(){ panel.querySelector('#childrenError')?.classList.remove('show'); }
+
+  // ----------------- hidden inputs / JSON for PHP -----------------
   function renderHiddenInputs(){
     if (!hiddenWrap) return;
     hiddenWrap.innerHTML = '';
-    CHILDREN.forEach((c, i) => {
+    if (!Array.isArray(CHILDREN)) return;
+
+    // children[0][first_name] style
+    CHILDREN.forEach(function(c, i){
       [
         ['first_name', c.first_name || ''],
         ['last_name',  c.last_name  || ''],
         ['dob',        c.dob        || ''],
         ['in_canada',  c.in_canada  || '']
-      ].forEach(([k,v]) => {
-        const inp = document.createElement('input');
+      ].forEach(function(pair){
+        var k = pair[0], v = pair[1];
+        var inp = document.createElement('input');
         inp.type  = 'hidden';
-        inp.name  = `children[${i}][${k}]`;
+        inp.name  = `child_rows[${i}][${k}]`; 
         inp.value = v;
         hiddenWrap.appendChild(inp);
       });
     });
+
+    // children_json for PHP
+    if (jsonField){
+      try {
+        jsonField.value = JSON.stringify(CHILDREN || []);
+      } catch(e){
+        console.warn('Failed to stringify CHILDREN', e);
+        jsonField.value = '[]';
+      }
+    }
   }
 
-  // ---------------- Add button placement ----------------
+  // ----------------- table render / add button -----------------
   function placeAddButton(){
     if (!addBtn || !wrapTop || !wrapBot) return;
-    if (CHILDREN.length > 0) {
+    if (CHILDREN && CHILDREN.length > 0) {
       wrapTop.style.display = 'none';
       wrapBot.style.display = 'flex';
       wrapBot.appendChild(addBtn);
@@ -12235,43 +13913,52 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // ---------------- Table render ----------------
   function renderTable(){
+    if (!tbody) return;
+
     tbody.innerHTML = '';
-    if (!CHILDREN.length){
-      tbody.appendChild(emptyTr);
+
+    if (!CHILDREN || !CHILDREN.length){
+      if (emptyTr) {
+        tbody.appendChild(emptyTr);
+      } else {
+        var trEmpty = document.createElement('tr');
+        trEmpty.innerHTML = '<td colspan="5" style="padding:8px; opacity:.7; text-align:center;">No children added yet.</td>';
+        tbody.appendChild(trEmpty);
+      }
     } else {
-      CHILDREN.forEach((c) => {
-        const dobDisplay = c.dob_display || isoToDisplay(c.dob) || '';
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-  <td style="padding:8px;">${escapeHtml(c.first_name || '')}</td>
-  <td style="padding:8px;">${escapeHtml(c.last_name  || '')}</td>
-  <td style="padding:8px;">${escapeHtml(dobDisplay)}</td>
-  <td style="padding:8px;">${c.in_canada === 'No' ? 'No' : 'Yes'}</td>
-  <td class="actions-cell">
-    <a href="#" class="action-link" data-edit="${c.id}">Edit</a>
-    <span class="action-sep" aria-hidden="true">•</span>
-    <a href="#" class="action-link delete" data-del="${c.id}">Delete</a>
-  </td>`;
+      CHILDREN.forEach(function(c){
+        var dobDisplay = c.dob_display || isoToDisplay(c.dob) || '';
+        var tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td style="padding:8px;">'+escapeHtml(c.first_name || '')+'</td>'+
+          '<td style="padding:8px;">'+escapeHtml(c.last_name  || '')+'</td>'+
+          '<td style="padding:8px;">'+escapeHtml(dobDisplay)+'</td>'+
+          '<td style="padding:8px;">'+(c.in_canada === 'No' ? 'No' : 'Yes')+'</td>'+
+          '<td class="actions-cell">'+
+            '<a href="#" class="action-link" data-edit="'+c.id+'">Edit</a>'+
+            '<span class="action-sep" aria-hidden="true">•</span>'+
+            '<a href="#" class="action-link delete" data-del="'+c.id+'">Delete</a>'+
+          '</td>';
         tbody.appendChild(tr);
       });
     }
 
-    // delegate actions
-    tbody.querySelectorAll('[data-edit]').forEach(btn=>{
-      btn.addEventListener('click', (e)=>{
+    // bind edit/delete
+    tbody.querySelectorAll('[data-edit]').forEach(function(btn){
+      btn.addEventListener('click', function(e){
         e.preventDefault();
-        const id  = btn.getAttribute('data-edit');
-        const row = CHILDREN.find(x=>x.id===id);
+        var id  = btn.getAttribute('data-edit');
+        var row = CHILDREN.find(function(x){ return x.id===id; });
         if (row) openChildModal(row);
       });
     });
-    tbody.querySelectorAll('[data-del]').forEach(btn=>{
-      btn.addEventListener('click', (e)=>{
+
+    tbody.querySelectorAll('[data-del]').forEach(function(btn){
+      btn.addEventListener('click', function(e){
         e.preventDefault();
-        const id  = btn.getAttribute('data-del');
-        const row = CHILDREN.find(x=>x.id===id);
+        var id  = btn.getAttribute('data-del');
+        var row = CHILDREN.find(function(x){ return x.id===id; });
         openConfirm(id, row);
       });
     });
@@ -12280,26 +13967,31 @@ document.addEventListener('DOMContentLoaded', function () {
     placeAddButton();
   }
 
-  // ---------------- Modal controls ----------------
+  // ----------------- modal controls -----------------
   function resetChildForm(){
-    idEl.value = '';
-    fNameEl.value = '';
-    lNameEl.value = '';
+    idEl.value      = '';
+    fNameEl.value   = '';
+    lNameEl.value   = '';
     dobDispEl.value = '';
     dobIsoEl.value  = '';
     inYesEl.checked = true;
     inNoEl.checked  = false;
+    clearInline(modal);
   }
 
   function openChildModal(row){
+    clearInline(modal);
     if (row){
       titleEl.textContent = 'Edit Child';
-      idEl.value     = row.id;
-      fNameEl.value  = row.first_name || '';
-      lNameEl.value  = row.last_name  || '';
-      dobDispEl.value= row.dob_display || isoToDisplay(row.dob) || '';
-      // snap visible + ISO
-      dobDispEl.dispatchEvent(new Event('blur', {bubbles:true}));
+      idEl.value      = row.id;
+      fNameEl.value   = row.first_name || '';
+      lNameEl.value   = row.last_name  || '';
+      dobDispEl.value = row.dob_display || isoToDisplay(row.dob) || '';
+      var p = parseDisplayDOB(dobDispEl.value);
+      if (p){
+        dobDispEl.value = partsToDisplay(p);
+        dobIsoEl.value  = partsToISO(p);
+      }
       (row.in_canada === 'No' ? inNoEl : inYesEl).checked = true;
     } else {
       titleEl.textContent = 'Add Child';
@@ -12308,29 +14000,73 @@ document.addEventListener('DOMContentLoaded', function () {
     open(modal);
   }
 
-  function closeChildModal(){ close(modal); }
+  function closeChildModal(){
+    close(modal);
+  }
 
-  btnCancel?.addEventListener('click', closeChildModal);
-  modal?.addEventListener('click', (e)=>{
-    if (e.target === modal || e.target.classList.contains('qs-modal__backdrop')) closeChildModal();
+  addBtn && addBtn.addEventListener('click', function(){
+    openChildModal(null);
   });
 
-  btnSave?.addEventListener('click', function(){
-    if (!form.reportValidity()) return;
+  btnCancel && btnCancel.addEventListener('click', function(){
+    closeChildModal();
+  });
 
-    // normalize one last time
-    const norm = normalizeDisplayAndISO(dobDispEl.value);
+  modal && modal.addEventListener('click', function(e){
+    if (e.target === modal || e.target.classList.contains('qs-modal__backdrop')) {
+      closeChildModal();
+    }
+  });
 
-    const data = {
+  // ----------------- SAVE (validation + update CHILDREN) -----------------
+  btnSave && btnSave.addEventListener('click', function(e){
+    if (!modal || getComputedStyle(modal).display === 'none') return;
+
+    clearInline(modal);
+    var errs = [];
+
+    if (!fNameEl.value.trim()){
+      errs.push(markError(fNameEl, 'First name is required.'));
+    }
+    if (!lNameEl.value.trim()){
+      errs.push(markError(lNameEl, 'Last name is required.'));
+    }
+
+    var parsed = parseDisplayDOB(dobDispEl.value);
+    if (!parsed){
+      errs.push(markError(dobDispEl, 'Enter date as DD | MMM | YYYY.'));
+    } else {
+      dobDispEl.value = partsToDisplay(parsed);
+      dobIsoEl.value  = partsToISO(parsed);
+    }
+
+    var radioAny = modal.querySelector('input[name="child_in_canada"]:checked');
+    if (!radioAny){
+      var r = modal.querySelector('.yn-group input[name="child_in_canada"]');
+      errs.push(markError(r, 'Please select Yes or No.'));
+    }
+
+    if (errs.length){
+      e.preventDefault();
+      var first = errs[0];
+      var focusable = first.querySelector('input,select,textarea,button') || first;
+      focusable && focusable.focus && focusable.focus();
+      return;
+    }
+
+    var data = {
       id:          idEl.value || uid(),
       first_name:  fNameEl.value.trim(),
       last_name:   lNameEl.value.trim(),
-      dob_display: norm.display,           // MMM | DD | YYYY
-      dob:         norm.iso,               // YYYY-MM-DD
+      dob_display: dobDispEl.value,
+      dob:         dobIsoEl.value,
       in_canada:   inNoEl.checked ? 'No' : 'Yes'
     };
 
-    const idx = CHILDREN.findIndex(x=>x.id===data.id);
+    console.log('Saving child:', data);
+
+    if (!Array.isArray(CHILDREN)) CHILDREN = [];
+    var idx = CHILDREN.findIndex(function(x){ return x.id === data.id; });
     if (idx >= 0) CHILDREN[idx] = data;
     else CHILDREN.push(data);
 
@@ -12338,9 +14074,18 @@ document.addEventListener('DOMContentLoaded', function () {
     closeChildModal();
   });
 
-  // ---------------- Delete confirm ----------------
+  // ----------------- delete confirm -----------------
   function openConfirm(id, row){
-    confirmText.textContent = `Delete ${row?.first_name || 'this'} ${row?.last_name || 'child'}?`;
+    if (!confirmModal || !confirmText || !confirmYes || !confirmCancel){
+      if (window.confirm('Delete ' + (row && row.first_name || 'this') + ' ' + (row && row.last_name || 'child') + '?')){
+        var i = CHILDREN.findIndex(function(x){ return x.id===id; });
+        if (i >= 0) CHILDREN.splice(i,1);
+        renderTable();
+      }
+      return;
+    }
+
+    confirmText.textContent = 'Delete ' + (row && row.first_name || 'this') + ' ' + (row && row.last_name || 'child') + '?';
     open(confirmModal);
 
     function cleanup(){
@@ -12349,7 +14094,7 @@ document.addEventListener('DOMContentLoaded', function () {
       confirmModal.removeEventListener('click', onBackdrop);
     }
     function onYes(){
-      const i = CHILDREN.findIndex(x=>x.id===id);
+      var i = CHILDREN.findIndex(function(x){ return x.id===id; });
       if (i >= 0) CHILDREN.splice(i,1);
       renderTable();
       close(confirmModal);
@@ -12365,7 +14110,50 @@ document.addEventListener('DOMContentLoaded', function () {
     confirmModal.addEventListener('click', onBackdrop);
   }
 
-  // ---------------- Initial paint ----------------
+  // ----------------- require one child before Continue -----------------
+  if (nextBtn){
+    nextBtn.addEventListener('click', function(e){
+      // check in-memory + hidden inputs
+      var hasChildren = CHILDREN && CHILDREN.length > 0;
+      if (!hasChildren && hiddenWrap && hiddenWrap.querySelector('[name^="children["]')) {
+        hasChildren = true;
+      }
+
+      if (!hasChildren){
+        showBanner();
+        var tableEl = panel.querySelector('.children-table');
+        panel.querySelector('#children-error-msg')?.remove();
+        if (tableEl){
+          var msg = document.createElement('div');
+          msg.id = 'children-error-msg';
+          msg.className = 'fi-error-text';
+          msg.textContent = 'Add at least one child.';
+          tableEl.insertAdjacentElement('afterend', msg);
+          tableEl.classList.add('is-invalid-table');
+          tableEl.scrollIntoView({behavior:'smooth', block:'center'});
+        }
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
+  }
+
+  // live cleanup of inline errors
+  panel.addEventListener('input', function(e){
+    var host = e.target.closest('.fi-group, .yn-group, .qs-block');
+    if (host && host.classList.contains('is-invalid')){
+      host.classList.remove('is-invalid');
+      host.querySelector('.fi-error-text')?.remove();
+      if (!panel.querySelector('.is-invalid')) hideBanner();
+    }
+    if (e.target.closest('.children-table')) {
+      panel.querySelector('#children-error-msg')?.remove();
+      panel.querySelector('.children-table')?.classList.remove('is-invalid-table');
+      hideBanner();
+    }
+  }, true);
+
+  // ----------------- initial paint -----------------
   renderTable();
 
 });
@@ -12373,186 +14161,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
-
-<!-- YES RENT 1 -->
-
+<!-- YES RENT 1 (CLEANED: no rent logic, only gig/HST) -->
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  // ---------- helpers ----------
   const $  = (s, r=document) => r.querySelector(s);
-  const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
   const show = (el, on) => { if (el) el.style.display = on ? '' : 'none'; };
-  const req  = (el, on) => { if (!el) return; on ? el.setAttribute('required','required') : el.removeAttribute('required'); };
-  const esc  = s => (s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
-  const uid  = p => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2,8)}`;
-  const open  = el => el && (el.style.display='block');
-  const close = el => el && (el.style.display='none');
+  const req  = (el, on) => { if (!el) return; on ? el.setAttribute('required','required')
+                                               : el.removeAttribute('required'); };
 
-  // ======= RENT BENEFIT (legacy) =======
-  // IMPORTANT: If the new inline Rent UI exists, skip the legacy rent code entirely.
-  const hasNewRentUI = !!document.getElementById('rent-addresses');
-
-  if (!hasNewRentUI) {
-    const rentYes = $('#rent_benefit_yes');
-    const rentNo  = $('#rent_benefit_no');
-    const rentSec = $('#rent-section');
-
-    const rentSeed = $('#rent-seed');
-    let RENTS = [];
-    try { RENTS = rentSeed ? JSON.parse(rentSeed.textContent || '[]') || [] : []; } catch { RENTS = []; }
-
-    const rentTbody  = $('#rent-tbody');
-    const rentHidden = $('#rent-hidden-inputs');
-
-    // modal bits
-    const rentModal  = $('#rent-modal');
-    const rentForm   = $('#rent-form');
-    const rentTitle  = $('#rent-modal-title');
-    const rentId     = $('#rent_id');
-    const rentAddr   = $('#rent_address');
-    const fromMon    = $('#rent_from_month');
-    const fromYear   = $('#rent_from_year');
-    const toMon      = $('#rent_to_month');
-    const toYear     = $('#rent_to_year');
-    const rentAmt    = $('#rent_amount');
-
-    // confirm bits
-    const rentConfirm        = $('#rent-confirm');
-    const rentConfirmText    = $('#rent-confirm-text');
-    const rentConfirmYes     = $('#rent-confirm-yes');
-    const rentConfirmCancel  = $('#rent-confirm-cancel');
-
-    // show/hide rent section
-    function applyRentVisibility() { show(rentSec, rentYes && rentYes.checked); }
-    [rentYes, rentNo].forEach(el => el && el.addEventListener('change', applyRentVisibility));
-    applyRentVisibility();
-
-    // table render + hidden inputs
-    function renderRentHidden() {
-      rentHidden.innerHTML = '';
-      RENTS.forEach((r,i) => {
-        const map = {
-          address:r.address||'', from_month:r.from_month||'', from_year:r.from_year||'',
-          to_month:r.to_month||'', to_year:r.to_year||'', amount:r.amount||''
-        };
-        Object.entries(map).forEach(([k,v]) => {
-          const inp = document.createElement('input');
-          inp.type='hidden'; inp.name=`rents[${i}][${k}]`; inp.value=v; rentHidden.appendChild(inp);
-        });
-      });
-    }
-
-    function renderRentTable() {
-      if (!RENNTSlength()) {
-        rentTbody.innerHTML = '<tr><td colspan="5" style="padding:10px;opacity:.7;">No addresses added yet.</td></tr>';
-      } else {
-        rentTbody.innerHTML = RENTS.map(r => `
-          <tr>
-            <td style="padding:8px;">${esc(r.address)}</td>
-            <td style="padding:8px;">${esc(r.from_label||'')}</td>
-            <td style="padding:8px;">${esc(r.to_label||'')}</td>
-            <td style="padding:8px;">${esc(r.amount||'')}</td>
-            <td style="padding:8px;display:flex;gap:8px;">
-              <button type="button" class="link-btn edit" data-action="edit" data-id="${r.id}">Edit</button>
-              <button type="button" class="link-btn delete danger"            data-action="del"  data-id="${r.id}">Delete</button>
-            </td>
-          </tr>`).join('');
-      }
-      renderRentHidden();
-    }
-    const RENNTSlength = () => RENTS && RENTS.length;
-
-    // event delegation for edit/delete
-    rentTbody?.addEventListener('click', e => {
-      const btn = e.target.closest('[data-action]');
-      if (!btn) return;
-      const id = btn.dataset.id;
-      const row = RENTS.find(x => x.id === id);
-      if (btn.dataset.action === 'edit') openRentModal(row);
-      if (btn.dataset.action === 'del')  openRentConfirm(row);
-    });
-
-    // add / save / cancel
-    $('#btn-add-rent')?.addEventListener('click', () => openRentModal());
-    $('#rent-cancel')?.addEventListener('click', () => close(rentModal));
-    rentModal?.addEventListener('click', e => { if (e.target === rentModal || e.target.classList.contains('qs-modal__backdrop')) close(rentModal); });
-
-    $('#rent-save')?.addEventListener('click', () => {
-      if (!rentForm.reportValidity()) return;
-      const data = {
-        id: rentId.value || uid('r'),
-        address: rentAddr.value.trim(),
-        from_month: fromMon.value, from_year: fromYear.value.trim(),
-        to_month: toMon.value,     to_year:   toYear.value.trim(),
-        amount: rentAmt.value.trim()
-      };
-      data.from_label = data.from_month && data.from_year ? `${data.from_month} ${data.from_year}` : '';
-      data.to_label   = data.to_month   && data.to_year   ? `${data.to_month} ${data.to_year}`   : '';
-      const i = RENTS.findIndex(x => x.id === data.id);
-      (i >= 0) ? RENTS.splice(i,1,data) : RENTS.push(data);
-      renderRentTable(); close(rentModal);
-    });
-
-    function openRentModal(row) {
-      if (row) {
-        rentTitle.textContent = 'Edit Address';
-        rentId.value = row.id;
-        rentAddr.value = row.address || '';
-        fromMon.value  = row.from_month || '';  fromYear.value = row.from_year || '';
-        toMon.value    = row.to_month   || '';  toYear.value   = row.to_year   || '';
-        rentAmt.value  = row.amount     || '';
-      } else {
-        rentTitle.textContent = 'Add Address';
-        rentForm.reset(); rentId.value = '';
-      }
-      open(rentModal);
-    }
-
-    function openRentConfirm(row) {
-      rentConfirmText.textContent = `Delete ${row?.address || 'this'} record?`;
-      open(rentConfirm);
-      function cleanup() {
-        rentConfirmYes.removeEventListener('click', onYes);
-        rentConfirmCancel.removeEventListener('click', onNo);
-        rentConfirm.removeEventListener('click', onBackdrop);
-      }
-      function onYes() {
-        const i = RENTS.findIndex(x => x.id === row.id);
-        if (i >= 0) RENTS.splice(i,1);
-        renderRentTable(); close(rentConfirm); cleanup();
-      }
-      function onNo() { close(rentConfirm); cleanup(); }
-      function onBackdrop(e){ if (e.target === rentConfirm || e.target.classList.contains('qs-modal__backdrop')) onNo(); }
-
-      rentConfirmYes.addEventListener('click', onYes);
-      rentConfirmCancel.addEventListener('click', onNo);
-      rentConfirm.addEventListener('click', onBackdrop);
-    }
-
-    renderRentTable();
-  }
-  // ======= END legacy RENT block guard =======
-
-
-  // ======= GIG INCOME =======
+  /* ========= SELF GIG INCOME ========= */
   const gigYes = $('#gig_yes');
   const gigNo  = $('#gig_no');
   const gigSec = $('#gig-section');
-
-  const dz      = $('#gig-drop');
-  const dzInput = $('#gig_tax_summary');
-  const dzBtn   = $('#gig-browse');
-  const dzList  = $('#gig-files');
-
   const expSummary = $('#gig_expenses_summary');
-
-  const hstYes   = $('#hst_yes');
-  const hstNo    = $('#hst_no');
-  const hstBox   = $('#hst-fields');
-  const hstNum   = $('#hst_number');
-  const hstAcc   = $('#hst_access');
-  const hstStart = $('#hst_start');
-  const hstEnd   = $('#hst_end');
 
   function applyGig() {
     const on = gigYes && gigYes.checked;
@@ -12562,6 +14183,15 @@ document.addEventListener('DOMContentLoaded', () => {
   [gigYes, gigNo].forEach(el => el && el.addEventListener('change', applyGig));
   applyGig();
 
+  /* ========= SELF HST ========= */
+  const hstYes   = $('#hst_yes');
+  const hstNo    = $('#hst_no');
+  const hstBox   = $('#hst-fields');
+  const hstNum   = $('#hst_number');
+  const hstAcc   = $('#hst_access');
+  const hstStart = $('#hst_start');
+  const hstEnd   = $('#hst_end');
+
   function applyHst() {
     const on = hstYes && hstYes.checked;
     show(hstBox, on);
@@ -12570,71 +14200,363 @@ document.addEventListener('DOMContentLoaded', () => {
   [hstYes, hstNo].forEach(el => el && el.addEventListener('change', applyHst));
   applyHst();
 
-  // simple dropzone
-  dzBtn?.addEventListener('click', () => dzInput.click());
-  dz?.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
-  dz?.addEventListener('dragleave', () => dz.classList.remove('dragover'));
-  dz?.addEventListener('drop', e => {
-    e.preventDefault(); dz.classList.remove('dragover');
-    dzInput.files = e.dataTransfer.files; listFiles();
-  });
-  dzInput?.addEventListener('change', listFiles);
+  /* ========= (OPTIONAL) SPOUSE GIG / HST ========= */
+  const spGigYes = $('#sp_gig_yes');
+  const spGigNo  = $('#sp_gig_no');
+  const spGigSec = $('#sp-gig-section');
+  const spExpSummary = $('#sp_gig_expenses_summary');
 
-  function listFiles() {
-    dzList.innerHTML = '';
-    const files = dzInput.files || [];
-    if (!files.length) return;
-    const ul = document.createElement('ul');
-    ul.style.margin = '8px 0 0'; ul.style.padding = '0 0 0 18px';
-    for (const f of files) {
-      const li = document.createElement('li');
-      li.textContent = `${f.name} (${Math.round(f.size/1024)} KB)`; ul.appendChild(li);
-    }
-    dzList.appendChild(ul);
+  function applySpGig() {
+    const on = spGigYes && spGigYes.checked;
+    show(spGigSec, on);
+    req(spExpSummary, on);
   }
+  [spGigYes, spGigNo].forEach(el => el && el.addEventListener('change', applySpGig));
+  applySpGig();
+
+  const spHstYes   = $('#sp_hst_yes');
+  const spHstNo    = $('#sp_hst_no');
+  const spHstBox   = $('#sp-hst-fields');
+  const spHstNum   = $('#sp_hst_number');
+  const spHstAcc   = $('#sp_hst_access');
+  const spHstStart = $('#sp_hst_start');
+  const spHstEnd   = $('#sp_hst_end');
+
+  function applySpHst() {
+    const on = spHstYes && spHstYes.checked;
+    show(spHstBox, on);
+    [spHstNum, spHstAcc, spHstStart, spHstEnd].forEach(el => req(el, on));
+  }
+  [spHstYes, spHstNo].forEach(el => el && el.addEventListener('change', applySpHst));
+  applySpHst();
 });
 </script>
 
-<!-- YES RENT 3 -->
 
+
+
+<!-- YES RENT 2 (Rent table + JSON) -->
 <script>
-(function(){
-  const root = document.getElementById('rent-tbody');
-  if(!root) return;
+document.addEventListener('DOMContentLoaded', function () {
+  // Prevent double-initialization
+  if (window.__rentTableInitDone) return;
+  window.__rentTableInitDone = true;
 
-  function formatMoney(str, pad2=true){
-    str = (str||'').replace(/[^\d.]/g,'');
-    const d = str.indexOf('.');
-    if(d !== -1) str = str.slice(0,d+1) + str.slice(d+1).replace(/\./g,'');
-    let [a,b=''] = str.split('.');
-    a = a.replace(/^0+(?=\d)/,'').replace(/\B(?=(\d{3})+(?!\d))/g,',');
-    b = b.slice(0,2); if(pad2) b = (b+'00').slice(0,2);
-    const out = b ? `${a}.${b}` : (pad2 ? `${a}.00` : a);
-    return out === '.00' ? '' : out;
+  const form       = document.getElementById('myForm');
+
+  // Radios / blocks
+  const onYes      = document.getElementById('onrent_yes');
+  const onNo       = document.getElementById('onrent_no');
+  const claimBlock = document.getElementById('claim-rent-block');
+  const claimYesEl = document.getElementById('claimrent_yes');
+  const claimNoEl  = document.getElementById('claimrent_no');
+  const rentUI     = document.getElementById('rent-addresses');
+
+  // Table bits
+  const tbody    = document.getElementById('rent-tbody');
+  const addTop   = document.getElementById('rent-add-wrap-top');
+  const addBot   = document.getElementById('rent-add-wrap-bottom');
+  const addBtnT  = document.getElementById('rent-add-btn');
+  const addBtnB  = document.getElementById('rent-add-btn-bottom');
+  const hidden   = document.getElementById('rent-hidden-inputs');
+  const jsonField = document.getElementById('rent_addresses_json');
+  const seedNode  = document.getElementById('rent-seed');
+
+  if (!tbody || !hidden) return;
+
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const pad2 = n => String(n).padStart(2,'0');
+
+  let seq = 0;   // unique key per row
+
+  /* ---------- visibility (onRent / claimRent) ---------- */
+  function syncVisibility(){
+    const onRent   = !!onYes?.checked;
+    const claimYes = !!claimYesEl?.checked;
+
+    if (claimBlock) claimBlock.style.display = onRent ? '' : 'none';
+    if (rentUI)     rentUI.style.display     = (onRent && claimYes) ? '' : 'none';
+
+    const disable = !(onRent && claimYes);
+    hidden.querySelectorAll('input').forEach(i => i.disabled = disable);
+    if (jsonField) jsonField.disabled = disable;
   }
 
-  function wire(el){
-    if(!el || el.dataset.wired) return;
-    el.dataset.wired = '1';
-    if(el.value.trim()) el.value = formatMoney(el.value, true);
-    el.addEventListener('input', ()=>{
-      const s = el.selectionStart, before = el.value;
-      el.value = formatMoney(before, false);
-      const diff = el.value.length - before.length;
-      el.setSelectionRange(Math.max(0,(s??el.value.length)+diff), Math.max(0,(s??el.value.length)+diff));
+  onYes?.addEventListener('change', syncVisibility);
+  onNo ?.addEventListener('change', syncVisibility);
+  claimYesEl?.addEventListener('change', syncVisibility);
+  claimNoEl ?.addEventListener('change', syncVisibility);
+  syncVisibility();
+
+  /* ---------- empty state ---------- */
+  function refreshEmptyState(){
+    const hasRows = tbody.querySelectorAll('tr.data-row').length > 0;
+
+    tbody.querySelectorAll('#rent-empty-row, .rent-empty-row').forEach(el => el.remove());
+
+    if (!hasRows){
+      const tr = document.createElement('tr');
+      tr.id = 'rent-empty-row';
+      tr.className = 'rent-empty-row';
+      tr.innerHTML = '<td colspan="5" style="padding:10px; opacity:.7; text-align:center;">No addresses added yet.</td>';
+      tbody.appendChild(tr);
+      if (addTop) addTop.style.display = 'flex';
+      if (addBot) addBot.style.display = 'none';
+    } else {
+      if (addTop) addTop.style.display = 'none';
+      if (addBot) addBot.style.display = 'flex';
+    }
+  }
+
+  function esc(s){
+    return (s ?? '').replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;'
+    }[c]));
+  }
+
+  function saveHidden(key, data){
+    hidden.querySelector(`.rent-hidden[data-key="${key}"]`)?.remove();
+
+    const block = document.createElement('div');
+    block.className = 'rent-hidden';
+    block.dataset.key = key;
+    block.innerHTML = `
+      <input type="hidden" name="rent[${key}][address]"     value="${esc(data.address)}">
+      <input type="hidden" name="rent[${key}][from_month]"  value="${esc(data.fm)}">
+      <input type="hidden" name="rent[${key}][from_year]"   value="${esc(data.fy)}">
+      <input type="hidden" name="rent[${key}][to_month]"    value="${esc(data.tm)}">
+      <input type="hidden" name="rent[${key}][to_year]"     value="${esc(data.ty)}">
+      <input type="hidden" name="rent[${key}][total]"       value="${esc(data.total)}">
+    `;
+    hidden.appendChild(block);
+  }
+
+  function renderViewRow(key, data){
+    refreshEmptyState();
+
+    const tr = document.createElement('tr');
+    tr.className = 'data-row';
+    tr.dataset.key = key;
+
+    const fromLabel = data.fm && data.fy ? `${MONTHS[+data.fm - 1]} ${data.fy}` : '';
+    const toLabel   = data.tm && data.ty ? `${MONTHS[+data.tm - 1]} ${data.ty}` : '';
+
+    tr.innerHTML = `
+      <td style="padding:8px;">${esc(data.address)}</td>
+      <td style="padding:8px;">${esc(fromLabel)}</td>
+      <td style="padding:8px;">${esc(toLabel)}</td>
+      <td style="padding:8px;">
+        <input type="text"
+               class="fi-input rent-total"
+               data-key="${key}"
+               inputmode="decimal"
+               value="${esc(data.total)}">
+      </td>
+      <td style="padding:8px; text-align:center;">
+        <a href="#" class="link-btn rent-edit">Edit</a>
+        <a href="#" class="link-btn rent-del danger">Delete</a>
+      </td>
+    `;
+    tbody.appendChild(tr);
+
+    saveHidden(key, data);
+    refreshEmptyState();
+  }
+
+  function monthSelect(val){
+    let h = '<select class="fi-input rent-mm" aria-label="Month">';
+    for (let i=1;i<=12;i++){
+      const v = pad2(i);
+      h += `<option value="${v}" ${v===val?'selected':''}>${MONTHS[i-1]}</option>`;
+    }
+    h += '</select>';
+    return h;
+  }
+
+  function yearSelect(val){
+    const cy = new Date().getFullYear(), start = cy-15, end = cy+1;
+    let h = '<select class="fi-input rent-yy" aria-label="Year"><option value="" disabled '+(val?'':'selected')+'>Year</option>';
+    for (let y=start;y<=end;y++){
+      h += `<option value="${y}" ${String(y)===String(val)?'selected':''}>${y}</option>`;
+    }
+    h += '</select>';
+    return h;
+  }
+
+  function renderEditRow(key, data = {}){
+    refreshEmptyState();
+
+    const tr = document.createElement('tr');
+    tr.className = 'data-row editing';
+    tr.dataset.key = key;
+
+    tr.innerHTML = `
+      <td style="padding:8px;">
+        <input type="text"
+               class="fi-input rent-addr rent-addr-input"
+               list="rent-addr-suggest"
+               placeholder="Rent Address"
+               value="${esc(data.address || '')}">
+      </td>
+      <td style="padding:8px;">${monthSelect(data.fm || '01')} ${yearSelect(data.fy || '')}</td>
+      <td style="padding:8px;">${monthSelect(data.tm || '01')} ${yearSelect(data.ty || '')}</td>
+      <td style="padding:8px;">
+        <input type="text"
+               class="fi-input rent-total"
+               placeholder="0.00"
+               inputmode="decimal"
+               value="${esc(data.total || '')}">
+      </td>
+      <td style="padding:8px; text-align:center;">
+        <a href="#" class="link-btn rent-save">Save</a>
+        <a href="#" class="link-btn rent-cancel">Cancel</a>
+      </td>
+    `;
+    tbody.appendChild(tr);
+    refreshEmptyState();
+
+    tr.querySelector('.rent-save').addEventListener('click', function (e) {
+      e.preventDefault();
+      const addr = tr.querySelector('.rent-addr').value.trim();
+      const fm   = tr.querySelectorAll('.rent-mm')[0].value;
+      const fy   = tr.querySelectorAll('.rent-yy')[0].value;
+      const tm   = tr.querySelectorAll('.rent-mm')[1].value;
+      const ty   = tr.querySelectorAll('.rent-yy')[1].value;
+      const tot  = tr.querySelector('.rent-total').value.trim();
+
+      if (!addr || !fm || !fy || !tm || !ty || !tot) {
+        alert('Please complete all fields.');
+        return;
+      }
+
+      tr.remove();
+      renderViewRow(key, { address: addr, fm, fy, tm, ty, total: tot });
     });
-    el.addEventListener('blur', ()=>{ el.value = formatMoney(el.value, true); });
+
+    tr.querySelector('.rent-cancel').addEventListener('click', function (e) {
+      e.preventDefault();
+      const saved = hidden.querySelector(`.rent-hidden[data-key="${key}"]`);
+      tr.remove();
+      if (saved){
+        renderViewRow(key, {
+          address: saved.querySelector(`[name="rent[${key}][address]"]`).value,
+          fm:      saved.querySelector(`[name="rent[${key}][from_month]"]`).value,
+          fy:      saved.querySelector(`[name="rent[${key}][from_year]"]`).value,
+          tm:      saved.querySelector(`[name="rent[${key}][to_month]"]`).value,
+          ty:      saved.querySelector(`[name="rent[${key}][to_year]"]`).value,
+          total:   saved.querySelector(`[name="rent[${key}][total]"]`).value
+        });
+      }
+      refreshEmptyState();
+    });
   }
 
-  function scan(){
-    root.querySelectorAll('tr td:nth-child(4) input').forEach(wire);
-  }
-  scan();
+  tbody.addEventListener('click', function (e) {
+    const editBtn = e.target.closest('.rent-edit');
+    const delBtn  = e.target.closest('.rent-del');
+    if (!editBtn && !delBtn) return;
+    e.preventDefault();
 
-  // if rows are added dynamically, observe and wire new inputs
-  new MutationObserver(scan).observe(root, {childList:true, subtree:true});
-})();
+    const tr  = e.target.closest('tr.data-row');
+    if (!tr) return;
+    const key = tr.dataset.key;
+
+    if (editBtn) {
+      const saved = hidden.querySelector(`.rent-hidden[data-key="${key}"]`);
+      if (!saved) return;
+      const data = {
+        address: saved.querySelector(`[name="rent[${key}][address]"]`).value,
+        fm:      saved.querySelector(`[name="rent[${key}][from_month]"]`).value,
+        fy:      saved.querySelector(`[name="rent[${key}][from_year]"]`).value,
+        tm:      saved.querySelector(`[name="rent[${key}][to_month]"]`).value,
+        ty:      saved.querySelector(`[name="rent[${key}][to_year]"]`).value,
+        total:   saved.querySelector(`[name="rent[${key}][total]"]`).value
+      };
+      tr.remove();
+      renderEditRow(key, data);
+    } else if (delBtn) {
+      tr.remove();
+      hidden.querySelector(`.rent-hidden[data-key="${key}"]`)?.remove();
+      refreshEmptyState();
+    }
+  });
+
+  function addNew(){ renderEditRow(++seq, {}); }
+  addBtnT?.addEventListener('click', addNew);
+  addBtnB?.addEventListener('click', addNew);
+
+  (function seedFromDB(){
+    if (!seedNode) { refreshEmptyState(); return; }
+
+    let seed = [];
+    try {
+      seed = JSON.parse(seedNode.textContent || '[]');
+    } catch (e) {
+      console.warn('Bad rent-seed JSON', e);
+      seed = [];
+    }
+
+    function monthAbbrToNum(abbr){
+      const i = MONTHS.indexOf((abbr || '').substr(0,3));
+      return i === -1 ? '01' : pad2(i+1);
+    }
+
+    seed.forEach(function (item) {
+      const key = ++seq;
+      const from = (item.from_display || '').trim().split(/\s+/);
+      const to   = (item.to_display   || '').trim().split(/\s+/);
+
+      const fm = monthAbbrToNum(from[0] || '');
+      const fy = from[1] || '';
+      const tm = monthAbbrToNum(to[0] || '');
+      const ty = to[1] || '';
+
+      renderViewRow(key, {
+        address: item.address || '',
+        fm, fy, tm, ty,
+        total: item.total_rent || ''
+      });
+    });
+
+    refreshEmptyState();
+  })();
+
+  if (form && jsonField){
+    form.addEventListener('submit', function () {
+      const out = [];
+      hidden.querySelectorAll('.rent-hidden').forEach(function (block) {
+        const key = block.dataset.key;
+        const addr = block.querySelector(`[name="rent[${key}][address]"]`)?.value || '';
+        const fm   = block.querySelector(`[name="rent[${key}][from_month]"]`)?.value || '';
+        const fy   = block.querySelector(`[name="rent[${key}][from_year]"]`)?.value || '';
+        const tm   = block.querySelector(`[name="rent[${key}][to_month]"]`)?.value || '';
+        const ty   = block.querySelector(`[name="rent[${key}][to_year]"]`)?.value || '';
+        const total= block.querySelector(`[name="rent[${key}][total]"]`)?.value || '';
+
+        if (!addr && !fm && !fy && !tm && !ty && !total) return;
+
+        const fmIdx = parseInt(fm,10) || 0;
+        const tmIdx = parseInt(tm,10) || 0;
+        const from_display = (fmIdx && fy) ? `${MONTHS[fmIdx-1]} ${fy}` : '';
+        const to_display   = (tmIdx && ty) ? `${MONTHS[tmIdx-1]} ${ty}` : '';
+
+        out.push({
+          address: addr,
+          from_display,
+          to_display,
+          total_rent: total
+        });
+      });
+
+      jsonField.value = JSON.stringify(out);
+    });
+  }
+
+  refreshEmptyState();
+});
 </script>
+
+
 
 <!-- YES UPLOAD 1 -->
 
@@ -13508,246 +15430,6 @@ document.getElementById('prop-close')?.addEventListener('click', () => {
 
 
 
-<!-- YES RENT 2 -->
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-  // --- Radios / blocks ---
-  const onYes      = document.getElementById('onrent_yes');
-  const onNo       = document.getElementById('onrent_no');
-
-  const claimBlock = document.getElementById('claim-rent-block');
-  const claimYesEl = document.getElementById('claimrent_yes');
-  const claimNoEl  = document.getElementById('claimrent_no');
-
-  const rentUI     = document.getElementById('rent-addresses');
-
-  // --- Table bits (same as your original) ---
-  const tbody   = document.getElementById('rent-tbody');
-  const addTop  = document.getElementById('rent-add-wrap-top');
-  const addBot  = document.getElementById('rent-add-wrap-bottom');
-  const addBtnT = document.getElementById('rent-add-btn');
-  const addBtnB = document.getElementById('rent-add-btn-bottom');
-  const hidden  = document.getElementById('rent-hidden-inputs');
-  const dl      = document.getElementById('rent-addr-suggest');
-  let seq = 0;
-
-  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const pad2 = n => String(n).padStart(2,'0');
-  const esc = s => (s??'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;' }[c]));
-  const money = s => {
-    if (s==null || s==='') return '';
-    const n = parseFloat(String(s).replace(/,/g,''));
-    return isFinite(n)?n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}):s;
-  };
-
-  // Disable/enable hidden inputs so data doesn't submit when benefit is OFF
-  function setHiddenDisabled(disabled){
-    hidden.querySelectorAll('input').forEach(i => i.disabled = !!disabled);
-  }
-
-  // Unified visibility logic
-  function syncVisibility(){
-    const onRent   = !!onYes?.checked;
-    const claimYes = !!claimYesEl?.checked;
-
-    // Show "claim rent benefit" block only when onRent = yes
-    if (claimBlock) claimBlock.style.display = onRent ? '' : 'none';
-
-    // Show rent table only when onRent = yes AND claim = yes
-    if (rentUI) rentUI.style.display = (onRent && claimYes) ? '' : 'none';
-
-    // Control submission of hidden inputs
-    setHiddenDisabled(!(onRent && claimYes));
-  }
-
-  onYes?.addEventListener('change', syncVisibility);
-  onNo ?.addEventListener('change', syncVisibility);
-  claimYesEl?.addEventListener('change', syncVisibility);
-  claimNoEl ?.addEventListener('change', syncVisibility);
-  syncVisibility(); // init
-
-  // --------- Table helpers (unchanged logic) ----------
-  function monthSelect(val){
-    let h = '<select class="fi-input rent-mm" aria-label="Month">';
-    for (let i=1;i<=12;i++){ const v=pad2(i); h+=`<option value="${v}" ${v===val?'selected':''}>${MONTHS[i-1]}</option>`; }
-    return h + '</select>';
-  }
-  function yearSelect(val){
-    const cy=new Date().getFullYear(), start=cy-15, end=cy+1;
-    let h = '<select class="fi-input rent-yy" aria-label="Year"><option value="" disabled '+(val?'':'selected')+'>Year</option>';
-    for (let y=start;y<=end;y++){ h+=`<option value="${y}" ${String(y)===String(val)?'selected':''}>${y}</option>`; }
-    return h + '</select>';
-  }
-
-  function refreshEmptyState(){
-    const hasRows = tbody.querySelectorAll('tr.data-row').length > 0 || tbody.querySelector('tr.editing') !== null;
-
-    // Remove ANY existing empty rows
-    tbody.querySelectorAll('#rent-empty-row, .rent-empty-row').forEach(el=>el.remove());
-
-    if (!hasRows){
-      const tr = document.createElement('tr');
-      tr.className = 'rent-empty-row';
-      tr.innerHTML = '<td colspan="5" style="padding:10px; opacity:.7;">No addresses added yet.</td>';
-      tbody.prepend(tr);
-      if (addTop) addTop.style.display = 'flex';
-      if (addBot) addBot.style.display = 'none';
-    } else {
-      if (addTop) addTop.style.display = 'none';
-      if (addBot) addBot.style.display = 'flex';
-    }
-  }
-
-  function saveHidden(key, data){
-    hidden.querySelector(`.rent-hidden[data-key="${key}"]`)?.remove();
-    const block = document.createElement('div');
-    block.className = 'rent-hidden';
-    block.dataset.key = key;
-    block.innerHTML = `
-      <input type="hidden" name="rent[${key}][address]" value="${esc(data.address)}">
-      <input type="hidden" name="rent[${key}][from_month]" value="${data.fm}">
-      <input type="hidden" name="rent[${key}][from_year]"  value="${data.fy}">
-      <input type="hidden" name="rent[${key}][to_month]"   value="${data.tm}">
-      <input type="hidden" name="rent[${key}][to_year]"    value="${data.ty}">
-      <input type="hidden" name="rent[${key}][total]"      value="${data.total}">
-    `;
-    hidden.appendChild(block);
-  }
-
-function renderViewRow(key, data){
-  tbody.querySelectorAll('#rent-empty-row, .rent-empty-row').forEach(el=>el.remove());
-
-  const tr = document.createElement('tr');
-  tr.className = 'data-row';
-  tr.dataset.key = key;
-
-  tr.innerHTML = `
-    <td style="padding:8px;">${esc(data.address)}</td>
-    <td style="padding:8px;">${MONTHS[+data.fm-1]} ${data.fy}</td>
-    <td style="padding:8px;">${MONTHS[+data.tm-1]} ${data.ty}</td>
-
-    <!-- Keep TOTAL as editable input even after saving -->
-    <td style="padding:8px;">
-      <div class="fi-group">
-        <input type="text" class="fi-input rent-total" data-key="${key}" inputmode="decimal" value="${esc(money(data.total))}">
-      </div>
-    </td>
-
-    <td style="padding:8px; text-align:center;">
-      <a href="#" class="link-btn rent-edit">Edit</a>
-      <a href="#" class="link-btn rent-del danger">Delete</a>
-    </td>
-  `;
-  tbody.appendChild(tr);
-  saveHidden(key, data);        // ensures hidden fields exist / update
-  refreshEmptyState();
-}
-
-  function renderEditRow(key, data={}){
-    const tr = document.createElement('tr');
-    tr.className = 'data-row editing';
-    tr.dataset.key = key;
-    tr.innerHTML = `
-      <td style="padding:8px;">
-        <input type="text" class="fi-input rent-addr" list="rent-addr-suggest"
-               placeholder="Rent Address" value="${esc(data.address||'')}">
-      </td>
-      <td style="padding:8px;">${monthSelect(data.fm||'01')} ${yearSelect(data.fy||'')}</td>
-      <td style="padding:8px;">${monthSelect(data.tm||'01')} ${yearSelect(data.ty||'')}</td>
-      <td style="padding:8px;">
-        <input type="text" class="fi-input rent-total" placeholder="0.00" inputmode="decimal"
-               value="${esc(data.total||'')}">
-      </td>
-      <td style="padding:8px; text-align:center;">
-        <a href="#" class="link-btn rent-save">Save</a>
-        <a href="#" class="link-btn rent-cancel">Cancel</a>
-      </td>
-    `;
-    tbody.appendChild(tr);
-    refreshEmptyState();
-
-    tr.querySelector('.rent-save').addEventListener('click', (e) => {
-      e.preventDefault();
-      const addr = tr.querySelector('.rent-addr').value.trim();
-      const fm   = tr.querySelectorAll('.rent-mm')[0].value;
-      const fy   = tr.querySelectorAll('.rent-yy')[0].value;
-      const tm   = tr.querySelectorAll('.rent-mm')[1].value;
-      const ty   = tr.querySelectorAll('.rent-yy')[1].value;
-      const tot  = tr.querySelector('.rent-total').value.trim();
-      if (!addr || !fm || !fy || !tm || !ty || !tot) { alert('Please complete all fields.'); return; }
-      tr.remove();
-      renderViewRow(key, { address:addr, fm, fy, tm, ty, total:tot });
-    });
-
-    tr.querySelector('.rent-cancel').addEventListener('click', (e) => {
-      e.preventDefault();
-      const saved = hidden.querySelector(`.rent-hidden[data-key="${key}"]`);
-      tr.remove();
-      if (saved){
-        renderViewRow(key, {
-          address: saved.querySelector(`[name="rent[${key}][address]"]`).value,
-          fm     : saved.querySelector(`[name="rent[${key}][from_month]"]`).value,
-          fy     : saved.querySelector(`[name="rent[${key}][from_year]"]`).value,
-          tm     : saved.querySelector(`[name="rent[${key}][to_month]"]`).value,
-          ty     : saved.querySelector(`[name="rent[${key}][to_year]"]`).value,
-          total  : saved.querySelector(`[name="rent[${key}][total]"]`).value
-        });
-      }
-      refreshEmptyState();
-    });
-  }
-
-  // table actions
-  tbody.addEventListener('click', (e) => {
-    const a = e.target.closest('.rent-edit, .rent-del');
-    if (!a) return;
-    e.preventDefault();
-    const tr  = e.target.closest('tr.data-row');
-    const key = tr.dataset.key;
-
-    if (a.classList.contains('rent-edit')) {
-      const saved = hidden.querySelector(`.rent-hidden[data-key="${key}"]`);
-      const data = {
-        address: saved.querySelector(`[name="rent[${key}][address]"]`).value,
-        fm:      saved.querySelector(`[name="rent[${key}][from_month]"]`).value,
-        fy:      saved.querySelector(`[name="rent[${key}][from_year]"]`).value,
-        tm:      saved.querySelector(`[name="rent[${key}][to_month]"]`).value,
-        ty:      saved.querySelector(`[name="rent[${key}][to_year]"]`).value,
-        total:   saved.querySelector(`[name="rent[${key}][total]"]`).value
-      };
-      tr.remove();
-      renderEditRow(key, data);
-    } else if (a.classList.contains('rent-del')) {
-      tr.remove();
-      hidden.querySelector(`.rent-hidden[data-key="${key}"]`)?.remove();
-      refreshEmptyState();
-    }
-  });
-
-  function addNew(){ renderEditRow(++seq, {}); }
-  addBtnT?.addEventListener('click', addNew);
-  addBtnB?.addEventListener('click', addNew);
-
-  // seed (optional)
-  try {
-    const seed = JSON.parse(document.getElementById('rent-seed')?.textContent || '[]');
-    seed.forEach(item => {
-      const key = (item.key ? +item.key : ++seq);
-      seq = Math.max(seq, key);
-      renderViewRow(key, {
-        address: item.address || '',
-        fm: pad2(item.from_month || item.fm || 1),
-        fy: item.from_year  || item.fy || '',
-        tm: pad2(item.to_month   || item.tm || 1),
-        ty: item.to_year    || item.ty || '',
-        total: item.total || ''
-      });
-    });
-  } catch(_) {}
-
-  refreshEmptyState();
-});
-</script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -13836,12 +15518,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const hstStart   = document.getElementById('hst_start');
   const hstEnd     = document.getElementById('hst_end');
 
-  // upload (on Upload page)
+  // upload section wrapper (we still show/hide this)
   const uploadGig  = document.getElementById('upload-gig-section');
-  const dz         = document.getElementById('gig-drop');
-  const dzInput    = document.getElementById('gig_tax_summary');
-  const dzBtn      = document.getElementById('gig-browse');
-  const dzList     = document.getElementById('gig-files');
 
   function applyGig() {
     const on = !!gigYes?.checked;
@@ -13864,40 +15542,15 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // wire events
-  [gigYes,gigNo].forEach(r => r?.addEventListener('change', () => { applyGig(); applyHst(); }));
+  [gigYes,gigNo].forEach(r => r?.addEventListener('change', () => {
+    applyGig();
+    applyHst();
+  }));
   [hstYes,hstNo].forEach(r => r?.addEventListener('change', applyHst));
 
   // init
   applyGig();
   applyHst();
-
-  // simple dropzone (upload page)
-  dzBtn?.addEventListener('click', () => dzInput?.click());
-  dz?.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
-  dz?.addEventListener('dragleave', () => dz.classList.remove('dragover'));
-  dz?.addEventListener('drop', e => {
-    e.preventDefault(); dz.classList.remove('dragover');
-    if (!dzInput) return;
-    dzInput.files = e.dataTransfer.files;
-    listFiles();
-  });
-  dzInput?.addEventListener('change', listFiles);
-
-  function listFiles(){
-    if (!dzList || !dzInput) return;
-    dzList.innerHTML = '';
-    const files = dzInput.files || [];
-    if (!files.length) return;
-    const ul = document.createElement('ul');
-    ul.style.margin = '8px 0 0';
-    ul.style.padding = '0 0 0 18px';
-    for (const f of files) {
-      const li = document.createElement('li');
-      li.textContent = `${f.name} (${Math.round(f.size/1024)} KB)`;
-      ul.appendChild(li);
-    }
-    dzList.appendChild(ul);
-  }
 });
 </script>
 
@@ -15921,26 +17574,20 @@ document.addEventListener('DOMContentLoaded', function () {
   const spHstStart = document.getElementById('sp_hst_start');
   const spHstEnd   = document.getElementById('sp_hst_end');
 
-  // Spouse upload (in Upload–Spouse panel)
+  // Spouse upload wrapper (Upload–Spouse panel)
   const spUpload   = document.getElementById('sp-upload-gig-section');
-  const spDz       = document.getElementById('sp-gig-drop');
-  const spDzInput  = document.getElementById('sp_gig_tax_summary');
-  const spDzBtn    = document.getElementById('sp-gig-browse');
-  const spDzList   = document.getElementById('sp-gig-files');
 
   function applySpouseGig(){
     const on = !!spGigYes?.checked;
     show(spExpBlock, on);
-    show(spHstQ, on);
-    req(spExpText, on);
+    show(spHstQ,     on);
+    show(spUpload,   on);
+    req(spExpText,   on);
 
     if (!on){
       show(spHstWrap, false);
       [spHstNum, spHstAcc, spHstStart, spHstEnd].forEach(el => req(el,false));
     }
-
-    // Keep spouse upload section in sync too (useful if user jumps to Upload tab)
-    show(spUpload, on);
   }
 
   function applySpouseHst(){
@@ -15950,46 +17597,22 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // Wire events
-  [spGigYes, spGigNo].forEach(r => r?.addEventListener('change', () => { applySpouseGig(); applySpouseHst(); }));
+  [spGigYes, spGigNo].forEach(r => r?.addEventListener('change', () => {
+    applySpouseGig();
+    applySpouseHst();
+  }));
   [spHstYes, spHstNo].forEach(r => r?.addEventListener('change', applySpouseHst));
 
   // Init
   applySpouseGig();
   applySpouseHst();
 
-  // Simple dropzone for spouse
-  spDzBtn?.addEventListener('click', () => spDzInput?.click());
-  spDz?.addEventListener('dragover', e => { e.preventDefault(); spDz.classList.add('dragover'); });
-  spDz?.addEventListener('dragleave', () => spDz.classList.remove('dragover'));
-  spDz?.addEventListener('drop', e => {
-    e.preventDefault(); spDz.classList.remove('dragover');
-    if (!spDzInput) return;
-    spDzInput.files = e.dataTransfer.files;
-    listSpFiles();
-  });
-  spDzInput?.addEventListener('change', listSpFiles);
-
-  function listSpFiles(){
-    if (!spDzList || !spDzInput) return;
-    spDzList.innerHTML = '';
-    const files = spDzInput.files || [];
-    if (!files.length) return;
-    const ul = document.createElement('ul');
-    ul.style.margin = '8px 0 0';
-    ul.style.padding = '0 0 0 18px';
-    for (const f of files) {
-      const li = document.createElement('li');
-      li.textContent = `${f.name} (${Math.round(f.size/1024)} KB)`;
-      ul.appendChild(li);
-    }
-    spDzList.appendChild(ul);
-  }
-
-  // Expose a tiny hook so showPanel can repaint when landing on Upload–Spouse
+  // Optional hook for other code
   window.App = window.App || {};
   window.App.applySpouseGigUpload = applySpouseGig;
 });
 </script>
+
 
 <script>
 (function(){
@@ -16143,11 +17766,6 @@ document.addEventListener('DOMContentLoaded', function(){
   syncSpouse();
 });
 </script>
-
-<!--  ERROR SCRIPT -->
-
-
-
 
 
 <script>
@@ -17916,205 +19534,6 @@ panel.addEventListener('change', (e)=>{
 
 <!--  CHILDREN ERROR 6 SCRIPT -->
 
-<script>
-(function(){
-  const panel = document.querySelector('.pi-main[data-panel="children"]');
-  if (!panel) return;
-
-  // ---------- helpers ----------
-  const $  = (q, r=document)=>r.querySelector(q);
-  const $$ = (q, r=document)=>Array.from(r.querySelectorAll(q));
-
-  function ensureBanner(){
-    let b = panel.querySelector('#childrenError');
-    if (!b){
-      b = document.createElement('div');
-      b.id = 'childrenError';
-      b.className = 'qs-error-banner';
-      b.setAttribute('role','alert');
-      b.setAttribute('aria-live','polite');
-      b.innerHTML = `
-        <h3>A selection is required.</h3>
-        <p>To proceed, please fill in or correct the required field(s).</p>
-      `;
-      panel.insertBefore(b, panel.firstElementChild);
-    }
-    return b;
-  }
-  function showBanner(){ ensureBanner().classList.add('show'); }
-  function hideBanner(){ panel.querySelector('#childrenError')?.classList.remove('show'); }
-
-  function clearInline(scope){
-    (scope || panel).querySelectorAll('.is-invalid').forEach(n=>n.classList.remove('is-invalid'));
-    (scope || panel).querySelectorAll('.fi-error-text').forEach(n=>n.remove());
-  }
-  function markError(anchor, msg){
-    if (!anchor) return null;
-    const host = anchor.closest('.fi-group, .yn-group, .qs-block') || anchor.parentElement || anchor;
-    host.classList.add('is-invalid');
-    if (!host.querySelector('.fi-error-text')){
-      const m = document.createElement('div');
-      m.className = 'fi-error-text';
-      m.textContent = msg || 'This field is required.';
-      (anchor.parentElement || host).appendChild(m);
-    }
-    return host;
-  }
-
-  // --- DOB helpers (DD | MMM | YYYY) ---
-  const MONTHS = {
-    jan:1, january:1,
-    feb:2, february:2,
-    mar:3, march:3,
-    apr:4, april:4,
-    may:5,
-    jun:6, june:6,
-    jul:7, july:7,
-    aug:8, august:8,
-    sep:9, sept:9, september:9,
-    oct:10, october:10,
-    nov:11, november:11,
-    dec:12, december:12
-  };
-  const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-  function isValidDate(y,m,d){
-    const dt = new Date(y, m-1, d);
-    return dt.getFullYear()===y && (dt.getMonth()+1)===m && dt.getDate()===d;
-  }
-
-  // Accepts things like "5 | feb | 2018", "05 Feb 2018", "5-feb-2018" etc.
-  function parseDisplayDOB(v){
-    if (!v) return null;
-    const parts = v.trim().split(/[\s|\/\-]+/).filter(Boolean); // split by | space / -
-    if (parts.length !== 3) return null;
-
-    const d = parseInt(parts[0], 10);
-    const mStr = String(parts[1]).toLowerCase();
-    const y = parseInt(parts[2], 10);
-
-    const m = MONTHS[mStr];
-    if (!m || !d || !y) return null;
-    if (!isValidDate(y, m, d)) return null;
-
-    return { d, m, y };
-  }
-
-  function normalizeDisplayDOB(inputEl, parsed){
-    const day = String(parsed.d).padStart(2,'0');
-    const mon = MONTH_LABELS[parsed.m-1];
-    inputEl.value = `${day} | ${mon} | ${parsed.y}`;
-  }
-
-  // ---------- Validate modal on Save ----------
-  const modal = document.getElementById('child-modal');
-  const btnSave = document.getElementById('child-save');
-
-  if (btnSave){
-    btnSave.addEventListener('click', (ev)=>{
-      // Only validate if modal is visible
-      const visible = modal && getComputedStyle(modal).display !== 'none';
-      if (!visible) return;
-
-      clearInline(modal);
-      let errs = [];
-
-      const f = $('#child_first_name', modal);
-      const l = $('#child_last_name',  modal);
-      const d = $('#child_dob_display', modal);
-      const hiddenDob = $('#child_dob', modal);
-      const radioAny  = modal.querySelector('input[name="child_in_canada"]:checked');
-
-      if (!f.value.trim()) errs.push(markError(f, 'First name is required.'));
-      if (!l.value.trim()) errs.push(markError(l, 'Last name is required.'));
-
-      const parsed = parseDisplayDOB(d.value);
-      if (!parsed) {
-        errs.push(markError(d, 'Enter date as DD | MMM | YYYY.'));
-      } else {
-        // normalize visible field and set hidden ISO yyyy-mm-dd
-        normalizeDisplayDOB(d, parsed);
-        const mm = String(parsed.m).padStart(2,'0');
-        const dd = String(parsed.d).padStart(2,'0');
-        const yy = String(parsed.y);
-        if (hiddenDob) hiddenDob.value = `${yy}-${mm}-${dd}`;
-      }
-
-      if (!radioAny){
-        const r = modal.querySelector('.yn-group input[name="child_in_canada"]');
-        errs.push(markError(r, 'Please select Yes or No.'));
-      }
-
-      if (errs.length){
-        ev.preventDefault();
-        ev.stopPropagation();
-        ev.stopImmediatePropagation();
-        const first = errs[0];
-        const focusable = first.querySelector('input,select,textarea,button') || first;
-        focusable?.focus?.();
-        return;
-      }
-      // valid → let your existing save handler run
-    }, true);
-  }
-
-  // ---------- Require at least one child before Continue ----------
-  const nextBtn = panel.querySelector('.continue-btn[data-goto="next"]');
-  if (nextBtn){
-    nextBtn.addEventListener('click', (ev)=>{
-      panel.querySelector('#children-error-msg')?.remove();
-      panel.querySelector('.children-table')?.classList.remove('is-invalid-table');
-
-      const tbody = panel.querySelector('#children-tbody');
-      const hiddenBin = panel.querySelector('#children-hidden-inputs');
-
-      let hasRow = false;
-      if (tbody){
-        const rows = Array.from(tbody.querySelectorAll('tr')).filter(tr => tr.id !== 'children-empty-row');
-        hasRow = rows.some(tr => {
-          const t = tr.textContent.trim();
-          return t && !/no children added yet/i.test(t);
-        });
-      }
-      const hasHidden = !!(hiddenBin && hiddenBin.querySelector('[name]'));
-
-      if (!(hasRow || hasHidden)){
-        showBanner();
-        const tableEl = panel.querySelector('.children-table');
-        const msg = document.createElement('div');
-        msg.id = 'children-error-msg';
-        msg.className = 'fi-error-text';
-        msg.textContent = 'Add at least one child.';
-        if (tableEl){
-          tableEl.insertAdjacentElement('afterend', msg);
-          tableEl.classList.add('is-invalid-table');
-          tableEl.scrollIntoView({behavior:'smooth', block:'center'});
-        }
-        ev.preventDefault();
-        ev.stopPropagation();
-        ev.stopImmediatePropagation();
-      }
-    }, true);
-  }
-
-  // live cleanup
-  panel.addEventListener('input', (e)=>{
-    const host = e.target.closest('.fi-group, .yn-group, .qs-block');
-    if (host?.classList.contains('is-invalid')){
-      host.classList.remove('is-invalid');
-      host.querySelector('.fi-error-text')?.remove();
-      if (!panel.querySelector('.is-invalid')) hideBanner();
-    }
-    if (e.target.closest('.children-table')) {
-      panel.querySelector('#children-error-msg')?.remove();
-      panel.querySelector('.children-table')?.classList.remove('is-invalid-table');
-      hideBanner();
-    }
-  }, true);
-
-})();
-
-</script>
 
 <script>
 (function () {
@@ -18651,5 +20070,311 @@ panel.addEventListener('change', (e)=>{
 
 
 
+<!--  JSON 1 CHILDREN -->
+<script>
+(function () {
+  const form        = document.getElementById('myForm');
+  const tbody       = document.getElementById('children-tbody');
+  const hiddenField = document.getElementById('children_json');
+  const seedEl      = document.getElementById('children-seed');
+
+  const modal       = document.getElementById('child-modal');
+  const childForm   = document.getElementById('child-form');
+
+  const idInput     = document.getElementById('child_id');
+  const firstInput  = document.getElementById('child_first_name');
+  const lastInput   = document.getElementById('child_last_name');
+  const dobDispInput= document.getElementById('child_dob_display');
+  const dobIsoInput = document.getElementById('child_dob'); // hidden bound to datepicker
+
+  const addBtn      = document.getElementById('btn-add-child');
+  const cancelBtn   = document.getElementById('child-cancel');
+  const saveBtn     = document.getElementById('child-save');
+
+  if (!tbody || !hiddenField) return;
+
+  // ----- STATE -----
+  let children = [];
+  try {
+    children = JSON.parse(seedEl?.textContent || '[]');
+    if (!Array.isArray(children)) children = [];
+  } catch (e) {
+    children = [];
+  }
+
+  function syncHidden() {
+    hiddenField.value = JSON.stringify(children);
+    // console.log('children_json =>', hiddenField.value);
+  }
+
+  // ----- RENDER TABLE -----
+  function renderTable() {
+    tbody.innerHTML = '';
+
+    if (!children.length) {
+      const tr = document.createElement('tr');
+      tr.id = 'children-empty-row';
+      const td = document.createElement('td');
+      td.colSpan = 5;
+      td.style.padding = '10px';
+      td.style.opacity = '.7';
+      td.style.textAlign = 'center';
+      td.textContent = 'No children added yet.';
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+      syncHidden();
+      return;
+    }
+
+    children.forEach((c, idx) => {
+      const tr = document.createElement('tr');
+      tr.dataset.index = idx;
+
+      const tdFirst = document.createElement('td');
+      tdFirst.style.padding = '8px';
+      tdFirst.textContent = c.first_name || '';
+      tr.appendChild(tdFirst);
+
+      const tdLast = document.createElement('td');
+      tdLast.style.padding = '8px';
+      tdLast.textContent = c.last_name || '';
+      tr.appendChild(tdLast);
+
+      const tdDob = document.createElement('td');
+      tdDob.style.padding = '8px';
+      tdDob.textContent = c.dob_display || '';
+      tr.appendChild(tdDob);
+
+      const tdCan = document.createElement('td');
+      tdCan.style.padding = '8px';
+      tdCan.textContent = c.in_canada || '';
+      tr.appendChild(tdCan);
+
+      const tdActions = document.createElement('td');
+      tdActions.style.padding = '8px';
+      tdActions.style.textAlign = 'center';
+
+      const editLink = document.createElement('a');
+      editLink.href = 'javascript:void(0)';
+      editLink.textContent = 'Edit';
+      editLink.style.marginRight = '12px';
+      editLink.addEventListener('click', () => openModal(idx));
+
+      const deleteLink = document.createElement('a');
+      deleteLink.href = 'javascript:void(0)';
+      deleteLink.textContent = 'Delete';
+      deleteLink.addEventListener('click', () => {
+        children.splice(idx, 1);
+        renderTable();
+      });
+
+      tdActions.appendChild(editLink);
+      tdActions.appendChild(document.createTextNode(' '));
+      tdActions.appendChild(deleteLink);
+
+      tr.appendChild(tdActions);
+      tbody.appendChild(tr);
+    });
+
+    syncHidden();
+  }
+
+  // ----- MODAL HELPERS -----
+  function openModal(index) {
+    if (index == null) {
+      // add new
+      idInput.value = '';
+      firstInput.value = '';
+      lastInput.value = '';
+      dobDispInput.value = '';
+      dobIsoInput.value = '';
+      // default radio: Yes
+      const yes = document.getElementById('child_in_canada_yes');
+      if (yes) yes.checked = true;
+    } else {
+      const c = children[index];
+      idInput.value = index;
+      firstInput.value = c.first_name || '';
+      lastInput.value = c.last_name || '';
+      dobDispInput.value = c.dob_display || '';
+      dobIsoInput.value = c.dob || '';
+
+      const yes = document.getElementById('child_in_canada_yes');
+      const no  = document.getElementById('child_in_canada_no');
+      if (c.in_canada === 'No') {
+        if (no) no.checked = true;
+      } else {
+        if (yes) yes.checked = true;
+      }
+    }
+
+    modal.style.display = 'block';
+  }
+
+  function closeModal() {
+    modal.style.display = 'none';
+  }
+
+  // ----- SAVE CHILD -----
+  function saveChild() {
+    if (!childForm.reportValidity()) return;
+
+    const index = idInput.value === '' ? null : parseInt(idInput.value, 10);
+
+    const inCanada = (document.querySelector('input[name="child_in_canada"]:checked')?.value) || 'Yes';
+    const dobDisplay = dobDispInput.value.trim();
+    const dobIso = dobIsoInput.value.trim() || dobDisplay;
+
+    const obj = {
+      first_name:  firstInput.value.trim(),
+      last_name:   lastInput.value.trim(),
+      dob_display: dobDisplay,
+      dob:         dobIso,
+      in_canada:   inCanada
+    };
+
+    if (index === null || isNaN(index)) {
+      children.push(obj);
+    } else {
+      children[index] = obj;
+    }
+
+    closeModal();
+    renderTable();
+  }
+
+  // ----- EVENT BINDINGS -----
+  if (addBtn) addBtn.addEventListener('click', () => openModal(null));
+  if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+  if (saveBtn) saveBtn.addEventListener('click', saveChild);
+
+  // safety: keep hidden in sync on real form submit (if someone edits last second)
+  if (form) {
+    form.addEventListener('submit', syncHidden);
+  }
+
+  // init
+  renderTable();
+})();
+</script>
+
+
+<!--  ERROR NAV  -->
+
+
+
+
+<!-- AUTO ADDRESS -->
+<script>
+  function initMovingPrevAutocomplete() {
+    if (!window.google || !google.maps || !google.maps.places) return;
+
+    /* ---------- 1) Previous Address ---------- */
+    var prevInput = document.getElementById('moving_prev_address');
+    if (prevInput) {
+      var prevAC = new google.maps.places.Autocomplete(prevInput, {
+        types: ['geocode'],
+        // no componentRestrictions -> worldwide
+        fields: ['address_components', 'formatted_address']
+      });
+
+      prevAC.addListener('place_changed', function () {
+        var place = prevAC.getPlace();
+        if (!place || !place.address_components) return;
+
+        var city    = '';
+        var region  = '';
+        var country = '';
+        var postal  = '';
+
+        place.address_components.forEach(function (c) {
+          if (c.types.includes('locality'))                    city = c.long_name;
+          if (c.types.includes('administrative_area_level_1')) region = c.short_name;
+          if (c.types.includes('country'))                     country = c.long_name;
+          if (c.types.includes('postal_code'))                 postal = c.long_name;
+        });
+
+        if (place.formatted_address) {
+          prevInput.value = place.formatted_address;
+        }
+
+        var cityEl    = document.getElementById('moving_prev_city');
+        var regionEl  = document.getElementById('moving_prev_region');
+        var countryEl = document.getElementById('moving_prev_country');
+        var postalEl  = document.getElementById('moving_prev_postal');
+
+        if (cityEl)    cityEl.value    = city;
+        if (regionEl)  regionEl.value  = region;
+        if (countryEl) countryEl.value = country;
+        if (postalEl)  postalEl.value  = postal;
+      });
+
+      // Prevent Enter from submitting the form while typing here
+      prevInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault(); // stops full-form submit
+        }
+      });
+    }
+
+    /* ---------- 2) Rent Address (all rows) ---------- */
+    function bindAllRentAutocompletes() {
+      var rentInputs = document.querySelectorAll('.rent-addr-input');
+
+      rentInputs.forEach(function (input) {
+        // don't bind twice
+        if (input.dataset.pacBound) return;
+
+        var ac = new google.maps.places.Autocomplete(input, {
+          types: ['geocode'],
+          fields: ['formatted_address']
+        });
+
+        ac.addListener('place_changed', function () {
+          var place = ac.getPlace();
+          if (place && place.formatted_address) {
+            input.value = place.formatted_address;
+          }
+        });
+
+        // also block Enter from submitting when user types in rent address
+        input.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+          }
+        });
+
+        input.dataset.pacBound = '1';
+      });
+    }
+
+    // expose it so YES RENT 2 can call it
+    window.bindAllRentAutocompletes = bindAllRentAutocompletes;
+
+    // run once after Maps loads (for any existing rows)
+    bindAllRentAutocompletes();
+  }
+</script>
+
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBoZXZN1fRd6SyAeTWOLR4PdPS9hXRQRGA&libraries=places&callback=initMovingPrevAutocomplete"
+  async defer>
+</script>
+
+
+<script>
+  // Fallback: if Google puts the field in error state, restore it
+  setTimeout(function () {
+    var el = document.getElementById('moving_prev_address');
+    if (!el) return;
+
+    if (el.classList.contains('gm-err-autocomplete')) {
+      el.classList.remove('gm-err-autocomplete');
+      el.disabled = false;
+      el.placeholder = 'Previous address';
+      el.style.backgroundImage = 'none';
+    }
+  }, 1500);
+</script>
 
 </body>
