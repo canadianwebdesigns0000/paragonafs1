@@ -27,7 +27,7 @@
     $GLOBALS['HOST']     = '127.0.0.1';   // or 'localhost'
     $GLOBALS['USERNAME'] = 'root';        // 
     $GLOBALS['PASSWORD'] = '';            // W6j4jCV9zJj8Tk8CWD
-    $GLOBALS['DATABASE'] = 'paragon';     
+    $GLOBALS['DATABASE'] = 'mnduvdmy_paragonafs';     
     /*
     |--------------------------------------------------------------------------
     | Application URL
