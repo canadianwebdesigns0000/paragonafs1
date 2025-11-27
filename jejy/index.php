@@ -1,6 +1,7 @@
 <?php
 session_start();
 include '../auth/config.php';
+require 'emailService.php';
 
 // ---------- confirm panel flag ----------
 $showConfirmPanel = !empty($_SESSION['show_confirm_panel']);
@@ -967,12 +968,205 @@ if ($first_home_buyer !== 'yes') {
         ':id' => $taxId
     ]);
 
-    $_SESSION['show_confirm_panel'] = true;
+    $emailSent = prepareEmail([
+      'first_name'        => $first_name,
+      'middle_name'       => $middle_name,
+      'last_name'         => $last_name,
+      'dob'               => $dob,
+      'gender'            => $gender,
+      'email_raw'         => $email_raw,
+      'phone_raw'         => $phone_raw,
+      'marital_status'    => $marital_status,
+      'status_date'       => $status_date,
+      'status_date_sdw'   => $status_date_sdw,
+      'spouse_in_canada'  => $spouse_in_canada,
+      'children_json'     => $children_json,
+      'rent_addresses_json' => $rent_addresses_json,
+    ]);
 
+    $_SESSION['show_confirm_panel'] = true;
+    $_SESSION['email_sent'] = $emailSent;
+    
     header('Location: ' . $_SERVER['REQUEST_URI']);
     exit();
 }
 
+function prepareEmail(array $data) {
+    // Extract form data with defaults
+    $first_name       = $data['first_name'] ?? '';
+    $middle_name      = $data['middle_name'] ?? '';
+    $last_name        = $data['last_name'] ?? '';
+    $dob              = $data['dob'] ?? '';
+    $gender           = $data['gender'] ?? '';
+    $email_raw        = $data['email_raw'] ?? '';
+    $phone_raw        = $data['phone_raw'] ?? '';
+    $marital_status   = $data['marital_status'] ?? '';
+    $status_date      = $data['status_date'] ?? '';
+    $status_date_sdw  = $data['status_date_sdw'] ?? '';
+    $spouse_in_canada = $data['spouse_in_canada'] ?? '';
+    $children_json    = $data['children_json'] ?? '[]';
+    $rent_addresses_json = $data['rent_addresses_json'] ?? '';
+
+    // Decode JSON data
+    $childrenArray = json_decode($children_json, true) ?: [];
+    $rentArray     = json_decode($rent_addresses_json, true) ?: [];
+
+    // Build children rows
+    $childrenRows = '';
+    if (!empty($childrenArray)) {
+        // Header row for children table
+        $childrenRows .= "<tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Date of Birth</th>
+            <th>In Canada</th>
+        </tr>";
+
+        foreach ($childrenArray as $idx => $child) {
+            $childName     = htmlspecialchars(trim(($child['first_name'] ?? '') . ' ' . ($child['last_name'] ?? '')), ENT_QUOTES, 'UTF-8');
+            $childDob      = htmlspecialchars($child['dob'] ?? '', ENT_QUOTES, 'UTF-8');
+            $childInCanada = htmlspecialchars($child['in_canada'] ?? 'Yes', ENT_QUOTES, 'UTF-8');
+
+            $childrenRows .= "<tr>
+                <td>" . ($idx + 1) . "</td>
+                <td>{$childName}</td>
+                <td>{$childDob}</td>
+                <td>{$childInCanada}</td>
+            </tr>";
+        }
+    } else {
+        $childrenRows = "<tr><td colspan='5'>No children data</td></tr>";
+    }
+
+    // Build rental addresses rows
+    $rentRows = '';
+    if (!empty($rentArray)) {
+        // Header row for rental addresses
+        $rentRows .= "<tr>
+            <th>#</th>
+            <th>Address</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Total Rent</th>
+        </tr>";
+
+        foreach ($rentArray as $idx => $rent) {
+            $address     = htmlspecialchars($rent['address'] ?? '', ENT_QUOTES, 'UTF-8');
+            $fromDisplay = htmlspecialchars($rent['from_display'] ?? '', ENT_QUOTES, 'UTF-8');
+            $toDisplay   = htmlspecialchars($rent['to_display'] ?? '', ENT_QUOTES, 'UTF-8');
+            $totalRent   = htmlspecialchars($rent['total_rent'] ?? '', ENT_QUOTES, 'UTF-8');
+
+            $rentRows .= "<tr>
+                <td>" . ($idx + 1) . "</td>
+                <td>{$address}</td>
+                <td>{$fromDisplay}</td>
+                <td>{$toDisplay}</td>
+                <td>\${$totalRent}</td>
+            </tr>";
+        }
+    } else {
+        $rentRows = "<tr><td colspan='5'>No rental addresses</td></tr>";
+    }
+
+    // Determine status value
+    $status_value = $status_date ?: $status_date_sdw;
+
+    // Build complete HTML email
+    $message = "<html>
+<head>
+    <title>New Tax Form Submission</title>
+    <style>
+        table {
+            font-family: Arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <table>
+        <tr>
+            <th>Questions</th>
+            <th colspan='4'>Answer</th>
+        </tr>
+        <tr>
+            <th>First Name</th>
+            <td colspan='4'>$first_name</td>
+        </tr>
+        <tr>
+            <th>Middle Name</th>
+            <td colspan='4'>$middle_name</td>
+        </tr>
+        <tr>
+            <th>Last Name</th>
+            <td colspan='4'>$last_name</td>
+        </tr>
+        <tr>
+            <th>Date of Birth</th>
+            <td colspan='4'>$dob</td>
+        </tr>
+        <tr>
+            <th>Gender</th>
+            <td colspan='4'>$gender</td>
+        </tr>
+        <tr>
+            <th>Email Address</th>
+            <td colspan='4'>$email_raw</td>
+        </tr>
+        <tr>
+            <th>Phone Number</th>
+            <td colspan='4'>$phone_raw</td>
+        </tr>
+        <tr>
+            <th colspan='5' style='background:#f2f2f2;'>Marital Information</th>
+        </tr>
+        <tr>
+            <th>Marital Status</th>
+            <td colspan='4'>$marital_status</td>
+        </tr>
+        <tr>
+            <th>Status Date</th>
+            <td colspan='4'>$status_value</td>
+        </tr>
+        <tr>
+            <th>Spouse in Canada</th>
+            <td colspan='4'>$spouse_in_canada</td>
+        </tr>
+        <tr>
+            <th colspan='5' style='background:#f2f2f2;'>Children Information</th>
+        </tr>
+        $childrenRows
+        <tr>
+            <th colspan='5' style='background:#f2f2f2;'>Rental Addresses</th>
+        </tr>
+        $rentRows
+    </table>
+</body>
+</html>";
+
+    $recipients = ['lance.canadianwebdesigns@gmail.com'];
+    $subject    = "New Tax Form Submission - $first_name $last_name";
+
+    $result = sendEmail($recipients, $subject, $message);
+
+    if ($result === true) {
+        $_SESSION['email_sent_success'] = true;
+        error_log('Email sent successfully!');
+    } else {
+        $_SESSION['email_sent_success'] = false;
+        error_log('Email sending failed: ' . $result);
+    }
+
+    return $result;
+}
 
 // ---------------------------------------------------------
 //  RE-LOAD AFTER SAVE (or first load)
