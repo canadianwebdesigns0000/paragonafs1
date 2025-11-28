@@ -9,6 +9,7 @@
 /backups
 Dependency folders
 /vendor/
+/jejy/DEBUG_OUTPUT.txt
 
 Temporary or backup files
 *.zip

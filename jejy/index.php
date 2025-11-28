@@ -2,6 +2,7 @@
 session_start();
 include '../auth/config.php';
 require 'emailService.php';
+require 'debugHelper.php';
 
 // ---------- confirm panel flag ----------
 $showConfirmPanel = !empty($_SESSION['show_confirm_panel']);
@@ -159,7 +160,7 @@ function handleMultiUpload($fieldName, $subdir, $userFolderBase, &$errors = []) 
         }
 
         $safeOrig = preg_replace('/[^A-Za-z0-9._-]/', '_', $origName);
-        $newName  = uniqid().'-'.$safeOrig;
+        $newName  = $fieldName . '-' . uniqid().'-'.$safeOrig;
         $target   = $targetBase.'/'.$newName;
 
         if (!move_uploaded_file($tmp[$i], $target)) {
@@ -258,90 +259,86 @@ if (!$rowTax) {
 
 $taxId = $rowTax['id'];
 
-
-// ---------------------------------------------------------
 //  HANDLE POST (SAVE FORM)
-// ---------------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    error_log('FULL POST: ' . print_r($_POST, true));
+  error_log('FULL POST: ' . print_r($_POST, true));
 
-    // ---------- PERSONAL ----------
-    $first_name   = field('first_name');
-    $middle_name  = field('middle_name');
-    $last_name    = field('last_name');
-    $dob          = parseDateField('dob');  // YYYY-MM-DD from form
-    $gender       = field('gender');
+  // ---------- PERSONAL ----------
+  $first_name   = field('first_name');
+  $middle_name  = field('middle_name');
+  $last_name    = field('last_name');
+  $dob          = parseDateField('dob');  // YYYY-MM-DD from form
+  $gender       = field('gender');
 
-    $street       = field('street');
-    $unit         = field('unit');
-    $city         = field('city');
-    $province     = field('province');
-    $postal       = field('postal');
-    $country      = field('country');
+  $street       = field('street');
+  $unit         = field('unit');
+  $city         = field('city');
+  $province     = field('province');
+  $postal       = field('postal');
+  $country      = field('country');
 
-    $phone_raw    = field('phone');  // contact phone from form
-    $email_raw    = field('email');  // contact email from form
-    $sin          = field('sin');
+  $phone_raw    = field('phone');  // contact phone from form
+  $email_raw    = field('email');  // contact email from form
+  $sin          = field('sin');
 
-    // ---------- WELCOME / MARITAL ----------
-    $marital_status   = field('marital_status');
-    $status_date      = parseDateField('status_date');      // married/common-law
-    $status_date_sdw  = parseDateField('status_date_sdw');  // separated/divorced/widowed
+  // ---------- WELCOME / MARITAL ----------
+  $marital_status   = field('marital_status');
+  $status_date      = parseDateField('status_date');      // married/common-law
+  $status_date_sdw  = parseDateField('status_date_sdw');  // separated/divorced/widowed
 
-    // Keep only the relevant date depending on marital status
-if ($marital_status === 'Married' || $marital_status === 'Common Law') {
-    // Married / CL: keep status_date, clear SDW date
-    $status_date_sdw = null;
-} elseif (in_array($marital_status, ['Separated','Divorced','Widowed'], true)) {
-    // Separated / Divorced / Widowed: keep SDW date, clear marriage date
-    $status_date = null;
-} else {
-    // Single or empty → no dates
-    $status_date = null;
-    $status_date_sdw = null;
-}
+  // Keep only the relevant date depending on marital status
+  if ($marital_status === 'Married' || $marital_status === 'Common Law') {
+      // Married / CL: keep status_date, clear SDW date
+      $status_date_sdw = null;
+  } elseif (in_array($marital_status, ['Separated','Divorced','Widowed'], true)) {
+      // Separated / Divorced / Widowed: keep SDW date, clear marriage date
+      $status_date = null;
+  } else {
+      // Single or empty → no dates
+      $status_date = null;
+      $status_date_sdw = null;
+  }
 
+  $spouse_in_canada = field('spouse_in_canada');          // Yes / No
+  $spouseFile       = field('spouseFile');                // yes / no
+  $children_flag    = field('children');                  // yes / no
 
-    $spouse_in_canada = field('spouse_in_canada');          // Yes / No
-    $spouseFile       = field('spouseFile');                // yes / no
-    $children_flag    = field('children');                  // yes / no
+  // ---------- TAX PANEL ----------
+  $first_time       = field('first_time');
+  $paragon_prior    = field('paragon_prior');
+  $return_years     = field('return_years');
 
-    // ---------- TAX PANEL ----------
-    $first_time       = field('first_time');
-    $paragon_prior    = field('paragon_prior');
-    $return_years     = field('return_years');
+  $entry_date       = parseDateField('entry_date');       // hidden YYYY-MM-DD
+  $birth_country    = field('birth_country');
 
-    $entry_date       = parseDateField('entry_date');       // hidden YYYY-MM-DD
-    $birth_country    = field('birth_country');
+  // DECIMAL
+  $inc_y1           = decimalField('inc_y1');
+  $inc_y2           = decimalField('inc_y2');
+  $inc_y3           = decimalField('inc_y3');
 
-    // DECIMAL
-    $inc_y1           = decimalField('inc_y1');
-    $inc_y2           = decimalField('inc_y2');
-    $inc_y3           = decimalField('inc_y3');
+  $moved_province   = field('moved_province');
+  $moved_date       = parseDateField('moved_date');       // hidden YYYY-MM-DD
+  $prov_from        = field('prov_from');
+  $prov_to          = field('prov_to');
 
-    $moved_province   = field('moved_province');
-    $moved_date       = parseDateField('moved_date');       // hidden YYYY-MM-DD
-    $prov_from        = field('prov_from');
-    $prov_to          = field('prov_to');
+  $moving_expenses_claim = field('moving_expenses_claim');
+  $moving_prev_address   = field('moving_prev_address');
+  $moving_distance       = field('moving_distance');
 
-    $moving_expenses_claim = field('moving_expenses_claim');
-    $moving_prev_address   = field('moving_prev_address');
-    $moving_distance       = field('moving_distance');
+  $first_home_buyer    = field('first_home_buyer');
+  $first_home_purchase = parseDateField('first_home_purchase');
+  $claim_full          = field('claim_full');
+  $owner_count         = intField('owner_count');         // INT helper
 
-    $first_home_buyer    = field('first_home_buyer');
-    $first_home_purchase = parseDateField('first_home_purchase');
-    $claim_full          = field('claim_full');
-    $owner_count         = intField('owner_count');         // INT helper
+  $onRent            = field('onRent');
+  $claimRent         = field('claimRent');
 
-    $onRent            = field('onRent');
-    $claimRent         = field('claimRent');
+  // JSON from your JS (rent addresses)
+  // ---------- RENT ADDRESSES (JSON) ----------
+  $rent_addresses_json = '[]';
 
-    // JSON from your JS (rent addresses)
-// ---------- RENT ADDRESSES (JSON) ----------
-$rent_addresses_json = '[]';
-
-if (!empty($_POST['rent']) && is_array($_POST['rent'])) {
+  if (!empty($_POST['rent']) && is_array($_POST['rent'])) {
     $rentRows = [];
 
     // Map numeric months -> short names
@@ -388,610 +385,619 @@ if (!empty($_POST['rent']) && is_array($_POST['rent'])) {
     if (!empty($rentRows)) {
         $rent_addresses_json = json_encode($rentRows, JSON_UNESCAPED_SLASHES);
     }
-} else {
-    // fallback – if one day you actually send rent_addresses_json from JS
-    $rent_addresses_json = jsonField('rent_addresses_json', '[]');
-}
+  } else {
+      // fallback – if one day you actually send rent_addresses_json from JS
+      $rent_addresses_json = jsonField('rent_addresses_json', '[]');
+  }
 
-error_log('FINAL rent_addresses_json going into DB: ' . $rent_addresses_json);
+  error_log('FINAL rent_addresses_json going into DB: ' . $rent_addresses_json);
 
+  // ---------- SPOUSE PANEL ----------
+  $spouse_first_name        = field('spouse_first_name');
+  $spouse_middle_name       = field('spouse_middle_name');
+  $spouse_last_name         = field('spouse_last_name');
+  $spouse_dob               = parseDateField('spouse_dob'); // YYYY-MM-DD
 
-    // ---------- SPOUSE PANEL ----------
-    $spouse_first_name        = field('spouse_first_name');
-    $spouse_middle_name       = field('spouse_middle_name');
-    $spouse_last_name         = field('spouse_last_name');
-    $spouse_dob               = parseDateField('spouse_dob'); // YYYY-MM-DD
+  // Encrypt DOBs
+  $dob_encrypted        = $dob        ? encrypt_decrypt('encrypt', $dob)        : null;
+  $spouse_dob_encrypted = $spouse_dob ? encrypt_decrypt('encrypt', $spouse_dob) : null;
 
-    // Encrypt DOBs
-    $dob_encrypted        = $dob        ? encrypt_decrypt('encrypt', $dob)        : null;
-    $spouse_dob_encrypted = $spouse_dob ? encrypt_decrypt('encrypt', $spouse_dob) : null;
+  // mirror top-level question
+  $spouse_in_canada_flag    = $spouse_in_canada;
 
-    // mirror top-level question
-    $spouse_in_canada_flag    = $spouse_in_canada;
+  // DECIMAL
+  $spouse_income_outside_cad = decimalField('spouse_income_outside_cad');
+  $spouse_income_cad         = decimalField('spouse_income_cad');
 
-    // DECIMAL
-    $spouse_income_outside_cad = decimalField('spouse_income_outside_cad');
-    $spouse_income_cad         = decimalField('spouse_income_cad');
+  error_log('RAW spouse_income_cad: ' . ($_POST['spouse_income_cad'] ?? 'MISSING'));
+  error_log('FINAL spouse_income_cad: ' . var_export($spouse_income_cad, true));
 
-    error_log('RAW spouse_income_cad: ' . ($_POST['spouse_income_cad'] ?? 'MISSING'));
-    error_log('FINAL spouse_income_cad: ' . var_export($spouse_income_cad, true));
+  $spouse_sin           = field('spouse_sin');
+  $spouse_address_same  = field('spouse_address_same');  // Yes/No
 
-    $spouse_sin           = field('spouse_sin');
-    $spouse_address_same  = field('spouse_address_same');  // Yes/No
+  $spouse_street        = field('spouse_street');
+  $spouse_unit          = field('spouse_unit');
+  $spouse_city          = field('spouse_city');
+  $spouse_province      = field('spouse_province');
+  $spouse_postal        = field('spouse_postal');
+  $spouse_country       = field('spouse_country');
 
-    $spouse_street        = field('spouse_street');
-    $spouse_unit          = field('spouse_unit');
-    $spouse_city          = field('spouse_city');
-    $spouse_province      = field('spouse_province');
-    $spouse_postal        = field('spouse_postal');
-    $spouse_country       = field('spouse_country');
+  $spouse_phone         = field('spouse_phone');
+  $spouse_email         = field('spouse_email');
 
-    $spouse_phone         = field('spouse_phone');
-    $spouse_email         = field('spouse_email');
+  // ---------- SPOUSE TAX PANEL ----------
+  $sp_first_time    = field('sp_first_time');
+  $sp_paragon_prior = field('sp_paragon_prior');
+  $sp_return_years  = field('sp_return_years');
 
-    // ---------- SPOUSE TAX PANEL ----------
-    $sp_first_time    = field('sp_first_time');
-    $sp_paragon_prior = field('sp_paragon_prior');
-    $sp_return_years  = field('sp_return_years');
+  $sp_entry_date    = parseDateField('sp_entry_date');
+  $sp_birth_country = field('sp_birth_country');
 
-    $sp_entry_date    = parseDateField('sp_entry_date');
-    $sp_birth_country = field('sp_birth_country');
+  // DECIMAL
+  $sp_inc_y1        = decimalField('sp_inc_y1');
+  $sp_inc_y2        = decimalField('sp_inc_y2');
+  $sp_inc_y3        = decimalField('sp_inc_y3');
 
-    // DECIMAL
-    $sp_inc_y1        = decimalField('sp_inc_y1');
-    $sp_inc_y2        = decimalField('sp_inc_y2');
-    $sp_inc_y3        = decimalField('sp_inc_y3');
+  $sp_moved_province = field('sp_moved_province');
+  $sp_moved_date     = parseDateField('sp_moved_date');
+  $sp_prov_from      = field('sp_prov_from');
+  $sp_prov_to        = field('sp_prov_to');
 
-    $sp_moved_province = field('sp_moved_province');
-    $sp_moved_date     = parseDateField('sp_moved_date');
-    $sp_prov_from      = field('sp_prov_from');
-    $sp_prov_to        = field('sp_prov_to');
+  // ---------- CHILDREN (JSON) ----------
+  error_log('RAW children_json POST: ' . (isset($_POST['children_json']) ? $_POST['children_json'] : 'MISSING'));
 
-    // ---------- CHILDREN (JSON) ----------
-    error_log('RAW children_json POST: ' . (isset($_POST['children_json']) ? $_POST['children_json'] : 'MISSING'));
+  $children_json = '[]';
 
-    $children_json = '[]';
+  if (!empty($_POST['child_rows']) && is_array($_POST['child_rows'])) {
+      $list = [];
 
-    if (!empty($_POST['child_rows']) && is_array($_POST['child_rows'])) {
-        $list = [];
+      foreach ($_POST['child_rows'] as $row) {
+          $first = isset($row['first_name']) ? trim($row['first_name']) : '';
+          $last  = isset($row['last_name'])  ? trim($row['last_name'])  : '';
+          $dobC  = isset($row['dob'])        ? trim($row['dob'])        : '';
+          $inCan = isset($row['in_canada'])  ? trim($row['in_canada'])  : '';
 
-        foreach ($_POST['child_rows'] as $row) {
-            $first = isset($row['first_name']) ? trim($row['first_name']) : '';
-            $last  = isset($row['last_name'])  ? trim($row['last_name'])  : '';
-            $dobC  = isset($row['dob'])        ? trim($row['dob'])        : '';
-            $inCan = isset($row['in_canada'])  ? trim($row['in_canada'])  : '';
+          if ($first === '' && $last === '' && $dobC === '') {
+              continue;
+          }
 
-            if ($first === '' && $last === '' && $dobC === '') {
-                continue;
-            }
+          $list[] = [
+              'first_name'  => $first,
+              'last_name'   => $last,
+              'dob'         => $dobC,
+              'dob_display' => $dobC,
+              'in_canada'   => $inCan !== '' ? $inCan : 'Yes',
+          ];
+      }
 
-            $list[] = [
-                'first_name'  => $first,
-                'last_name'   => $last,
-                'dob'         => $dobC,
-                'dob_display' => $dobC,
-                'in_canada'   => $inCan !== '' ? $inCan : 'Yes',
-            ];
-        }
+      if (!empty($list)) {
+          $children_json = json_encode($list, JSON_UNESCAPED_SLASHES);
+      }
+  } else {
+      $children_json = jsonField('children_json', '[]');
+  }
 
-        if (!empty($list)) {
-            $children_json = json_encode($list, JSON_UNESCAPED_SLASHES);
-        }
-    } else {
-        $children_json = jsonField('children_json', '[]');
+  error_log('children_json going into DB: ' . $children_json);
+
+  // ---------- OTHER INCOME ----------
+  $gig_income           = field('gig_income');
+  $gig_expenses_summary = field('gig_expenses_summary');
+  $gig_hst              = field('gig_hst');
+  $hst_number           = field('hst_number');
+  $hst_access           = field('hst_access');
+  $hst_start            = parseDateField('hst_start');
+  $hst_end              = parseDateField('hst_end');
+
+  $sp_gig_income           = field('sp_gig_income');
+  $sp_gig_expenses_summary = field('sp_gig_expenses_summary');
+  $sp_gig_hst              = field('sp_gig_hst');
+  $sp_hst_number           = field('sp_hst_number');
+  $sp_hst_access           = field('sp_hst_access');
+  $sp_hst_start            = parseDateField('sp_hst_start');
+  $sp_hst_end              = parseDateField('sp_hst_end');
+
+  // ---------- RENTAL PROPERTIES (JSON) ----------
+  $rental_props_json = '[]';
+
+  if (!empty($_POST['rental_props']) && is_array($_POST['rental_props'])) {
+
+    $props = [];
+
+    foreach ($_POST['rental_props'] as $idx => $row) {
+        if (!is_array($row)) continue;
+
+        $owner       = isset($row['owner'])        ? trim($row['owner'])        : '';
+        $address     = isset($row['address'])      ? trim($row['address'])      : '';
+        $startDisp   = isset($row['start_display'])? trim($row['start_display']): '';
+        $endDisp     = isset($row['end_display'])  ? trim($row['end_display'])  : '';
+        $partner     = isset($row['partner'])      ? trim($row['partner'])      : '';
+        $ownerPct    = isset($row['owner_pct'])    ? trim($row['owner_pct'])    : '';
+        $ownUsePct   = isset($row['ownuse_pct'])   ? trim($row['ownuse_pct'])   : '';
+        $grossIncome = isset($row['gross'])        ? trim($row['gross'])        : '';
+
+        $exp = isset($row['expenses']) && is_array($row['expenses'])
+            ? $row['expenses']
+            : [];
+
+        $props[] = [
+            'owner'          => $owner,
+            'address'        => $address,
+            'start_display'  => $startDisp,
+            'end_display'    => $endDisp,
+            'partner'        => $partner,
+            'owner_pct'      => $ownerPct,
+            'own_use_pct'    => $ownUsePct,
+            'gross_income'   => $grossIncome,
+            'exp_mortgage'   => trim($exp['mortgage']     ?? ''),
+            'exp_insurance'  => trim($exp['insurance']    ?? ''),
+            'exp_repairs'    => trim($exp['repairs']      ?? ''),
+            'exp_utilities'  => trim($exp['utilities']    ?? ''),
+            'exp_internet'   => trim($exp['internet']     ?? ''),
+            'exp_propertytax'=> trim($exp['property_tax'] ?? ''),
+            'exp_other'      => trim($exp['other']        ?? ''),
+        ];
     }
 
-    error_log('children_json going into DB: ' . $children_json);
-
-    // ---------- OTHER INCOME ----------
-    $gig_income           = field('gig_income');
-    $gig_expenses_summary = field('gig_expenses_summary');
-    $gig_hst              = field('gig_hst');
-    $hst_number           = field('hst_number');
-    $hst_access           = field('hst_access');
-    $hst_start            = parseDateField('hst_start');
-    $hst_end              = parseDateField('hst_end');
-
-    $sp_gig_income           = field('sp_gig_income');
-    $sp_gig_expenses_summary = field('sp_gig_expenses_summary');
-    $sp_gig_hst              = field('sp_gig_hst');
-    $sp_hst_number           = field('sp_hst_number');
-    $sp_hst_access           = field('sp_hst_access');
-    $sp_hst_start            = parseDateField('sp_hst_start');
-    $sp_hst_end              = parseDateField('sp_hst_end');
-
-    // ---------- RENTAL PROPERTIES (JSON) ----------
-    $rental_props_json = '[]';
-
-    if (!empty($_POST['rental_props']) && is_array($_POST['rental_props'])) {
-
-        $props = [];
-
-        foreach ($_POST['rental_props'] as $idx => $row) {
-            if (!is_array($row)) continue;
-
-            $owner       = isset($row['owner'])        ? trim($row['owner'])        : '';
-            $address     = isset($row['address'])      ? trim($row['address'])      : '';
-            $startDisp   = isset($row['start_display'])? trim($row['start_display']): '';
-            $endDisp     = isset($row['end_display'])  ? trim($row['end_display'])  : '';
-            $partner     = isset($row['partner'])      ? trim($row['partner'])      : '';
-            $ownerPct    = isset($row['owner_pct'])    ? trim($row['owner_pct'])    : '';
-            $ownUsePct   = isset($row['ownuse_pct'])   ? trim($row['ownuse_pct'])   : '';
-            $grossIncome = isset($row['gross'])        ? trim($row['gross'])        : '';
-
-            $exp = isset($row['expenses']) && is_array($row['expenses'])
-                ? $row['expenses']
-                : [];
-
-            $props[] = [
-                'owner'          => $owner,
-                'address'        => $address,
-                'start_display'  => $startDisp,
-                'end_display'    => $endDisp,
-                'partner'        => $partner,
-                'owner_pct'      => $ownerPct,
-                'own_use_pct'    => $ownUsePct,
-                'gross_income'   => $grossIncome,
-                'exp_mortgage'   => trim($exp['mortgage']     ?? ''),
-                'exp_insurance'  => trim($exp['insurance']    ?? ''),
-                'exp_repairs'    => trim($exp['repairs']      ?? ''),
-                'exp_utilities'  => trim($exp['utilities']    ?? ''),
-                'exp_internet'   => trim($exp['internet']     ?? ''),
-                'exp_propertytax'=> trim($exp['property_tax'] ?? ''),
-                'exp_other'      => trim($exp['other']        ?? ''),
-            ];
-        }
-
-        if (!empty($props)) {
-            $rental_props_json = json_encode($props, JSON_UNESCAPED_SLASHES);
-        }
-
-    } else {
-        $rental_props_json = jsonField('rental_props_json', '[]');
+    if (!empty($props)) {
+      $rental_props_json = json_encode($props, JSON_UNESCAPED_SLASHES);
     }
 
-    error_log('DEBUG rental_props (array): ' . (isset($_POST['rental_props'])
-        ? print_r($_POST['rental_props'], true)
-        : 'MISSING'));
-    error_log('FINAL rental_props_json going into DB: ' . $rental_props_json);
+  } else {
+    $rental_props_json = jsonField('rental_props_json', '[]');
+  }
+
+  error_log('DEBUG rental_props (array): ' . (isset($_POST['rental_props'])
+      ? print_r($_POST['rental_props'], true)
+      : 'MISSING'));
+  error_log('FINAL rental_props_json going into DB: ' . $rental_props_json);
 
 
-        /* -----------------------------
-     *  BRANCH CLEANUP LOGIC
-     *  (make DB empty when branch is off)
-     * ----------------------------- */
+    /* -----------------------------
+  *  BRANCH CLEANUP LOGIC
+  *  (make DB empty when branch is off)
+  * ----------------------------- */
 
-    // If FIRST-TIME = yes → keep first-time details, clear prior-customer stuff
-    if ($first_time === 'yes') {
-        $paragon_prior = null;
-        $return_years  = null;
-    }
-    // If FIRST-TIME = no → keep prior-customer stuff, clear entry/world-income details
-    if ($first_time === 'no') {
-        $entry_date    = null;
-        $birth_country = null;
-        $inc_y1 = $inc_y2 = $inc_y3 = null;
-    }
+  // If FIRST-TIME = yes → keep first-time details, clear prior-customer stuff
+  if ($first_time === 'yes') {
+      $paragon_prior = null;
+      $return_years  = null;
+  }
+  // If FIRST-TIME = no → keep prior-customer stuff, clear entry/world-income details
+  if ($first_time === 'no') {
+      $entry_date    = null;
+      $birth_country = null;
+      $inc_y1 = $inc_y2 = $inc_y3 = null;
+  }
 
-    // If entry date is empty, world income should also be empty
-    if (empty($entry_date)) {
-        $inc_y1 = $inc_y2 = $inc_y3 = null;
-    }
+  // If entry date is empty, world income should also be empty
+  if (empty($entry_date)) {
+      $inc_y1 = $inc_y2 = $inc_y3 = null;
+  }
 
-    // MOVED PROVINCE: if answer is NOT "yes", wipe all move fields
-    if ($moved_province !== 'yes') {
-        $moved_date            = null;
-        $prov_from             = null;
-        $prov_to               = null;
-        $moving_expenses_claim = null;
-        $moving_prev_address   = null;
-        $moving_distance       = null;
-    }
+  // MOVED PROVINCE: if answer is NOT "yes", wipe all move fields
+  if ($moved_province !== 'yes') {
+      $moved_date            = null;
+      $prov_from             = null;
+      $prov_to               = null;
+      $moving_expenses_claim = null;
+      $moving_prev_address   = null;
+      $moving_distance       = null;
+  }
 
-    // MOVING EXPENSES: if not claiming, wipe its details
-    if ($moving_expenses_claim !== 'yes') {
-        $moving_prev_address = null;
-        $moving_distance     = null;
-    }
+  // MOVING EXPENSES: if not claiming, wipe its details
+  if ($moving_expenses_claim !== 'yes') {
+      $moving_prev_address = null;
+      $moving_distance     = null;
+  }
 
     // FIRST HOME BUYER: if not first-time buyer, wipe everything in that block
-if ($first_home_buyer !== 'yes') {
+  if ($first_home_buyer !== 'yes') {
     $first_home_purchase = null;
+  }
+
+  // SOLE OWNER: only keep owner_count when they said "no"
+  if ($claim_full !== 'no') {
+      $owner_count = null;
+  }
+
+  // RENT: if not living on rent, wipe claim + addresses JSON
+  if ($onRent !== 'yes') {
+      $claimRent          = null;
+      $rent_addresses_json = '[]';
+  }
+
+  // ---------- FILE UPLOADS ----------
+  $userUploadFolder = __DIR__ . '/../uploads/tax/user_' . $taxId;
+
+  $uploadErrors = [];
+
+  // Applicant uploads
+  $appUploads = [
+      'id_proof'   => [],
+      'tslips'     => [],
+      't2202'      => [],
+      'invest'     => [],
+      't2200'      => [],
+      'exp_summary'=> [],
+      'otherdocs'  => [],
+      'gig'        => [],
+  ];
+
+  $gigFiles = handleMultiUpload('gig_tax_summary', 'app_gig_tax', $userUploadFolder, $uploadErrors);
+  if ($gigFiles) {
+      $appUploads['gig'] = $gigFiles;
+  }
+
+  $idProofFiles = handleMultiUpload('app_id_proof', 'app_id_proof', $userUploadFolder, $uploadErrors);
+  if ($idProofFiles) {
+      $appUploads['id_proof'] = $idProofFiles;
+  }
+
+  $tslipsFiles = handleMultiUpload('app_tslips', 'app_tslips', $userUploadFolder, $uploadErrors);
+  if ($tslipsFiles) {
+      $appUploads['tslips'] = $tslipsFiles;
+  }
+
+  $t2202Files = handleMultiUpload('app_t2202_receipt', 'app_t2202', $userUploadFolder, $uploadErrors);
+  if ($t2202Files) {
+      $appUploads['t2202'] = $t2202Files;
+  }
+
+  $investFiles = handleMultiUpload('app_invest', 'app_invest', $userUploadFolder, $uploadErrors);
+  if ($investFiles) {
+      $appUploads['invest'] = $investFiles;
+  }
+
+  $t2200Files = handleMultiUpload('app_t2200_work', 'app_t2200_work', $userUploadFolder, $uploadErrors);
+  if ($t2200Files) {
+      $appUploads['t2200'] = $t2200Files;
+  }
+
+  $expSummaryFiles = handleMultiUpload('app_exp_summary', 'app_exp_summary', $userUploadFolder, $uploadErrors);
+  if ($expSummaryFiles) {
+      $appUploads['exp_summary'] = $expSummaryFiles;
+  }
+
+  $otherDocsFiles = handleMultiUpload('app_otherdocs', 'app_otherdocs', $userUploadFolder, $uploadErrors);
+  if ($otherDocsFiles) {
+      $appUploads['otherdocs'] = $otherDocsFiles;
+  }
+
+  // Spouse uploads
+  $spouseUploads = [
+      'id_proof'  => [],
+      'tslips'    => [],
+      't2202'     => [],
+      'invest'    => [],
+      'otherdocs' => [],
+      'gig'       => [],
+  ];
+
+  $spGigFiles = handleMultiUpload('sp_gig_tax_summary', 'sp_gig_tax', $userUploadFolder, $uploadErrors);
+  if ($spGigFiles) {
+      $spouseUploads['gig'] = $spGigFiles;
+  }
+
+  $spIdProofFiles = handleMultiUpload('sp_id_proof', 'sp_id_proof', $userUploadFolder, $uploadErrors);
+  if ($spIdProofFiles) {
+      $spouseUploads['id_proof'] = $spIdProofFiles;
+  }
+
+  $spT2202Files = handleMultiUpload('sp_t2202', 'sp_t2202', $userUploadFolder, $uploadErrors);
+  if ($spT2202Files) {
+      $spouseUploads['t2202'] = $spT2202Files;
+  }
+
+  $spTslipsFiles = handleMultiUpload('sp_tslips', 'sp_tslips', $userUploadFolder, $uploadErrors);
+  if ($spTslipsFiles) {
+      $spouseUploads['tslips'] = $spTslipsFiles;
+  }
+
+  $spInvestFiles = handleMultiUpload('sp_invest', 'sp_invest', $userUploadFolder, $uploadErrors);
+  if ($spInvestFiles) {
+      $spouseUploads['invest'] = $spInvestFiles;
+  }
+
+  $spOtherDocsFiles = handleMultiUpload('sp_otherdocs', 'sp_otherdocs', $userUploadFolder, $uploadErrors);
+  if ($spOtherDocsFiles) {
+      $spouseUploads['otherdocs'] = $spOtherDocsFiles;
+  }
+
+  $app_uploads_json    = json_encode($appUploads, JSON_UNESCAPED_SLASHES);
+  $spouse_uploads_json = json_encode($spouseUploads, JSON_UNESCAPED_SLASHES);
+
+  // -------------------------------------------------
+  //  ENCRYPT SENSITIVE FIELDS
+  // -------------------------------------------------
+  $sin_encrypted        = $sin        ? encrypt_decrypt('encrypt', $sin)        : null;
+  $spouse_sin_encrypted = $spouse_sin ? encrypt_decrypt('encrypt', $spouse_sin) : null;
+
+  $phone_encrypted      = $phone_raw  ? encrypt_decrypt('encrypt', $phone_raw)  : null;
+  $email_encrypted      = $email_raw  ? encrypt_decrypt('encrypt', $email_raw)  : null;
+
+  $spouse_phone_encrypted = $spouse_phone ? encrypt_decrypt('encrypt', $spouse_phone) : null;
+  $spouse_email_encrypted = $spouse_email ? encrypt_decrypt('encrypt', $spouse_email) : null;
+
+  // Applicant HST
+  $hst_number_encrypted = $hst_number ? encrypt_decrypt('encrypt', $hst_number) : null;
+  $hst_access_encrypted = $hst_access ? encrypt_decrypt('encrypt', $hst_access) : null;
+  $hst_start_encrypted  = $hst_start  ? encrypt_decrypt('encrypt', $hst_start)  : null;
+  $hst_end_encrypted    = $hst_end    ? encrypt_decrypt('encrypt', $hst_end)    : null;
+
+  // Spouse HST
+  $sp_hst_number_encrypted = $sp_hst_number ? encrypt_decrypt('encrypt', $sp_hst_number) : null;
+  $sp_hst_access_encrypted = $sp_hst_access ? encrypt_decrypt('encrypt', $sp_hst_access) : null;
+  $sp_hst_start_encrypted  = $sp_hst_start  ? encrypt_decrypt('encrypt', $sp_hst_start)  : null;
+  $sp_hst_end_encrypted    = $sp_hst_end    ? encrypt_decrypt('encrypt', $sp_hst_end)    : null;
+
+
+  // -------------------------------------------------
+  //  UPDATE personal_tax
+  // -------------------------------------------------
+  $updateSql = "
+    UPDATE personal_tax SET
+      /* PERSONAL */
+      first_name      = :first_name,
+      middle_name     = :middle_name,
+      last_name       = :last_name,
+      dob             = :dob,
+      gender          = :gender,
+      street          = :street,
+      unit            = :unit,
+      city            = :city,
+      province        = :province,
+      postal          = :postal,
+      country         = :country,
+      phone           = :phone,
+      sin             = :sin,
+      email           = :email,
+
+      /* WELCOME / MARITAL */
+      marital_status       = :marital_status,
+      status_date          = :status_date,
+      status_date_sdw      = :status_date_sdw,
+      spouse_in_canada     = :spouse_in_canada,
+      spouseFile           = :spouseFile,
+      children_flag        = :children_flag,
+
+      /* TAX PANEL */
+      first_time           = :first_time,
+      paragon_prior        = :paragon_prior,
+      return_years         = :return_years,
+
+      entry_date           = :entry_date,
+      birth_country        = :birth_country,
+      inc_y1               = :inc_y1,
+      inc_y2               = :inc_y2,
+      inc_y3               = :inc_y3,
+
+      moved_province       = :moved_province,
+      moved_date           = :moved_date,
+      prov_from            = :prov_from,
+      prov_to              = :prov_to,
+      moving_expenses_claim = :moving_expenses_claim,
+      moving_prev_address  = :moving_prev_address,
+      moving_distance      = :moving_distance,
+
+      first_home_buyer     = :first_home_buyer,
+      first_home_purchase  = :first_home_purchase,
+      claim_full           = :claim_full,
+      owner_count          = :owner_count,
+
+      onRent               = :onRent,
+      claimRent            = :claimRent,
+      rent_addresses_json  = :rent_addresses_json,
+
+      /* SPOUSE PANEL */
+      spouse_first_name        = :spouse_first_name,
+      spouse_middle_name       = :spouse_middle_name,
+      spouse_last_name         = :spouse_last_name,
+      spouse_dob               = :spouse_dob,
+      spouse_in_canada_flag    = :spouse_in_canada_flag,
+      spouse_income_outside_cad = :spouse_income_outside_cad,
+
+      spouse_sin               = :spouse_sin,
+      spouse_address_same      = :spouse_address_same,
+      spouse_street            = :spouse_street,
+      spouse_unit              = :spouse_unit,
+      spouse_city              = :spouse_city,
+      spouse_province          = :spouse_province,
+      spouse_postal            = :spouse_postal,
+      spouse_country           = :spouse_country,
+      spouse_phone             = :spouse_phone,
+      spouse_email             = :spouse_email,
+      spouse_income_cad        = :spouse_income_cad,
+
+      /* SPOUSE TAX */
+      sp_first_time        = :sp_first_time,
+      sp_paragon_prior     = :sp_paragon_prior,
+      sp_return_years      = :sp_return_years,
+      sp_entry_date        = :sp_entry_date,
+      sp_birth_country     = :sp_birth_country,
+      sp_inc_y1            = :sp_inc_y1,
+      sp_inc_y2            = :sp_inc_y2,
+      sp_inc_y3            = :sp_inc_y3,
+      sp_moved_province    = :sp_moved_province,
+      sp_moved_date        = :sp_moved_date,
+      sp_prov_from         = :sp_prov_from,
+      sp_prov_to           = :sp_prov_to,
+
+      /* CHILDREN JSON */
+      children_json        = :children_json,
+
+      /* OTHER INCOME */
+      gig_income           = :gig_income,
+      gig_expenses_summary = :gig_expenses_summary,
+      gig_hst              = :gig_hst,
+      hst_number           = :hst_number,
+      hst_access           = :hst_access,
+      hst_start            = :hst_start,
+      hst_end              = :hst_end,
+
+      sp_gig_income           = :sp_gig_income,
+      sp_gig_expenses_summary = :sp_gig_expenses_summary,
+      sp_gig_hst              = :sp_gig_hst,
+      sp_hst_number           = :sp_hst_number,
+      sp_hst_access           = :sp_hst_access,
+      sp_hst_start            = :sp_hst_start,
+      sp_hst_end              = :sp_hst_end,
+
+      /* RENTAL PROPS JSON */
+      rental_props_json    = :rental_props_json,
+
+      /* UPLOADS JSON */
+      app_uploads_json     = :app_uploads_json,
+      spouse_uploads_json  = :spouse_uploads_json,
+
+      updated_at = NOW()
+    WHERE id = :id
+  ";
+
+  $update = $db->prepare($updateSql);
+
+  $update->execute([
+      // PERSONAL
+      ':first_name'      => $first_name,
+      ':middle_name'     => $middle_name,
+      ':last_name'       => $last_name,
+      ':dob'             => $dob_encrypted,
+      ':gender'          => $gender,
+      ':street'          => $street,
+      ':unit'            => $unit,
+      ':city'            => $city,
+      ':province'        => $province,
+      ':postal'          => $postal,
+      ':country'         => $country,
+      ':phone'           => $phone_encrypted,
+      ':sin'             => $sin_encrypted,
+      ':email'           => $email_encrypted,
+
+      // WELCOME / MARITAL
+      ':marital_status'   => $marital_status,
+      ':status_date'      => $status_date,
+      ':status_date_sdw'  => $status_date_sdw,
+      ':spouse_in_canada' => $spouse_in_canada,
+      ':spouseFile'       => $spouseFile,
+      ':children_flag'    => $children_flag,
+
+      // TAX
+      ':first_time'        => $first_time,
+      ':paragon_prior'     => $paragon_prior,
+      ':return_years'      => $return_years,
+      ':entry_date'        => $entry_date,
+      ':birth_country'     => $birth_country,
+      ':inc_y1'            => $inc_y1,
+      ':inc_y2'            => $inc_y2,
+      ':inc_y3'            => $inc_y3,
+      ':moved_province'    => $moved_province,
+      ':moved_date'        => $moved_date,
+      ':prov_from'         => $prov_from,
+      ':prov_to'           => $prov_to,
+      ':moving_expenses_claim' => $moving_expenses_claim,
+      ':moving_prev_address'   => $moving_prev_address,
+      ':moving_distance'       => $moving_distance,
+      ':first_home_buyer'      => $first_home_buyer,
+      ':first_home_purchase'   => $first_home_purchase,
+      ':claim_full'            => $claim_full,
+      ':owner_count'           => $owner_count,
+      ':onRent'                => $onRent,
+      ':claimRent'             => $claimRent,
+      ':rent_addresses_json'   => $rent_addresses_json,
+
+      // SPOUSE PANEL
+      ':spouse_first_name'         => $spouse_first_name,
+      ':spouse_middle_name'        => $spouse_middle_name,
+      ':spouse_last_name'          => $spouse_last_name,
+      ':spouse_dob'                => $spouse_dob_encrypted,
+      ':spouse_in_canada_flag'     => $spouse_in_canada_flag,
+      ':spouse_income_outside_cad' => $spouse_income_outside_cad,
+      ':spouse_sin'                => $spouse_sin_encrypted,
+      ':spouse_address_same'       => $spouse_address_same,
+      ':spouse_street'             => $spouse_street,
+      ':spouse_unit'               => $spouse_unit,
+      ':spouse_city'               => $spouse_city,
+      ':spouse_province'           => $spouse_province,
+      ':spouse_postal'             => $spouse_postal,
+      ':spouse_country'            => $spouse_country,
+      ':spouse_phone'              => $spouse_phone_encrypted,
+      ':spouse_email'              => $spouse_email_encrypted,
+      ':spouse_income_cad'         => $spouse_income_cad,
+
+      // SPOUSE TAX
+      ':sp_first_time'    => $sp_first_time,
+      ':sp_paragon_prior' => $sp_paragon_prior,
+      ':sp_return_years'  => $sp_return_years,
+      ':sp_entry_date'    => $sp_entry_date,
+      ':sp_birth_country' => $sp_birth_country,
+      ':sp_inc_y1'        => $sp_inc_y1,
+      ':sp_inc_y2'        => $sp_inc_y2,
+      ':sp_inc_y3'        => $sp_inc_y3,
+      ':sp_moved_province'=> $sp_moved_province,
+      ':sp_moved_date'    => $sp_moved_date,
+      ':sp_prov_from'     => $sp_prov_from,
+      ':sp_prov_to'       => $sp_prov_to,
+
+      // CHILDREN
+      ':children_json'    => $children_json,
+
+      // OTHER INCOME
+      ':gig_income'           => $gig_income,
+      ':gig_expenses_summary' => $gig_expenses_summary,
+      ':gig_hst'              => $gig_hst,
+      ':hst_number'           => $hst_number_encrypted,
+      ':hst_access'           => $hst_access_encrypted,
+      ':hst_start'            => $hst_start_encrypted,
+      ':hst_end'              => $hst_end_encrypted,
+      ':sp_gig_income'           => $sp_gig_income,
+      ':sp_gig_expenses_summary' => $sp_gig_expenses_summary,
+      ':sp_gig_hst'              => $sp_gig_hst,
+      ':sp_hst_number'           => $sp_hst_number_encrypted,
+      ':sp_hst_access'           => $sp_hst_access_encrypted,
+      ':sp_hst_start'            => $sp_hst_start_encrypted,
+      ':sp_hst_end'              => $sp_hst_end_encrypted,
+
+      // RENTAL PROPS + UPLOADS
+      ':rental_props_json'   => $rental_props_json,
+      ':app_uploads_json'    => $app_uploads_json,
+      ':spouse_uploads_json' => $spouse_uploads_json,
+
+      ':id' => $taxId
+  ]);
+
+  $emailSent = prepareEmail([
+    'first_name'        => $first_name,
+    'middle_name'       => $middle_name,
+    'last_name'         => $last_name,
+    'dob'               => $dob,
+    'gender'            => $gender,
+    'email_raw'         => $email_raw,
+    'phone_raw'         => $phone_raw,
+    'marital_status'    => $marital_status,
+    'status_date'       => $status_date,
+    'status_date_sdw'   => $status_date_sdw,
+    'spouse_in_canada'  => $spouse_in_canada,
+    'children_json'     => $children_json,
+    'rent_addresses_json' => $rent_addresses_json,
+  ], $appUploads, $spouseUploads);
+
+  $_SESSION['show_confirm_panel'] = true;
+  $_SESSION['email_sent'] = $emailSent;
+  
+  header('Location: ' . $_SERVER['REQUEST_URI']);
+  exit();
 }
 
-    // SOLE OWNER: only keep owner_count when they said "no"
-    if ($claim_full !== 'no') {
-        $owner_count = null;
-    }
-
-    // RENT: if not living on rent, wipe claim + addresses JSON
-    if ($onRent !== 'yes') {
-        $claimRent          = null;
-        $rent_addresses_json = '[]';
-    }
-
-    // ---------- FILE UPLOADS ----------
-    $userUploadFolder = __DIR__ . '/../uploads/tax/user_' . $taxId;
-
-    $uploadErrors = [];
-
-    // Applicant uploads
-    $appUploads = [
-        'id_proof'   => [],
-        'tslips'     => [],
-        't2202'      => [],
-        'invest'     => [],
-        't2200'      => [],
-        'exp_summary'=> [],
-        'otherdocs'  => [],
-        'gig'        => [],
-    ];
-
-    $gigFiles = handleMultiUpload('gig_tax_summary', 'app_gig_tax', $userUploadFolder, $uploadErrors);
-    if ($gigFiles) {
-        $appUploads['gig'] = $gigFiles;
-    }
-
-    $idProofFiles = handleMultiUpload('app_id_proof', 'app_id_proof', $userUploadFolder, $uploadErrors);
-    if ($idProofFiles) {
-        $appUploads['id_proof'] = $idProofFiles;
-    }
-
-    $tslipsFiles = handleMultiUpload('app_tslips', 'app_tslips', $userUploadFolder, $uploadErrors);
-    if ($tslipsFiles) {
-        $appUploads['tslips'] = $tslipsFiles;
-    }
-
-    $t2202Files = handleMultiUpload('app_t2202_receipt', 'app_t2202', $userUploadFolder, $uploadErrors);
-    if ($t2202Files) {
-        $appUploads['t2202'] = $t2202Files;
-    }
-
-    $investFiles = handleMultiUpload('app_invest', 'app_invest', $userUploadFolder, $uploadErrors);
-    if ($investFiles) {
-        $appUploads['invest'] = $investFiles;
-    }
-
-    $t2200Files = handleMultiUpload('app_t2200_work', 'app_t2200_work', $userUploadFolder, $uploadErrors);
-    if ($t2200Files) {
-        $appUploads['t2200'] = $t2200Files;
-    }
-
-    $expSummaryFiles = handleMultiUpload('app_exp_summary', 'app_exp_summary', $userUploadFolder, $uploadErrors);
-    if ($expSummaryFiles) {
-        $appUploads['exp_summary'] = $expSummaryFiles;
-    }
-
-    $otherDocsFiles = handleMultiUpload('app_otherdocs', 'app_otherdocs', $userUploadFolder, $uploadErrors);
-    if ($otherDocsFiles) {
-        $appUploads['otherdocs'] = $otherDocsFiles;
-    }
-
-    // Spouse uploads
-    $spouseUploads = [
-        'id_proof'  => [],
-        'tslips'    => [],
-        't2202'     => [],
-        'invest'    => [],
-        'otherdocs' => [],
-        'gig'       => [],
-    ];
-
-    $spGigFiles = handleMultiUpload('sp_gig_tax_summary', 'sp_gig_tax', $userUploadFolder, $uploadErrors);
-    if ($spGigFiles) {
-        $spouseUploads['gig'] = $spGigFiles;
-    }
-
-    $spIdProofFiles = handleMultiUpload('sp_id_proof', 'sp_id_proof', $userUploadFolder, $uploadErrors);
-    if ($spIdProofFiles) {
-        $spouseUploads['id_proof'] = $spIdProofFiles;
-    }
-
-    $spT2202Files = handleMultiUpload('sp_t2202', 'sp_t2202', $userUploadFolder, $uploadErrors);
-    if ($spT2202Files) {
-        $spouseUploads['t2202'] = $spT2202Files;
-    }
-
-    $spTslipsFiles = handleMultiUpload('sp_tslips', 'sp_tslips', $userUploadFolder, $uploadErrors);
-    if ($spTslipsFiles) {
-        $spouseUploads['tslips'] = $spTslipsFiles;
-    }
-
-    $spInvestFiles = handleMultiUpload('sp_invest', 'sp_invest', $userUploadFolder, $uploadErrors);
-    if ($spInvestFiles) {
-        $spouseUploads['invest'] = $spInvestFiles;
-    }
-
-    $spOtherDocsFiles = handleMultiUpload('sp_otherdocs', 'sp_otherdocs', $userUploadFolder, $uploadErrors);
-    if ($spOtherDocsFiles) {
-        $spouseUploads['otherdocs'] = $spOtherDocsFiles;
-    }
-
-    $app_uploads_json    = json_encode($appUploads, JSON_UNESCAPED_SLASHES);
-    $spouse_uploads_json = json_encode($spouseUploads, JSON_UNESCAPED_SLASHES);
-
-    // -------------------------------------------------
-    //  ENCRYPT SENSITIVE FIELDS
-    // -------------------------------------------------
-    $sin_encrypted        = $sin        ? encrypt_decrypt('encrypt', $sin)        : null;
-    $spouse_sin_encrypted = $spouse_sin ? encrypt_decrypt('encrypt', $spouse_sin) : null;
-
-    $phone_encrypted      = $phone_raw  ? encrypt_decrypt('encrypt', $phone_raw)  : null;
-    $email_encrypted      = $email_raw  ? encrypt_decrypt('encrypt', $email_raw)  : null;
-
-    $spouse_phone_encrypted = $spouse_phone ? encrypt_decrypt('encrypt', $spouse_phone) : null;
-    $spouse_email_encrypted = $spouse_email ? encrypt_decrypt('encrypt', $spouse_email) : null;
-
-    // Applicant HST
-    $hst_number_encrypted = $hst_number ? encrypt_decrypt('encrypt', $hst_number) : null;
-    $hst_access_encrypted = $hst_access ? encrypt_decrypt('encrypt', $hst_access) : null;
-    $hst_start_encrypted  = $hst_start  ? encrypt_decrypt('encrypt', $hst_start)  : null;
-    $hst_end_encrypted    = $hst_end    ? encrypt_decrypt('encrypt', $hst_end)    : null;
-
-    // Spouse HST
-    $sp_hst_number_encrypted = $sp_hst_number ? encrypt_decrypt('encrypt', $sp_hst_number) : null;
-    $sp_hst_access_encrypted = $sp_hst_access ? encrypt_decrypt('encrypt', $sp_hst_access) : null;
-    $sp_hst_start_encrypted  = $sp_hst_start  ? encrypt_decrypt('encrypt', $sp_hst_start)  : null;
-    $sp_hst_end_encrypted    = $sp_hst_end    ? encrypt_decrypt('encrypt', $sp_hst_end)    : null;
-
-
-    // -------------------------------------------------
-    //  UPDATE personal_tax
-    // -------------------------------------------------
-    $updateSql = "
-      UPDATE personal_tax SET
-        /* PERSONAL */
-        first_name      = :first_name,
-        middle_name     = :middle_name,
-        last_name       = :last_name,
-        dob             = :dob,
-        gender          = :gender,
-        street          = :street,
-        unit            = :unit,
-        city            = :city,
-        province        = :province,
-        postal          = :postal,
-        country         = :country,
-        phone           = :phone,
-        sin             = :sin,
-        email           = :email,
-
-        /* WELCOME / MARITAL */
-        marital_status       = :marital_status,
-        status_date          = :status_date,
-        status_date_sdw      = :status_date_sdw,
-        spouse_in_canada     = :spouse_in_canada,
-        spouseFile           = :spouseFile,
-        children_flag        = :children_flag,
-
-        /* TAX PANEL */
-        first_time           = :first_time,
-        paragon_prior        = :paragon_prior,
-        return_years         = :return_years,
-
-        entry_date           = :entry_date,
-        birth_country        = :birth_country,
-        inc_y1               = :inc_y1,
-        inc_y2               = :inc_y2,
-        inc_y3               = :inc_y3,
-
-        moved_province       = :moved_province,
-        moved_date           = :moved_date,
-        prov_from            = :prov_from,
-        prov_to              = :prov_to,
-        moving_expenses_claim = :moving_expenses_claim,
-        moving_prev_address  = :moving_prev_address,
-        moving_distance      = :moving_distance,
-
-        first_home_buyer     = :first_home_buyer,
-        first_home_purchase  = :first_home_purchase,
-        claim_full           = :claim_full,
-        owner_count          = :owner_count,
-
-        onRent               = :onRent,
-        claimRent            = :claimRent,
-        rent_addresses_json  = :rent_addresses_json,
-
-        /* SPOUSE PANEL */
-        spouse_first_name        = :spouse_first_name,
-        spouse_middle_name       = :spouse_middle_name,
-        spouse_last_name         = :spouse_last_name,
-        spouse_dob               = :spouse_dob,
-        spouse_in_canada_flag    = :spouse_in_canada_flag,
-        spouse_income_outside_cad = :spouse_income_outside_cad,
-
-        spouse_sin               = :spouse_sin,
-        spouse_address_same      = :spouse_address_same,
-        spouse_street            = :spouse_street,
-        spouse_unit              = :spouse_unit,
-        spouse_city              = :spouse_city,
-        spouse_province          = :spouse_province,
-        spouse_postal            = :spouse_postal,
-        spouse_country           = :spouse_country,
-        spouse_phone             = :spouse_phone,
-        spouse_email             = :spouse_email,
-        spouse_income_cad        = :spouse_income_cad,
-
-        /* SPOUSE TAX */
-        sp_first_time        = :sp_first_time,
-        sp_paragon_prior     = :sp_paragon_prior,
-        sp_return_years      = :sp_return_years,
-        sp_entry_date        = :sp_entry_date,
-        sp_birth_country     = :sp_birth_country,
-        sp_inc_y1            = :sp_inc_y1,
-        sp_inc_y2            = :sp_inc_y2,
-        sp_inc_y3            = :sp_inc_y3,
-        sp_moved_province    = :sp_moved_province,
-        sp_moved_date        = :sp_moved_date,
-        sp_prov_from         = :sp_prov_from,
-        sp_prov_to           = :sp_prov_to,
-
-        /* CHILDREN JSON */
-        children_json        = :children_json,
-
-        /* OTHER INCOME */
-        gig_income           = :gig_income,
-        gig_expenses_summary = :gig_expenses_summary,
-        gig_hst              = :gig_hst,
-        hst_number           = :hst_number,
-        hst_access           = :hst_access,
-        hst_start            = :hst_start,
-        hst_end              = :hst_end,
-
-        sp_gig_income           = :sp_gig_income,
-        sp_gig_expenses_summary = :sp_gig_expenses_summary,
-        sp_gig_hst              = :sp_gig_hst,
-        sp_hst_number           = :sp_hst_number,
-        sp_hst_access           = :sp_hst_access,
-        sp_hst_start            = :sp_hst_start,
-        sp_hst_end              = :sp_hst_end,
-
-        /* RENTAL PROPS JSON */
-        rental_props_json    = :rental_props_json,
-
-        /* UPLOADS JSON */
-        app_uploads_json     = :app_uploads_json,
-        spouse_uploads_json  = :spouse_uploads_json,
-
-        updated_at = NOW()
-      WHERE id = :id
-    ";
-
-    $update = $db->prepare($updateSql);
-
-    $update->execute([
-        // PERSONAL
-        ':first_name'      => $first_name,
-        ':middle_name'     => $middle_name,
-        ':last_name'       => $last_name,
-        ':dob'             => $dob_encrypted,
-        ':gender'          => $gender,
-        ':street'          => $street,
-        ':unit'            => $unit,
-        ':city'            => $city,
-        ':province'        => $province,
-        ':postal'          => $postal,
-        ':country'         => $country,
-        ':phone'           => $phone_encrypted,
-        ':sin'             => $sin_encrypted,
-        ':email'           => $email_encrypted,
-
-        // WELCOME / MARITAL
-        ':marital_status'   => $marital_status,
-        ':status_date'      => $status_date,
-        ':status_date_sdw'  => $status_date_sdw,
-        ':spouse_in_canada' => $spouse_in_canada,
-        ':spouseFile'       => $spouseFile,
-        ':children_flag'    => $children_flag,
-
-        // TAX
-        ':first_time'        => $first_time,
-        ':paragon_prior'     => $paragon_prior,
-        ':return_years'      => $return_years,
-        ':entry_date'        => $entry_date,
-        ':birth_country'     => $birth_country,
-        ':inc_y1'            => $inc_y1,
-        ':inc_y2'            => $inc_y2,
-        ':inc_y3'            => $inc_y3,
-        ':moved_province'    => $moved_province,
-        ':moved_date'        => $moved_date,
-        ':prov_from'         => $prov_from,
-        ':prov_to'           => $prov_to,
-        ':moving_expenses_claim' => $moving_expenses_claim,
-        ':moving_prev_address'   => $moving_prev_address,
-        ':moving_distance'       => $moving_distance,
-        ':first_home_buyer'      => $first_home_buyer,
-        ':first_home_purchase'   => $first_home_purchase,
-        ':claim_full'            => $claim_full,
-        ':owner_count'           => $owner_count,
-        ':onRent'                => $onRent,
-        ':claimRent'             => $claimRent,
-        ':rent_addresses_json'   => $rent_addresses_json,
-
-        // SPOUSE PANEL
-        ':spouse_first_name'         => $spouse_first_name,
-        ':spouse_middle_name'        => $spouse_middle_name,
-        ':spouse_last_name'          => $spouse_last_name,
-        ':spouse_dob'                => $spouse_dob_encrypted,
-        ':spouse_in_canada_flag'     => $spouse_in_canada_flag,
-        ':spouse_income_outside_cad' => $spouse_income_outside_cad,
-        ':spouse_sin'                => $spouse_sin_encrypted,
-        ':spouse_address_same'       => $spouse_address_same,
-        ':spouse_street'             => $spouse_street,
-        ':spouse_unit'               => $spouse_unit,
-        ':spouse_city'               => $spouse_city,
-        ':spouse_province'           => $spouse_province,
-        ':spouse_postal'             => $spouse_postal,
-        ':spouse_country'            => $spouse_country,
-        ':spouse_phone'              => $spouse_phone_encrypted,
-        ':spouse_email'              => $spouse_email_encrypted,
-        ':spouse_income_cad'         => $spouse_income_cad,
-
-        // SPOUSE TAX
-        ':sp_first_time'    => $sp_first_time,
-        ':sp_paragon_prior' => $sp_paragon_prior,
-        ':sp_return_years'  => $sp_return_years,
-        ':sp_entry_date'    => $sp_entry_date,
-        ':sp_birth_country' => $sp_birth_country,
-        ':sp_inc_y1'        => $sp_inc_y1,
-        ':sp_inc_y2'        => $sp_inc_y2,
-        ':sp_inc_y3'        => $sp_inc_y3,
-        ':sp_moved_province'=> $sp_moved_province,
-        ':sp_moved_date'    => $sp_moved_date,
-        ':sp_prov_from'     => $sp_prov_from,
-        ':sp_prov_to'       => $sp_prov_to,
-
-        // CHILDREN
-        ':children_json'    => $children_json,
-
-        // OTHER INCOME
-        ':gig_income'           => $gig_income,
-        ':gig_expenses_summary' => $gig_expenses_summary,
-        ':gig_hst'              => $gig_hst,
-        ':hst_number'           => $hst_number_encrypted,
-        ':hst_access'           => $hst_access_encrypted,
-        ':hst_start'            => $hst_start_encrypted,
-        ':hst_end'              => $hst_end_encrypted,
-        ':sp_gig_income'           => $sp_gig_income,
-        ':sp_gig_expenses_summary' => $sp_gig_expenses_summary,
-        ':sp_gig_hst'              => $sp_gig_hst,
-        ':sp_hst_number'           => $sp_hst_number_encrypted,
-        ':sp_hst_access'           => $sp_hst_access_encrypted,
-        ':sp_hst_start'            => $sp_hst_start_encrypted,
-        ':sp_hst_end'              => $sp_hst_end_encrypted,
-
-        // RENTAL PROPS + UPLOADS
-        ':rental_props_json'   => $rental_props_json,
-        ':app_uploads_json'    => $app_uploads_json,
-        ':spouse_uploads_json' => $spouse_uploads_json,
-
-        ':id' => $taxId
-    ]);
-
-    $emailSent = prepareEmail([
-      'first_name'        => $first_name,
-      'middle_name'       => $middle_name,
-      'last_name'         => $last_name,
-      'dob'               => $dob,
-      'gender'            => $gender,
-      'email_raw'         => $email_raw,
-      'phone_raw'         => $phone_raw,
-      'marital_status'    => $marital_status,
-      'status_date'       => $status_date,
-      'status_date_sdw'   => $status_date_sdw,
-      'spouse_in_canada'  => $spouse_in_canada,
-      'children_json'     => $children_json,
-      'rent_addresses_json' => $rent_addresses_json,
-    ]);
-
-    $_SESSION['show_confirm_panel'] = true;
-    $_SESSION['email_sent'] = $emailSent;
+function prepareEmail(array $data, array $appUploads = [], array $spouseUploads = []) {
+    // DEBUG: Write to file
+    debugLog("===== PREPARE EMAIL CALLED =====");
+    debugLog("appUploads received:", $appUploads);
+    debugLog("spouseUploads received:", $spouseUploads);
     
-    header('Location: ' . $_SERVER['REQUEST_URI']);
-    exit();
-}
-
-function prepareEmail(array $data) {
+    // Also keep error_log
+    error_log("===== PREPARE EMAIL DEBUG =====");
+    error_log("appUploads: " . print_r($appUploads, true));
+    error_log("spouseUploads: " . print_r($spouseUploads, true));
+    
     // Extract form data with defaults
     $first_name       = $data['first_name'] ?? '';
     $middle_name      = $data['middle_name'] ?? '';
@@ -1068,6 +1074,10 @@ function prepareEmail(array $data) {
         $rentRows = "<tr><td colspan='5'>No rental addresses</td></tr>";
     }
 
+    // Determine status value
+    $status_value = $status_date ?: $status_date_sdw;
+
+    // Build complete HTML email
     // Determine status value
     $status_value = $status_date ?: $status_date_sdw;
 
@@ -1155,7 +1165,101 @@ function prepareEmail(array $data) {
     $recipients = ['lance.canadianwebdesigns@gmail.com'];
     $subject    = "New Tax Form Submission - $first_name $last_name";
 
-    $result = sendEmail($recipients, $subject, $message);
+    // Build attachments array
+    $attachments = [];
+
+    // Merge applicant + spouse uploads into one structure
+    $allUploads = [
+        'Applicant' => $appUploads,
+        'Spouse'    => $spouseUploads
+    ];
+
+    foreach ($allUploads as $label => $uploads) {
+
+        debugLog("Processing {$label} uploads...");
+        error_log("Processing {$label} uploads...");
+
+        foreach ($uploads as $category => $files) {
+
+            debugLog("{$label} Category: {$category}", $files);
+            error_log("Category: {$category}, Files: " . print_r($files, true));
+
+            if (empty($files) || !is_array($files)) {
+                continue;
+            }
+
+            foreach ($files as $fileInfo) {
+
+                // Get the raw path from either 'stored' or 'path'
+                $rawPath = $fileInfo['stored'] ?? $fileInfo['path'] ?? '';
+                
+                if (empty($rawPath)) {
+                    debugLog("✗ {$label} - No path found in fileInfo");
+                    error_log("{$label} - No path found in fileInfo");
+                    continue;
+                }
+
+                // First normalize separators to forward slashes
+                $normalizedPath = str_replace('\\', '/', $rawPath);
+                
+                // Use realpath to properly resolve ../ references
+                // realpath returns false if file doesn't exist, so we check that
+                $resolvedPath = realpath($normalizedPath);
+                
+                // If realpath fails, try the original path as-is
+                if ($resolvedPath === false) {
+                    $resolvedPath = $normalizedPath;
+                }
+                
+                // Convert back to forward slashes (realpath on Windows returns backslashes)
+                $filePath = str_replace('\\', '/', $resolvedPath);
+                
+                debugLog("Raw path: {$rawPath}");
+                debugLog("Normalized path: {$normalizedPath}");
+                debugLog("Resolved path: {$filePath}");
+                error_log("Raw: {$rawPath}, Normalized: {$normalizedPath}, Resolved: {$filePath}");
+
+                // Derive filename - sanitize by removing all special characters
+                $originalName = $fileInfo['original'] ?? basename($filePath);
+                // Remove or replace special characters that can cause email issues
+                $fileName = $category . '_' . preg_replace('/[^A-Za-z0-9._-]/', '_', $originalName);
+
+                debugLog("File name: {$fileName}");
+                debugLog("File exists: " . (file_exists($filePath) ? 'YES' : 'NO'));
+                error_log("File name: {$fileName}, Exists: " . (file_exists($filePath) ? 'YES' : 'NO'));
+
+                if (file_exists($filePath)) {
+
+                    $attachments[] = [
+                        'path' => $filePath,
+                        'name' => $fileName
+                    ];
+
+                    debugLog("✓ Added {$label} attachment: {$filePath}");
+                    error_log("Added {$label} attachment: {$filePath}");
+
+                } else {
+
+                    debugLog("✗ {$label} file NOT FOUND: {$filePath}");
+                    error_log("{$label} file not found: {$filePath}");
+
+                }
+            }
+        }
+    }
+
+    debugLog("===== FINAL ATTACHMENTS ARRAY =====", $attachments);
+    debugLog("Total attachments prepared: " . count($attachments));
+    
+    error_log("Total attachments prepared: " . count($attachments));
+    error_log("Attachments array: " . print_r($attachments, true));
+    error_log("===== END PREPARE EMAIL DEBUG =====");
+
+    // Send email with attachments
+    // $result = sendEmail($recipients, $subject, $message, $attachments); // Not working $subject
+    $result = sendEmail($recipients, "NewTaxFormSubmission", $message, $attachments);
+    // $result = sendEmail($recipients, "TESTTT",  $message, []);
+    error_log("sendEmail returned: " . print_r($result, true));
 
     if ($result === true) {
         $_SESSION['email_sent_success'] = true;
@@ -1167,7 +1271,6 @@ function prepareEmail(array $data) {
 
     return $result;
 }
-
 // ---------------------------------------------------------
 //  RE-LOAD AFTER SAVE (or first load)
 // ---------------------------------------------------------
