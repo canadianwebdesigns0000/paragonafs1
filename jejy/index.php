@@ -1389,7 +1389,7 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
 
                     $attachments[] = [
                         'path' => $filePath,
-                        'name' => $fileName
+                        'name' => $label . '_' . $fileName
                     ];
 
                     debugLog("✓ Added {$label} attachment: {$filePath}");
