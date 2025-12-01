@@ -496,6 +496,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $sp_hst_start            = parseDateField('sp_hst_start');
   $sp_hst_end              = parseDateField('sp_hst_end');
 
+  // ---------- OTHERS ----------------
+  $yourMessageToUs = field('other_message');
+
   // ---------- RENTAL PROPERTIES (JSON) ----------
   $rental_props_json = '[]';
 
@@ -855,7 +858,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   $update = $db->prepare($updateSql);
 
-  $update->execute([
+  $dataToUpdate = [
       // PERSONAL
       ':first_name'      => $first_name,
       ':middle_name'     => $middle_name,
@@ -962,7 +965,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       ':spouse_uploads_json' => $spouse_uploads_json,
 
       ':id' => $taxId
-  ]);
+  ];  
+
+  debugLog("Initial Data: " . print_r($dataToUpdate, true));
+
+  $update->execute($dataToUpdate);
 
   $emailSent = prepareEmail([
     'first_name'        => $first_name,
@@ -971,19 +978,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     'unit'              => $unit,
     'street'            => $street,
     'city'              => $city,
-    // 'province'          => $province,
     'postal'            => $postal,
     'country'           => $country,
+    'province'    => $province,
     'dob'               => $dob,
-    'sin'               => $sin_encrypted,
+    'sin'               => $sin,
     'phone_raw'         => $phone_raw,
     'email_raw'         => $email_raw,
-    'moved_province'    => $movedProvince,
+    'moved_province'    => $moved_province,
     'first_home_buyer'  => $first_home_buyer,
     'paragonPrior'      => $paragonPrior,
     'spYears'           => $spYears,
     'fthb'              => $fthb,
     'first_home_purchase'=> $first_home_purchase,
+    'first_home_purchase_date' => $first_home_purchase_date,
     'marital_status'    => $marital_status,
     'spouse_first_name' => $spouse_first_name,
     'spouse_last_name'  => $spouse_last_name,
@@ -995,6 +1003,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     'spouse_sin'        => $spouse_sin,
     'spouse_email'      => $spouse_email,
     'spouse_phone'      => $spouse_phone,
+    'spouse_address_same' => $spouse_address_same,
     'spouseFileVal'     => $spouseFile,
     'spouse_annual_income' => $spouse_income_cad,
     //Is this the first time your spouse filing tax
@@ -1002,6 +1011,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     'childrenFlag'      => $childrenFlag,
     'children_json'     => $children_json,
     'rent_addresses_json' => $rent_addresses_json,
+    'yourMessageToUs'  => $yourMessageToUs,
   ], $appUploads, $spouseUploads);
 
   $_SESSION['show_confirm_panel'] = true;
@@ -1030,6 +1040,7 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
     $street           = $data['street'] ?? '';
     $city             = $data['city'] ?? '';
     $postal           = $data['postal'] ?? '';
+    $province         = $data['province'] ?? '';
     $country          = $data['country'] ?? '';
     $dob              = $data['dob'] ?? '';
     $sin              = $data['sin'] ?? '';
@@ -1041,6 +1052,7 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
     $spYears          = $data['spYears'] ?? '';
     $fthb             = $data['fthb'] ?? '';
     $first_home_purchase = $data['first_home_purchase'] ?? '';
+    $first_home_purchase_date = $data['first_home_purchase_date'] ?? '';
     $marital_status   = $data['marital_status'] ?? '';
     $spouse_first_name = $data['spouse_first_name'] ?? '';
     $spouse_last_name  = $data['spouse_last_name'] ?? '';
@@ -1057,6 +1069,8 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
     $spouse_anual_income = $data['spouse_annual_income'] ?? '';
     $children_json    = $data['children_json'] ?? '[]';
     $rent_addresses_json = $data['rent_addresses_json'] ?? '';
+    $childrenFlag     = $data['childrenFlag'] ?? '';
+    $yourMessageToUs  = $data['yourMessageToUs'] ?? '';
 
     // Decode JSON data
     $childrenArray = json_decode($children_json, true) ?: [];
@@ -1166,7 +1180,7 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
             <td colspan='4'>$gender</td>
         </tr>
         <tr>
-            <th>Apartmen/Unit #</th>
+            <th>Apartment/Unit #</th>
             <td colspan='4'>$unit</td>
         </tr>
         <tr>
@@ -1179,7 +1193,7 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
         </tr>
         <tr>
             <th>State/Province</th>
-            <td colspan='4'></td>
+            <td colspan='4'>$province</td>
         </tr>
         <tr>
             <th>Postal Code</th>
@@ -1228,7 +1242,7 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
         </tr>
         <tr>
             <th>When did you purchase your first home?</th>
-            <td colspan='4'></td>
+            <td colspan='4'>$first_home_purchase_date</td>
         </tr>
 
         <tr>
@@ -1252,18 +1266,39 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
         </tr>
         <tr>
             <th>Date of Marriage</th>
-            <td colspan='4'>$spouse_dob</td>
+            <td colspan='4'>$date_of_marriage</td>
         </tr>
         <tr>
             <th>Residing in Canada</th>
+            <td colspan='4'>$spouse_in_canada</td>
+        </tr>
+        <tr>
+            <th>Spouse SIN</th>
+            <td colspan='4'>$spouse_sin</td>
+        </tr>
+        <tr>
+            <th>Spouse Email Address</th>
+            <td colspan='4'>$spouse_email</td>
+        </tr>
+        <tr>
+            <th>Spouse Phone Number</th>
+            <td colspan='4'>$spouse_phone</td>
+        </tr>
+
+        <tr>
+            <th>Does your spouse want to file taxes?</th>
             <td colspan='4'></td>
         </tr>
         <tr>
-            <th>Spousal Annual Income outside Canada (Converted to CAD)</th>
-            <td colspan='4'>$spouse_anual_income</td>
+            <th>Is this the first time your spouse filing tax?</th>
+            <td colspan='4'></td>
         </tr>
         <tr>
-            <th>Do you have child</th>
+            <th>Did your Spouse file earlier with Paragon Tax Services?</th>
+            <td colspan='4'></td>
+        </tr>
+        <tr>
+            <th>Which years your Spouse want to file tax returns?</th>
             <td colspan='4'></td>
         </tr>
 
@@ -1276,6 +1311,11 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
             <th colspan='5' style='background:#f2f2f2;'>Rental Addresses</th>
         </tr>
         $rentRows
+
+        <tr>
+            <th>Your Message For Us</th>
+            <td colspan='4'>$yourMessageToUs</td>
+        </tr>
     </table>
 </body>
 </html>";
@@ -11847,7 +11887,9 @@ document.addEventListener('DOMContentLoaded', function () {
       <div class="qs-block"> 
      <label class="qs-label">Your Message For Us?</label>
       <div class="fi-group fi-float fi-span2"> 
-     <textarea id="other_message" name="other_message" class="fi-input" rows="6" placeholder=" "></textarea> 
+     <textarea id="other_message" name="other_message" class="fi-input" rows="6" placeholder=" ">
+      <?= htmlspecialchars($yourMessageToUs ?? '') ?>
+     </textarea> 
         </div>
           </div>
 
