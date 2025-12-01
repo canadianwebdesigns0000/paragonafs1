@@ -28,7 +28,7 @@ function sendEmail($to = [], $subject = '', $body = '', $attachments = []) {
         $mail->Timeout = 300; // 5 minutes timeout for large attachments
 
         // Sender & recipient
-        $mail->setFrom('testemail@mnd.uvd.mybluehost.me', 'Lance');
+        $mail->setFrom('testemail@mnd.uvd.mybluehost.me', 'Paragon AFS');
         
         foreach ($to as $recipient) {
             $mail->addAddress($recipient);

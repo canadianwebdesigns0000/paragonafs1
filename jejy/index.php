@@ -1020,6 +1020,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     'first_time'       => $first_time,
     'sp_first_time'    => $sp_first_time,
     'paragonPrior' => $paragonPrior,
+    'gig_income' => $gig_income,
+    'gig_expenses_summary' => $gig_expenses_summary,
+    'gig_hst'              => $gig_hst,
+    'sp_gig_income' => $sp_gig_income,
+    'sp_gig_expenses_summary' => $sp_gig_expenses_summary,
+    'sp_gig_hst'              => $sp_gig_hst,
   ], $appUploads, $spouseUploads);
 
   $_SESSION['show_confirm_panel'] = true;
@@ -1082,6 +1088,12 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
     $fthb              = $data['fthb'] ?? 'N/A';
     $first_home_purchase = $data['first_home_purchase'] ?? 'N/A';
     $paragonPrior    = $data['paragonPrior'] ?? 'N/A';
+    $gig_income      = $data['gig_income'] ?? 'No';
+    $gig_expenses_summary = $data['gig_expenses_summary'] ?? 'N/A';
+    $gig_hst             = $data['gig_hst'] ?? 'N/A';
+    $sp_gig_income      = $data['sp_gig_income'] ?? 'No';
+    $sp_gig_expenses_summary = $data['sp_gig_expenses_summary'] ?? 'N/A';
+    $sp_gig_hst             = $data['sp_gig_hst'] ?? 'N/A';
 
     // Decode JSON data
     $childrenArray = json_decode($children_json, true) ?: [];
@@ -1093,7 +1105,7 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
         // Header row for children table
         $childrenRows .= "<tr>
             <th>#</th>
-            <th>Name</th>
+            <th colspan='2'>Name</th>
             <th>Date of Birth</th>
             <th>In Canada</th>
         </tr>";
@@ -1105,13 +1117,13 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
 
             $childrenRows .= "<tr>
                 <td>" . ($idx + 1) . "</td>
-                <td>{$childName}</td>
+                <td colspan='2'>{$childName}</td>
                 <td>{$childDob}</td>
                 <td>{$childInCanada}</td>
             </tr>";
         }
     } else {
-        $childrenRows = "<tr><td colspan='5'>No children data</td></tr>";
+        $childrenRows = "<tr><td colspan='5' style='text-align: center;'>No children data</td></tr>";
     }
 
     // Build rental addresses rows
@@ -1141,7 +1153,7 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
             </tr>";
         }
     } else {
-        $rentRows = "<tr><td colspan='5'>No rental addresses</td></tr>";
+        $rentRows = "<tr><td colspan='5' style='text-align: center;'>No rental addresses</td></tr>";
     }
 
     // Determine status value
@@ -1255,9 +1267,13 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
             <th>When did you purchase your first home?</th>
             <td colspan='4'>$first_home_purchase</td>
         </tr>
+        <tr>
+            <th>Do you have income from Uber/Skip/Lyft/Doordash etc.?</th>
+            <td colspan='4'>$gig_income - $gig_expenses_summary</td>
+        </tr>
 
         <tr>
-            <th colspan='5' style='background:#f2f2f2;'>Marital Information</th>
+            <th colspan='5' style='background:#f2f2f2; text-align: center;'>Marital Information</th>
         </tr>
         <tr>
             <th>Marital Status</th>
@@ -1312,17 +1328,24 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
             <th>Which years your Spouse want to file tax returns?</th>
             <td colspan='4'>$sp_return_years</td>
         </tr>
+        <tr>
+            <th>Does your spouse have income from Uber/Skip/Lyft/Doordash etc.?</th>
+            <td colspan='4'>$sp_gig_income - $sp_gig_expenses_summary</td>
+        </tr>
 
         <tr>
-            <th colspan='5' style='background:#f2f2f2;'>Children Information</th>
+            <th colspan='5' style='background:#f2f2f2; text-align: center;'>Children Information</th>
         </tr>
         $childrenRows
         
         <tr>
-            <th colspan='5' style='background:#f2f2f2;'>Rental Addresses</th>
+            <th colspan='5' style='background:#f2f2f2;  text-align: center;'>Rental Addresses</th>
         </tr>
         $rentRows
 
+        <tr>
+            <th colspan='5' style='background:#f2f2f2; text-align: center;'>Others</th>
+        </tr>
         <tr>
             <th>Your Message For Us</th>
             <td colspan='4'>$yourMessageToUs</td>
@@ -1331,7 +1354,7 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
 </body>
 </html>";
 
-    $recipients = ['lance.canadianwebdesigns@gmail.com'];
+    $recipients = [$email_raw, 'dev@canadianwebdesigns.com'];
 
     // Build attachments array
     $attachments = [];
