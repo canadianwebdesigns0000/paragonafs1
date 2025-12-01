@@ -966,16 +966,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   $emailSent = prepareEmail([
     'first_name'        => $first_name,
-    'middle_name'       => $middle_name,
     'last_name'         => $last_name,
-    'dob'               => $dob,
     'gender'            => $gender,
-    'email_raw'         => $email_raw,
+    'unit'              => $unit,
+    'street'            => $street,
+    'city'              => $city,
+    // 'province'          => $province,
+    'postal'            => $postal,
+    'country'           => $country,
+    'dob'               => $dob,
+    'sin'               => $sin_encrypted,
     'phone_raw'         => $phone_raw,
+    'email_raw'         => $email_raw,
+    'moved_province'    => $movedProvince,
+    'first_home_buyer'  => $first_home_buyer,
+    'paragonPrior'      => $paragonPrior,
+    'spYears'           => $spYears,
+    'fthb'              => $fthb,
+    'first_home_purchase'=> $first_home_purchase,
     'marital_status'    => $marital_status,
+    'spouse_first_name' => $spouse_first_name,
+    'spouse_last_name'  => $spouse_last_name,
+    'spouse_dob'        => $spouse_dob,
+    'date_of_marriage'  => $status_date,
+    'spouse_in_canada'  => $spouse_in_canada,
     'status_date'       => $status_date,
     'status_date_sdw'   => $status_date_sdw,
-    'spouse_in_canada'  => $spouse_in_canada,
+    'spouse_sin'        => $spouse_sin,
+    'spouse_email'      => $spouse_email,
+    'spouse_phone'      => $spouse_phone,
+    'spouseFileVal'     => $spouseFile,
+    'spouse_annual_income' => $spouse_income_cad,
+    //Is this the first time your spouse filing tax
+    'spouse_paragonPrior' => $rowSpouseTax['paragon_prior'],
+    'childrenFlag'      => $childrenFlag,
     'children_json'     => $children_json,
     'rent_addresses_json' => $rent_addresses_json,
   ], $appUploads, $spouseUploads);
@@ -1000,16 +1024,37 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
     
     // Extract form data with defaults
     $first_name       = $data['first_name'] ?? '';
-    $middle_name      = $data['middle_name'] ?? '';
     $last_name        = $data['last_name'] ?? '';
-    $dob              = $data['dob'] ?? '';
     $gender           = $data['gender'] ?? '';
-    $email_raw        = $data['email_raw'] ?? '';
+    $unit             = $data['unit'] ?? '';
+    $street           = $data['street'] ?? '';
+    $city             = $data['city'] ?? '';
+    $postal           = $data['postal'] ?? '';
+    $country          = $data['country'] ?? '';
+    $dob              = $data['dob'] ?? '';
+    $sin              = $data['sin'] ?? '';
     $phone_raw        = $data['phone_raw'] ?? '';
+    $email_raw        = $data['email_raw'] ?? '';
+    $moved_province   = $data['moved_province'] ?? '';
+    $first_home_buyer = $data['first_home_buyer'] ?? '';
+    $paragonPrior     = $data['paragonPrior'] ?? '';
+    $spYears          = $data['spYears'] ?? '';
+    $fthb             = $data['fthb'] ?? '';
+    $first_home_purchase = $data['first_home_purchase'] ?? '';
     $marital_status   = $data['marital_status'] ?? '';
+    $spouse_first_name = $data['spouse_first_name'] ?? '';
+    $spouse_last_name  = $data['spouse_last_name'] ?? '';
+    $spouse_dob       = $data['spouse_dob'] ?? '';
+    $date_of_marriage  = $data['date_of_marriage'] ?? '';
+    $spouse_sin       = $data['spouse_sin'] ?? '';
     $status_date      = $data['status_date'] ?? '';
     $status_date_sdw  = $data['status_date_sdw'] ?? '';
     $spouse_in_canada = $data['spouse_in_canada'] ?? '';
+    $spouse_email     = $data['spouse_email'] ?? '';
+    $spouse_phone     = $data['spouse_phone'] ?? '';
+    $spouseFileVal    = $data['spouseFileVal'] ?? '';
+    $spouse_paragonPrior = $data['spouse_paragonPrior'] ?? '';
+    $spouse_anual_income = $data['spouse_annual_income'] ?? '';
     $children_json    = $data['children_json'] ?? '[]';
     $rent_addresses_json = $data['rent_addresses_json'] ?? '';
 
@@ -1082,6 +1127,7 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
     $status_value = $status_date ?: $status_date_sdw;
 
     // Build complete HTML email
+    // Email Template
     $message = "<html>
 <head>
     <title>New Tax Form Submission</title>
@@ -1112,29 +1158,79 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
             <td colspan='4'>$first_name</td>
         </tr>
         <tr>
-            <th>Middle Name</th>
-            <td colspan='4'>$middle_name</td>
-        </tr>
-        <tr>
             <th>Last Name</th>
             <td colspan='4'>$last_name</td>
-        </tr>
-        <tr>
-            <th>Date of Birth</th>
-            <td colspan='4'>$dob</td>
         </tr>
         <tr>
             <th>Gender</th>
             <td colspan='4'>$gender</td>
         </tr>
         <tr>
-            <th>Email Address</th>
-            <td colspan='4'>$email_raw</td>
+            <th>Apartmen/Unit #</th>
+            <td colspan='4'>$unit</td>
+        </tr>
+        <tr>
+            <th>Street</th>
+            <td colspan='4'>$street</td>
+        </tr>
+        <tr>
+            <th>City</th>
+            <td colspan='4'>$city</td>
+        </tr>
+        <tr>
+            <th>State/Province</th>
+            <td colspan='4'></td>
+        </tr>
+        <tr>
+            <th>Postal Code</th>
+            <td colspan='4'>$postal</td>
+        </tr>
+        <tr>
+            <th>Country/Region</th>
+            <td colspan='4'>$country</td>
+        </tr>
+        <tr>
+            <th>Date of Birth</th>
+            <td colspan='4'>$dob</td>
+        </tr>
+        <tr>
+            <th>SIN Number</th>
+            <td colspan='4'>$sin</td>
         </tr>
         <tr>
             <th>Phone Number</th>
             <td colspan='4'>$phone_raw</td>
         </tr>
+        <tr>
+            <th>Email Address</th>
+            <td colspan='4'>$email_raw</td>
+        </tr>
+
+        <tr>
+            <th>Did you move to another province?</th>
+            <td colspan='4'>$moved_province</td>
+        </tr>
+        <tr>
+            <th>Is this the first time you are filing tax?</th>
+            <td colspan='4'>$first_home_buyer</td>
+        </tr>
+        <tr>
+            <th>Did you file earlier with Paragon Tax Services?</th>
+            <td colspan='4'>$paragonPrior</td>
+        </tr>
+        <tr>
+            <th>Which years do you want to file tax returns?</th>
+            <td colspan='4'>$spYears</td>
+        </tr>
+        <tr>
+            <th>Are you first time home buyer?</th>
+            <td colspan='4'>$first_home_purchase</td>
+        </tr>
+        <tr>
+            <th>When did you purchase your first home?</th>
+            <td colspan='4'></td>
+        </tr>
+
         <tr>
             <th colspan='5' style='background:#f2f2f2;'>Marital Information</th>
         </tr>
@@ -1143,17 +1239,39 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
             <td colspan='4'>$marital_status</td>
         </tr>
         <tr>
-            <th>Status Date</th>
-            <td colspan='4'>$status_value</td>
+            <th>Spouse Last Name</th>
+            <td colspan='4'>$spouse_last_name</td>
         </tr>
         <tr>
-            <th>Spouse in Canada</th>
-            <td colspan='4'>$spouse_in_canada</td>
+            <th>Spouse First Name</th>
+            <td colspan='4'>$spouse_first_name</td>
         </tr>
+        <tr>
+            <th>Spouse Date of Birth</th>
+            <td colspan='4'>$spouse_dob</td>
+        </tr>
+        <tr>
+            <th>Date of Marriage</th>
+            <td colspan='4'>$spouse_dob</td>
+        </tr>
+        <tr>
+            <th>Residing in Canada</th>
+            <td colspan='4'></td>
+        </tr>
+        <tr>
+            <th>Spousal Annual Income outside Canada (Converted to CAD)</th>
+            <td colspan='4'>$spouse_anual_income</td>
+        </tr>
+        <tr>
+            <th>Do you have child</th>
+            <td colspan='4'></td>
+        </tr>
+
         <tr>
             <th colspan='5' style='background:#f2f2f2;'>Children Information</th>
         </tr>
         $childrenRows
+        
         <tr>
             <th colspan='5' style='background:#f2f2f2;'>Rental Addresses</th>
         </tr>
@@ -1163,7 +1281,6 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
 </html>";
 
     $recipients = ['lance.canadianwebdesigns@gmail.com'];
-    $subject    = "New Tax Form Submission - $first_name $last_name";
 
     // Build attachments array
     $attachments = [];
@@ -1257,7 +1374,7 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
 
     // Send email with attachments
     // $result = sendEmail($recipients, $subject, $message, $attachments); // Not working $subject
-    $result = sendEmail($recipients, "NewTaxFormSubmission", $message, $attachments);
+    $result = sendEmail($recipients, "OnlineFileSubmission from $first_name $last_name", $message, $attachments);
     // $result = sendEmail($recipients, "TESTTT",  $message, []);
     error_log("sendEmail returned: " . print_r($result, true));
 
@@ -1911,7 +2028,7 @@ error_log("personal_tax loaded for: " . $loginEmail);
                     spouse_email: 'Spouse Email Address is required',
                     spouse_canada_entry: 'Date of Entry in Canada is required',
                     spouse_birth_country: 'Birth Country is required',
-                    spouse_year1: 'Year 1 is required',
+                    o you have chispouse_year1: 'Year 1 is required',
                     spouse_year1_income: 'Year 1 income is required',
                     spouse_year2: 'Year 2 is required',
                     spouse_year2_income: 'Year 2 income is required',
