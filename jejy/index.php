@@ -334,6 +334,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $onRent            = field('onRent');
   $claimRent         = field('claimRent');
 
+  
+
   // JSON from your JS (rent addresses)
   // ---------- RENT ADDRESSES (JSON) ----------
   $rent_addresses_json = '[]';
@@ -498,6 +500,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   // ---------- OTHERS ----------------
   $yourMessageToUs = field('other_message');
+  $taxReturn = ('tax_return_years');
+  $spouseTaxReturn = ('spouse_tax_return_years');
+  //$rowTax['return_years']
 
   // ---------- RENTAL PROPERTIES (JSON) ----------
   $rental_props_json = '[]';
@@ -987,11 +992,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     'email_raw'         => $email_raw,
     'moved_province'    => $moved_province,
     'first_home_buyer'  => $first_home_buyer,
-    'paragonPrior'      => $paragonPrior,
-    'spYears'           => $spYears,
+    'paragon_prior'      => $paragon_prior,
     'fthb'              => $fthb,
     'first_home_purchase'=> $first_home_purchase,
-    'first_home_purchase_date' => $first_home_purchase_date,
     'marital_status'    => $marital_status,
     'spouse_first_name' => $spouse_first_name,
     'spouse_last_name'  => $spouse_last_name,
@@ -1007,11 +1010,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     'spouseFileVal'     => $spouseFile,
     'spouse_annual_income' => $spouse_income_cad,
     //Is this the first time your spouse filing tax
-    'spouse_paragonPrior' => $rowSpouseTax['paragon_prior'],
+    'sp_paragon_prior' => $sp_paragon_prior,
     'childrenFlag'      => $childrenFlag,
     'children_json'     => $children_json,
     'rent_addresses_json' => $rent_addresses_json,
     'yourMessageToUs'  => $yourMessageToUs,
+    'return_year'      => $return_years,
+    'sp_return_year'   => $sp_return_years,
+    'first_time'       => $first_time,
+    'sp_first_time'    => $sp_first_time,
+    'paragonPrior' => $paragonPrior,
   ], $appUploads, $spouseUploads);
 
   $_SESSION['show_confirm_panel'] = true;
@@ -1033,44 +1041,47 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
     error_log("spouseUploads: " . print_r($spouseUploads, true));
     
     // Extract form data with defaults
-    $first_name       = $data['first_name'] ?? '';
-    $last_name        = $data['last_name'] ?? '';
-    $gender           = $data['gender'] ?? '';
-    $unit             = $data['unit'] ?? '';
-    $street           = $data['street'] ?? '';
-    $city             = $data['city'] ?? '';
-    $postal           = $data['postal'] ?? '';
-    $province         = $data['province'] ?? '';
-    $country          = $data['country'] ?? '';
-    $dob              = $data['dob'] ?? '';
-    $sin              = $data['sin'] ?? '';
-    $phone_raw        = $data['phone_raw'] ?? '';
-    $email_raw        = $data['email_raw'] ?? '';
-    $moved_province   = $data['moved_province'] ?? '';
-    $first_home_buyer = $data['first_home_buyer'] ?? '';
-    $paragonPrior     = $data['paragonPrior'] ?? '';
-    $spYears          = $data['spYears'] ?? '';
-    $fthb             = $data['fthb'] ?? '';
-    $first_home_purchase = $data['first_home_purchase'] ?? '';
-    $first_home_purchase_date = $data['first_home_purchase_date'] ?? '';
-    $marital_status   = $data['marital_status'] ?? '';
-    $spouse_first_name = $data['spouse_first_name'] ?? '';
-    $spouse_last_name  = $data['spouse_last_name'] ?? '';
-    $spouse_dob       = $data['spouse_dob'] ?? '';
-    $date_of_marriage  = $data['date_of_marriage'] ?? '';
-    $spouse_sin       = $data['spouse_sin'] ?? '';
-    $status_date      = $data['status_date'] ?? '';
-    $status_date_sdw  = $data['status_date_sdw'] ?? '';
-    $spouse_in_canada = $data['spouse_in_canada'] ?? '';
-    $spouse_email     = $data['spouse_email'] ?? '';
-    $spouse_phone     = $data['spouse_phone'] ?? '';
+    $first_name       = $data['first_name'] ?? 'N/A';
+    $last_name        = $data['last_name'] ?? 'N/A';
+    $gender           = $data['gender'] ?? 'N/A';
+    $unit             = $data['unit'] ?? 'N/A';
+    $street           = $data['street'] ?? 'N/A';
+    $city             = $data['city'] ?? 'N/A';
+    $postal           = $data['postal'] ?? 'N/A';
+    $province         = $data['province'] ?? 'N/A';
+    $country          = $data['country'] ?? 'N/A';
+    $dob              = $data['dob'] ?? 'N/A';
+    $sin              = $data['sin'] ?? 'N/A';
+    $phone_raw        = $data['phone_raw'] ?? 'N/A';
+    $email_raw        = $data['email_raw'] ?? 'N/A';
+    $moved_province   = $data['moved_province'] ?? 'N/A';
+    $first_home_buyer = $data['first_home_buyer'] ?? 'N/A';
+    $paragon_prior     = $data['paragon_prior'] ?? 'N/A';
+    $marital_status   = $data['marital_status'] ?? 'N/A';
+    $spouse_first_name = $data['spouse_first_name'] ?? 'N/A';
+    $spouse_last_name  = $data['spouse_last_name'] ?? 'N/A';
+    $spouse_dob       = $data['spouse_dob'] ?? 'N/A';
+    $date_of_marriage  = $data['date_of_marriage'] ?? 'N/A';
+    $spouse_sin       = $data['spouse_sin'] ?? 'N/A';
+    $status_date      = $data['status_date'] ?? 'N/A';
+    $status_date_sdw  = $data['status_date_sdw'] ?? 'N/A';
+    $spouse_in_canada = $data['spouse_in_canada'] ?? 'N/A';
+    $spouse_email     = $data['spouse_email'] ?? 'N/A';
+    $spouse_phone     = $data['spouse_phone'] ?? 'N/A';
     $spouseFileVal    = $data['spouseFileVal'] ?? '';
-    $spouse_paragonPrior = $data['spouse_paragonPrior'] ?? '';
-    $spouse_anual_income = $data['spouse_annual_income'] ?? '';
+    $spouse_anual_income = $data['spouse_annual_income'] ?? 'N/A';
+    $sp_paragon_prior = $data['sp_paragon_prior'] ?? 'No';
     $children_json    = $data['children_json'] ?? '[]';
     $rent_addresses_json = $data['rent_addresses_json'] ?? '';
     $childrenFlag     = $data['childrenFlag'] ?? '';
-    $yourMessageToUs  = $data['yourMessageToUs'] ?? '';
+    $yourMessageToUs  = $data['yourMessageToUs'] ?? 'N/A';
+    $return_years     = $data['return_year'] ?? 'N/A';
+    $sp_return_years  = $data['sp_return_year'] ?? 'N/A';
+    $first_time       = $data['first_time'] ?? 'N/A';
+    $sp_first_time    = $data['sp_first_time'] ?? 'N/A';
+    $fthb              = $data['fthb'] ?? 'N/A';
+    $first_home_purchase = $data['first_home_purchase'] ?? 'N/A';
+    $paragonPrior    = $data['paragonPrior'] ?? 'N/A';
 
     // Decode JSON data
     $childrenArray = json_decode($children_json, true) ?: [];
@@ -1226,23 +1237,23 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
         </tr>
         <tr>
             <th>Is this the first time you are filing tax?</th>
-            <td colspan='4'>$first_home_buyer</td>
+            <td colspan='4'>$first_time</td>
         </tr>
         <tr>
             <th>Did you file earlier with Paragon Tax Services?</th>
-            <td colspan='4'>$paragonPrior</td>
+            <td colspan='4'>$paragon_prior</td>
         </tr>
         <tr>
             <th>Which years do you want to file tax returns?</th>
-            <td colspan='4'>$spYears</td>
+            <td colspan='4'>$return_years</td>
         </tr>
         <tr>
             <th>Are you first time home buyer?</th>
-            <td colspan='4'>$first_home_purchase</td>
+            <td colspan='4'>$first_home_buyer</td>
         </tr>
         <tr>
             <th>When did you purchase your first home?</th>
-            <td colspan='4'>$first_home_purchase_date</td>
+            <td colspan='4'>$first_home_purchase</td>
         </tr>
 
         <tr>
@@ -1287,19 +1298,19 @@ function prepareEmail(array $data, array $appUploads = [], array $spouseUploads 
 
         <tr>
             <th>Does your spouse want to file taxes?</th>
-            <td colspan='4'></td>
+            <td colspan='4'>$spouseFileVal</td>
         </tr>
         <tr>
             <th>Is this the first time your spouse filing tax?</th>
-            <td colspan='4'></td>
+            <td colspan='4'>$sp_first_time</td>
         </tr>
         <tr>
             <th>Did your Spouse file earlier with Paragon Tax Services?</th>
-            <td colspan='4'></td>
+            <td colspan='4'>$sp_paragon_prior</td>
         </tr>
         <tr>
             <th>Which years your Spouse want to file tax returns?</th>
-            <td colspan='4'></td>
+            <td colspan='4'>$sp_return_years</td>
         </tr>
 
         <tr>
@@ -11887,9 +11898,7 @@ document.addEventListener('DOMContentLoaded', function () {
       <div class="qs-block"> 
      <label class="qs-label">Your Message For Us?</label>
       <div class="fi-group fi-float fi-span2"> 
-     <textarea id="other_message" name="other_message" class="fi-input" rows="6" placeholder=" ">
-      <?= htmlspecialchars($yourMessageToUs ?? '') ?>
-     </textarea> 
+     <textarea id="other_message" name="other_message" class="fi-input" rows="6" placeholder=" "><?= htmlspecialchars($yourMessageToUs ?? '') ?></textarea> 
         </div>
           </div>
 
