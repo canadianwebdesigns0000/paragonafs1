@@ -1,0 +1,15 @@
+{
+  "name": "paragon/afs",
+  "description": "Paragon AFS tax form dependencies (PHPMailer + Google API client)",
+  "type": "project",
+  "require": {
+    "phpmailer/phpmailer": "v6.7.1",
+    "google/apiclient": "v2.14.0"
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "sort-packages": true
+  }
+}
+
+
