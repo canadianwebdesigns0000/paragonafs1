@@ -1,0 +1,29 @@
+`# Uploads or user-generated files
+/uploads
+/reupload.php
+/upload.php
+/upload_local.php
+/upload_and_insert_files.php
+/webmail
+/phpmyadmin
+/backups
+Dependency folders
+/vendor/
+
+Temporary or backup files
+*.zip
+*.bak
+*.tmp
+
+IDE / environment files
+*.log
+.DS_Store
+.env
+
+# secrets
+*.key
+*.pem
+.env
+credentials/*.json
+
+path/to/the/file.ext
